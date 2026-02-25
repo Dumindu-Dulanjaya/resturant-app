@@ -7,6 +7,9 @@ import { AuthModule } from './auth/auth.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
 import { MenusModule } from './menus/menus.module';
 import { CategoriesModule } from './categories/categories.module';
+import { SubcategoriesModule } from './subcategories/subcategories.module';
+import { FoodItemsModule } from './food-items/food-items.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -33,6 +36,9 @@ import { CategoriesModule } from './categories/categories.module';
     RestaurantsModule,
     MenusModule,
     CategoriesModule,
+    SubcategoriesModule,
+    FoodItemsModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
