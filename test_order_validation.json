@@ -1,0 +1,12 @@
+{
+  "restaurantId": 1,
+  "tableNo": "T-99",
+  "notes": "Test validation limits",
+  "items": [
+    {
+      "foodItemId": 50,
+      "qty": 25,
+      "notes": "This should fail - qty exceeds 20"
+    }
+  ]
+}

@@ -59,6 +59,9 @@ export class Restaurant {
   @Column({ name: 'package_id', nullable: true })
   packageId: number;
 
+  @Column({ name: 'api_key', type: 'varchar', length: 64, unique: true, nullable: true })
+  apiKey: string | null;
+
   @OneToMany(() => Admin, (admin) => admin.restaurant)
   admins: Admin[];
 }

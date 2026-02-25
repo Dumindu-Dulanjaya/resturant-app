@@ -1,0 +1,10 @@
+{
+  "tableNo": "T-99",
+  "notes": "Missing restaurantId - should fail",
+  "items": [
+    {
+      "foodItemId": 50,
+      "qty": 2
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "restaurantId": 1,
+  "tableNo": "T-12",
+  "items": [
+    {
+      "foodItemId": 50,
+      "qty": 3,
+      "notes": "Extra strong"
+    }
+  ]
+}
