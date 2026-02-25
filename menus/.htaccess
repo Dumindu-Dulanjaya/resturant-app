@@ -1,0 +1,28 @@
+# Enable URL rewriting
+RewriteEngine On
+
+# Redirect all HTTP traffic to HTTPS (skip for LAN IPs like 192.168.x.x)
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1|192\.168\.[0-9]+\.[0-9]+)$ [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Rewrite /menus/ to index.php
+RewriteRule ^menus/?$ index.php [L]
+
+# Rewrite /items/ to pages/items.php
+RewriteRule ^items/?$ pages/items.php [L]
+
+# Rewrite /items/[item-id] to pages/single_item.php?id=[item-id]
+RewriteRule ^items/([0-9]+)/?$ pages/single_item.php?id=$1 [L]
+
+# Rewrite /menu_categories/[menu_id] to pages/menu_categories.php?menu_id=[menu_id]
+RewriteRule ^menu_categories/([0-9]+)/?$ pages/menu_categories.php?menu_id=$1 [L]
+
+# Prevent direct access to .htaccess and sensitive files
+<FilesMatch "^(\.htaccess|\.env|\.ini|\.json|\.log)$">
+Order Allow,Deny
+Deny from all
+</FilesMatch>
+
+# Set the default charset to UTF-8
+AddDefaultCharset UTF-8

@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+# Disallow sensitive areas
+Disallow: /menus/admin/
+Disallow: /menus/s_admin/
+Disallow: /menus/backend/
+Disallow: /menus/sql/
+Disallow: /menus/vendor/
+Disallow: /assets/
+Disallow: /*.json$
+Disallow: /process_*.php
+Disallow: /add_*.php
+Disallow: /delete_*.php
+Disallow: /validate_*.php
+
+# Allow important public pages
+Allow: /menus/
+Allow: /menus/login.php
+Allow: /menus/room_login.php
+
+# Sitemap location
+Sitemap: https://www.anawuma.com/sitemap.xml
+
+# Crawl delay (optional - helps with server load)
+Crawl-delay: 1

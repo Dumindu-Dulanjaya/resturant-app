@@ -1,0 +1,53 @@
+# =============================================
+# StayEaseInn - .gitignore
+# =============================================
+
+# --- Environment / Secrets ---
+menus/.env
+.env
+*.env
+
+# --- Composer Dependencies (installed on server) ---
+menus/vendor/
+menus/composer.phar
+
+# --- Generated QR Code Images ---
+qrcodes/
+menus/qrcodes/
+
+# --- PHP Logs & Cache ---
+*.log
+*.cache
+error_log
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE Files ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- Temporary / Debug Files ---
+test_*.php
+check_*.php
+fix_*.php
+alter_db.php
+restore_database.php
+add_country_currency.php
+custom.php
+
+# --- Node / NestJS / React ---
+node_modules/
+restaurant-backend-nestjs/dist/
+restaurant-backend-nestjs/.env
+restaurant-frontend/build/
+restaurant-frontend/.env
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
