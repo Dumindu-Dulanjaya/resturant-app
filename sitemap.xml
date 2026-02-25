@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+    <!-- Main Pages -->
+    <url>
+        <loc>https://www.anawuma.com/</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+        <image:image>
+            <image:loc>https://www.anawuma.com/assets/images/logos/logo-rmbg-2.png</image:loc>
+            <image:title>Anawuma - QR-based Order Management Software</image:title>
+            <image:caption>Leading restaurant management software with QR code ordering system</image:caption>
+        </image:image>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/about</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/pricing</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/contact</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/blog</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- Authentication Pages -->
+    <url>
+        <loc>https://www.anawuma.com/login</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/register</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    
+    <!-- User Dashboard Pages (for logged-in users) -->
+    <url>
+        <loc>https://www.anawuma.com/profile</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/checkout</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.4</priority>
+    </url>
+    
+    <!-- Payment Result Pages -->
+    <url>
+        <loc>https://www.anawuma.com/payment-success</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/payment-failed</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
+    
+    <!-- Restaurant Menu System -->
+    <url>
+        <loc>https://www.anawuma.com/menus/</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/menus/login</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.anawuma.com/menus/room-login</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    
+    <!-- Blog Detail Pages (if they exist) -->
+    <url>
+        <loc>https://www.anawuma.com/blog-details</loc>
+        <lastmod>2024-12-19T10:00:00+00:00</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+    </url>
+</urlset>
