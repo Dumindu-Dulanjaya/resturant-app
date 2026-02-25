@@ -5,9 +5,13 @@ import { OrdersController } from './orders.controller';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { FoodItem } from '../food-items/entities/food-item.entity';
+import { RestaurantsModule } from '../restaurants/restaurants.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order, OrderItem, FoodItem])],
+  imports: [
+    TypeOrmModule.forFeature([Order, OrderItem, FoodItem]),
+    RestaurantsModule, // Import for ApiKeyGuard
+  ],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

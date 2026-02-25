@@ -1,0 +1,11 @@
+{
+  "restaurantId": 1,
+  "tableNo": "T-5",
+  "notes": "VIP customer",
+  "items": [
+    {
+      "foodItemId": 50,
+      "qty": 1
+    }
+  ]
+}

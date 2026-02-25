@@ -10,33 +10,49 @@ import {
   Request,
   ParseIntPipe,
   Query,
+  Header,
+  BadRequestException,
+  Req,
 } from '@nestjs/common';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto, @Request() req) {
-    // For MVP: If you want this public (customer orders), hardcode restaurantId or get from body
-    // For now, following the pattern of using JWT auth for all mutations
-    // If making it public, you'd need to add restaurantId to the DTO or use a default value
-    const restaurantId = req.user?.restaurantId || 1; // Default to 1 for MVP if no auth
+  @UseGuards(ApiKeyGuard) // Secure public endpoint with API key
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per 60 seconds
+  create(@Req() req, @Body() createOrderDto: CreateOrderDto) {
+    // restaurantId comes from ApiKeyGuard (attached to req)
+    const restaurantId = req.restaurantId;
+    
+    // Validate items array is not empty
+    if (!createOrderDto.items || createOrderDto.items.length === 0) {
+      throw new BadRequestException('Order must contain at least one item');
+    }
+
     return this.ordersService.create(createOrderDto, restaurantId);
   }
 
   @Get()
+  @SkipThrottle() // Skip rate limiting for authenticated GET requests
   @UseGuards(JwtAuthGuard)
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   findAll(@Query('status') status?: string, @Request() req?) {
     const restaurantId = req.user.restaurantId;
     return this.ordersService.findAll(restaurantId, status);
   }
 
   @Get(':id')
+  @SkipThrottle() // Skip rate limiting for authenticated requests
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const restaurantId = req.user.restaurantId;
@@ -44,6 +60,7 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
+  @SkipThrottle() // Skip rate limiting for authenticated requests
   @UseGuards(JwtAuthGuard)
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -55,6 +72,7 @@ export class OrdersController {
   }
 
   @Delete(':id')
+  @SkipThrottle() // Skip rate limiting for authenticated requests
   @UseGuards(JwtAuthGuard)
   remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const restaurantId = req.user.restaurantId;
