@@ -6,6 +6,7 @@ import { OrderItem } from './entities/order-item.entity';
 import { FoodItem } from '../food-items/entities/food-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { QueryOrdersDto } from './dto/query-orders.dto';
 
 @Injectable()
 export class OrdersService {
@@ -81,19 +82,48 @@ export class OrdersService {
     return await this.ordersRepository.save(order);
   }
 
-  async findAll(restaurantId?: number, status?: string) {
+  async findAll(restaurantId: number, queryDto: QueryOrdersDto = {}) {
+    const { status, from, to, tableNo, orderNo } = queryDto;
+
     const query = this.ordersRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.orderItems', 'orderItems')
       .leftJoinAndSelect('orderItems.foodItem', 'foodItem')
-      .orderBy('order.createdAt', 'ASC');
+      .where('order.restaurantId = :restaurantId', { restaurantId })
+      .orderBy('order.createdAt', 'DESC'); // Latest first
 
-    if (restaurantId) {
-      query.where('order.restaurantId = :restaurantId', { restaurantId });
-    }
-
+    // Status filter
     if (status) {
       query.andWhere('order.status = :status', { status });
+    }
+
+    // Date range filter
+    if (from || to) {
+      const startDate = from
+        ? new Date(`${from}T00:00:00.000Z`)
+        : new Date('1970-01-01');
+      const endDate = to
+        ? new Date(`${to}T23:59:59.999Z`)
+        : new Date('2099-12-31');
+
+      query.andWhere('order.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    }
+
+    // Table number partial match
+    if (tableNo) {
+      query.andWhere('order.tableNo LIKE :tableNo', {
+        tableNo: `%${tableNo}%`,
+      });
+    }
+
+    // Order number partial match
+    if (orderNo) {
+      query.andWhere('order.orderNo LIKE :orderNo', {
+        orderNo: `%${orderNo}%`,
+      });
     }
 
     return await query.getMany();

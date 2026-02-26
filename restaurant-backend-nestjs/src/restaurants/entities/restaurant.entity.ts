@@ -62,6 +62,19 @@ export class Restaurant {
   @Column({ name: 'api_key', type: 'varchar', length: 64, unique: true, nullable: true })
   apiKey: string | null;
 
+  // Feature flags for optional modules
+  @Column({ name: 'enable_steward', type: 'tinyint', width: 1, default: 1 })
+  enableSteward: boolean;
+
+  @Column({ name: 'enable_housekeeping', type: 'tinyint', width: 1, default: 1 })
+  enableHousekeeping: boolean;
+
+  @Column({ name: 'enable_kds', type: 'tinyint', width: 1, default: 1 })
+  enableKds: boolean;
+
+  @Column({ name: 'enable_reports', type: 'tinyint', width: 1, default: 1 })
+  enableReports: boolean;
+
   @OneToMany(() => Admin, (admin) => admin.restaurant)
   admins: Admin[];
 }

@@ -13,6 +13,9 @@ import { MenusService } from './menus.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../auth/enums/role.enum';
 
 interface RequestWithUser extends Request {
   user: {
@@ -24,7 +27,8 @@ interface RequestWithUser extends Request {
 }
 
 @Controller('menus')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 export class MenusController {
   constructor(private readonly menusService: MenusService) {}
 
