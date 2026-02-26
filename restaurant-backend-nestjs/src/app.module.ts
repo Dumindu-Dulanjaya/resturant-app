@@ -12,6 +12,10 @@ import { CategoriesModule } from './categories/categories.module';
 import { SubcategoriesModule } from './subcategories/subcategories.module';
 import { FoodItemsModule } from './food-items/food-items.module';
 import { OrdersModule } from './orders/orders.module';
+import { TableQrModule } from './table-qr/table-qr.module';
+import { ReportsModule } from './reports/reports.module';
+import { RoomQrModule } from './room-qr/room-qr.module';
+import { HousekeepingModule } from './housekeeping/housekeeping.module';
 
 @Module({
   imports: [
@@ -45,6 +49,10 @@ import { OrdersModule } from './orders/orders.module';
     SubcategoriesModule,
     FoodItemsModule,
     OrdersModule,
+    TableQrModule,
+    ReportsModule,
+    RoomQrModule,
+    HousekeepingModule,
   ],
   controllers: [AppController],
   providers: [

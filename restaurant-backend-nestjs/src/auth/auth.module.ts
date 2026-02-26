@@ -9,11 +9,13 @@ import { Admin } from './entities/admin.entity';
 import { SuperAdmin } from './entities/super-admin.entity';
 import { Restaurant } from '../restaurants/entities/restaurant.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { RestaurantsModule } from '../restaurants/restaurants.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Admin, SuperAdmin, Restaurant]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    RestaurantsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
