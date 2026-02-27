@@ -16,6 +16,7 @@ import { TableQrModule } from './table-qr/table-qr.module';
 import { ReportsModule } from './reports/reports.module';
 import { RoomQrModule } from './room-qr/room-qr.module';
 import { HousekeepingModule } from './housekeeping/housekeeping.module';
+import { OffersModule } from './offers/offers.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { HousekeepingModule } from './housekeeping/housekeeping.module';
     ReportsModule,
     RoomQrModule,
     HousekeepingModule,
+    OffersModule,
   ],
   controllers: [AppController],
   providers: [
