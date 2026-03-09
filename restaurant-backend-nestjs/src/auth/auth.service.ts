@@ -190,4 +190,8 @@ export class AuthService {
       order: { adminId: 'DESC' },
     });
   }
+
+  async deleteAdmin(adminId: number): Promise<void> {
+    await this.adminRepository.delete(adminId);
+  }
 }

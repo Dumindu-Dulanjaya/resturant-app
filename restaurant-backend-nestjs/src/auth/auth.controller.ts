@@ -3,6 +3,8 @@ import {
   Post,
   Body,
   Get,
+  Delete,
+  Param,
   UseGuards,
   Request,
   HttpCode,
@@ -93,5 +95,13 @@ export class AuthController {
       success: true,
       data: admins,
     };
+  }
+
+  @Delete('admins/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  async deleteAdmin(@Param('id') id: string) {
+    await this.authService.deleteAdmin(parseInt(id));
+    return { success: true, message: 'Admin deleted successfully' };
   }
 }

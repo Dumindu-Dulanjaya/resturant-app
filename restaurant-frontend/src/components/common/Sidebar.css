@@ -1,0 +1,130 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 250px;
+  background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #2c3e50;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 3px;
+}
+
+.sidebar-header {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 2px solid #667eea;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.sidebar-menu li {
+  margin: 0.25rem 0.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-menu li a {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: #ecf0f1;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.sidebar-menu li a:hover {
+  background: rgba(102, 126, 234, 0.2);
+  padding-left: 1.5rem;
+}
+
+.sidebar-menu li.active > a,
+.sidebar-menu li.active > a:hover {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 500;
+}
+
+.sidebar-menu li a i {
+  width: 20px;
+  margin-right: 0.75rem;
+  text-align: center;
+}
+
+.sidebar-menu li.has-submenu > a {
+  position: relative;
+}
+
+.submenu-arrow {
+  margin-left: auto !important;
+  font-size: 0.75rem;
+  margin-right: 0 !important;
+  transition: transform 0.3s ease;
+}
+
+.has-submenu.open > a .submenu-arrow {
+  transform: rotate(0deg);
+}
+
+.submenu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.submenu li {
+  margin: 0;
+}
+
+.submenu li a {
+  padding: 0.6rem 1rem 0.6rem 3rem;
+  font-size: 0.9rem;
+}
+
+.submenu li a:hover {
+  background: rgba(102, 126, 234, 0.3);
+}
+
+.submenu li.active a {
+  background: rgba(102, 126, 234, 0.4);
+  border-left: 3px solid #667eea;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-250px);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+}

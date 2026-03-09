@@ -26,7 +26,7 @@ import { OffersModule } from './offers/offers.module';
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000, // 60 seconds
-      limit: 10, // 10 requests per 60 seconds per IP
+      limit: 300, // 300 requests per 60 seconds per IP
     }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
