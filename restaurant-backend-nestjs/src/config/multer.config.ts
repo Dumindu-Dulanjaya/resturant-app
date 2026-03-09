@@ -30,5 +30,17 @@ export const offerImageStorage = diskStorage({
   },
 });
 
+// Storage configuration for restaurant logos
+export const logoStorage = diskStorage({
+  destination: './uploads/logos',
+  filename: (req, file, callback) => {
+    // Generate unique filename: timestamp-randomnumber-originalname
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = extname(file.originalname);
+    const filename = `logo-${uniqueSuffix}${ext}`;
+    callback(null, filename);
+  },
+});
+
 // File size limit (5MB)
 export const maxFileSize = 5 * 1024 * 1024; // 5MB in bytes

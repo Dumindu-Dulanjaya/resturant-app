@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { Admin } from './entities/admin.entity';
 import { SuperAdmin } from './entities/super-admin.entity';
 import { LoginDto } from './dto/login.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 import { AuthResponse, JwtPayload } from './interfaces/auth.interface';
 import { Restaurant } from '../restaurants/entities/restaurant.entity';
 
@@ -151,5 +152,42 @@ export class AuthService {
       });
       return superAdmin;
     }
+  }
+
+  /**
+   * Create a new admin (Super Admin only)
+   */
+  async createAdmin(createAdminDto: CreateAdminDto): Promise<Admin> {
+    // Check if email already exists
+    const existingAdmin = await this.adminRepository.findOne({
+      where: { email: createAdminDto.email },
+    });
+
+    if (existingAdmin) {
+      throw new ConflictException('Email already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(createAdminDto.password, 10);
+
+    // Create admin
+    const admin = this.adminRepository.create({
+      email: createAdminDto.email,
+      password: hashedPassword,
+      role: createAdminDto.role,
+      restaurantId: createAdminDto.restaurantId,
+    });
+
+    return this.adminRepository.save(admin);
+  }
+
+  /**
+   * Get all admins (Super Admin only)
+   */
+  async getAllAdmins(): Promise<Admin[]> {
+    return this.adminRepository.find({
+      relations: ['restaurant'],
+      order: { adminId: 'DESC' },
+    });
   }
 }

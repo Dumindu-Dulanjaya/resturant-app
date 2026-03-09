@@ -10,7 +10,11 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
+import { UserRole } from './enums/role.enum';
 import { AuthResponse } from './interfaces/auth.interface';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 
@@ -64,6 +68,30 @@ export class AuthController {
         restaurantSettings,
         ...user,
       },
+    };
+  }
+
+  @Post('admin/create')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  async createAdmin(@Body() createAdminDto: CreateAdminDto) {
+    const admin = await this.authService.createAdmin(createAdminDto);
+    return {
+      success: true,
+      data: admin,
+      message: 'Admin created successfully',
+    };
+  }
+
+  @Get('admins')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  async getAllAdmins() {
+    const admins = await this.authService.getAllAdmins();
+    return {
+      success: true,
+      data: admins,
     };
   }
 }
