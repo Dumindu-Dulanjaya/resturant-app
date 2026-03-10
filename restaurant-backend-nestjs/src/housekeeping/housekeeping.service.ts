@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HousekeepingRequest, RequestStatus, RequestType } from './entities/housekeeping-request.entity';
 import { CreateHousekeepingRequestDto } from './dto/create-housekeeping-request.dto';
+import { RoomQr } from '../room-qr/entities/room-qr.entity';
 
 @Injectable()
 export class HousekeepingService {
   constructor(
     @InjectRepository(HousekeepingRequest)
     private readonly housekeepingRepository: Repository<HousekeepingRequest>,
+    @InjectRepository(RoomQr)
+    private readonly roomQrRepository: Repository<RoomQr>,
   ) {}
 
   /**
@@ -116,5 +119,37 @@ export class HousekeepingService {
       done: requests.filter((r) => r.status === RequestStatus.DONE).length,
       cancelled: requests.filter((r) => r.status === RequestStatus.CANCELLED).length,
     };
+  }
+
+  /**
+   * Public: Track request status by room key (for guests)
+   */
+  async trackRequestByRoomKey(
+    requestId: number,
+    roomKey: string,
+  ): Promise<HousekeepingRequest> {
+    // Verify room key
+    const roomQr = await this.roomQrRepository.findOne({
+      where: { roomKey, isActive: 1 },
+    });
+
+    if (!roomQr) {
+      throw new UnauthorizedException('Invalid room key');
+    }
+
+    // Find request that matches room key's restaurant and room number
+    const request = await this.housekeepingRepository.findOne({
+      where: {
+        requestId,
+        restaurantId: roomQr.restaurantId,
+        roomNo: roomQr.roomNo,
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Housekeeping request not found');
+    }
+
+    return request;
   }
 }

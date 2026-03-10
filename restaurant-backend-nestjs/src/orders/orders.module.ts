@@ -5,12 +5,13 @@ import { OrdersController } from './orders.controller';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { FoodItem } from '../food-items/entities/food-item.entity';
+import { TableQr } from '../table-qr/entities/table-qr.entity';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { TableQrModule } from '../table-qr/table-qr.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, FoodItem]),
+    TypeOrmModule.forFeature([Order, OrderItem, FoodItem, TableQr]),
     RestaurantsModule, // Import for ApiKeyGuard
     TableQrModule, // Import for TableKeyGuard
   ],

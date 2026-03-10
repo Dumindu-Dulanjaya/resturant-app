@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HousekeepingRequest } from './entities/housekeeping-request.entity';
+import { RoomQr } from '../room-qr/entities/room-qr.entity';
 import { HousekeepingService } from './housekeeping.service';
 import {
   HousekeepingPublicController,
@@ -11,7 +12,7 @@ import { RestaurantsModule } from '../restaurants/restaurants.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([HousekeepingRequest]),
+    TypeOrmModule.forFeature([HousekeepingRequest, RoomQr]),
     RoomQrModule, // For room key validation
     RestaurantsModule, // For FeatureFlagGuard
   ],

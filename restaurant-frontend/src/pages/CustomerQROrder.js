@@ -16,8 +16,116 @@ const CustomerQROrder = () => {
   const [loading, setLoading] = useState(true);
   const [showCart, setShowCart] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+  const [currentOrderStatus, setCurrentOrderStatus] = useState(null);
+  const [shownNotifications, setShownNotifications] = useState(new Set());
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Poll order status when order is placed
+  useEffect(() => {
+    let pollInterval;
+    
+    if (orderSuccess && orderSuccess.orderId) {
+      setCurrentOrderStatus(orderSuccess.status);
+      
+      pollInterval = setInterval(async () => {
+        try {
+          const response = await axios.get(
+            `${API_URL}/orders/track/${orderSuccess.orderId}`,
+            {
+              headers: {
+                'x-table-key': tableKey
+              }
+            }
+          );
+          
+          const newStatus = response.data.status;
+          
+          // Update status using callback to get latest value
+          setCurrentOrderStatus(prevStatus => {
+            // Check for status changes
+            if (newStatus !== prevStatus) {
+              // Show notification only once per status change
+              setShownNotifications(prevNotifications => {
+                if (!prevNotifications.has(newStatus)) {
+                  if (newStatus === 'ACCEPTED') {
+                    showNotification(
+                      'Order Accepted! 👨‍🍳',
+                      `Your order #${orderSuccess.orderNo} has been accepted by the kitchen.`,
+                      'success'
+                    );
+                  } else if (newStatus === 'READY') {
+                    showNotification(
+                      'Order Ready! 🍽️',
+                      `Your order #${orderSuccess.orderNo} is ready! We'll bring it to your table shortly.`,
+                      'success'
+                    );
+                  } else if (newStatus === 'CANCELLED') {
+                    showNotification(
+                      'Order Cancelled ❌',
+                      `Your order #${orderSuccess.orderNo} has been cancelled. Please contact staff for assistance.`,
+                      'error'
+                    );
+                  }
+                  return new Set(prevNotifications).add(newStatus);
+                }
+                return prevNotifications;
+              });
+            }
+            return newStatus;
+          });
+        } catch (error) {
+          console.error('Error polling order status:', error);
+        }
+      }, 5000); // Poll every 5 seconds
+    }
+    
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
+  }, [orderSuccess, API_URL, tableKey]);
+
+  const showNotification = (title, message, type = 'info') => {
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: message,
+        icon: '/logo192.png',
+        badge: '/logo192.png',
+        vibrate: [200, 100, 200],
+        tag: 'order-update'
+      });
+
+      // Auto-close after 5 seconds
+      setTimeout(() => notification.close(), 5000);
+
+      // Play sound (optional)
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(() => {});
+      } catch (e) {}
+    }
+
+    // Also show SweetAlert notification
+    Swal.fire({
+      title: title,
+      text: message,
+      icon: type,
+      timer: 4000,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
+  };
 
   const fetchTableInfo = useCallback(async () => {
     try {
@@ -86,17 +194,17 @@ const CustomerQROrder = () => {
   }, [selectedCategory, foodItems]);
 
   const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.foodItemId === item.foodItemsId);
+    const existingItem = cart.find(cartItem => cartItem.foodItemId === item.foodItemId);
     if (existingItem) {
       setCart(cart.map(cartItem =>
-        cartItem.foodItemId === item.foodItemsId
+        cartItem.foodItemId === item.foodItemId
           ? { ...cartItem, qty: cartItem.qty + 1 }
           : cartItem
       ));
     } else {
       setCart([...cart, {
-        foodItemId: item.foodItemsId,
-        name: item.foodItemsName,
+        foodItemId: item.foodItemId,
+        name: item.itemName,
         price: parseFloat(item.price),
         qty: 1,
         notes: ''
@@ -169,29 +277,108 @@ const CustomerQROrder = () => {
 
   const startNewOrder = () => {
     setOrderSuccess(null);
+    setCurrentOrderStatus(null);
+    setShownNotifications(new Set());
   };
 
-  // Success Screen
+  // Get status badge color and icon
+  const getStatusDisplay = (status) => {
+    const displays = {
+      'NEW': { color: 'primary', icon: 'fa-clock', text: 'Order Received' },
+      'ACCEPTED': { color: 'info', icon: 'fa-check-circle', text: 'Kitchen Accepted' },
+      'COOKING': { color: 'warning', icon: 'fa-fire', text: 'Being Prepared' },
+      'READY': { color: 'success', icon: 'fa-check-double', text: 'Ready to Serve' },
+      'SERVED': { color: 'success', icon: 'fa-utensils', text: 'Served' },
+      'CANCELLED': { color: 'danger', icon: 'fa-times-circle', text: 'Cancelled' }
+    };
+    return displays[status] || displays['NEW'];
+  };
+
+  // Success Screen with Real-time Status Updates
   if (orderSuccess) {
+    const statusDisplay = getStatusDisplay(currentOrderStatus || orderSuccess.status);
+    const isCancelled = (currentOrderStatus || orderSuccess.status) === 'CANCELLED';
+    
     return (
       <div className="customer-qr-order-container">
         <div className="order-success-screen">
-          <div className="success-icon">
-            <i className="fas fa-check-circle"></i>
+          <div className={`success-icon ${isCancelled ? 'cancelled-icon' : ''}`}>
+            <i className={`fas ${isCancelled ? 'fa-times-circle' : 'fa-check-circle'}`}></i>
           </div>
-          <h1>Order Placed Successfully!</h1>
+          <h1>{isCancelled ? 'Order Cancelled' : 'Order Placed Successfully!'}</h1>
           <div className="order-details-card">
             <h3>Order Number</h3>
             <div className="order-number">{orderSuccess.orderNo}</div>
-            <div className="order-info">
+            
+            {/* Real-time Status Tracker */}
+            <div className="order-status-tracker mt-4">
+              <h5>Order Status</h5>
+              <div className={`status-badge badge bg-${statusDisplay.color} pulse-animation`}>
+                <i className={`fas ${statusDisplay.icon} me-2`}></i>
+                {statusDisplay.text}
+              </div>
+              
+              {/* Status Progress */}
+              <div className="status-timeline mt-3">
+                <div className={`timeline-step ${['NEW', 'ACCEPTED', 'COOKING', 'READY', 'SERVED'].indexOf(currentOrderStatus || orderSuccess.status) >= 0 ? 'completed' : ''}`}>
+                  <i className="fas fa-check-circle"></i>
+                  <span>Received</span>
+                </div>
+                <div className={`timeline-step ${['ACCEPTED', 'COOKING', 'READY', 'SERVED'].indexOf(currentOrderStatus || orderSuccess.status) >= 0 ? 'completed' : ''}`}>
+                  <i className="fas fa-thumbs-up"></i>
+                  <span>Accepted</span>
+                </div>
+                <div className={`timeline-step ${['COOKING', 'READY', 'SERVED'].indexOf(currentOrderStatus || orderSuccess.status) >= 0 ? 'completed' : ''}`}>
+                  <i className="fas fa-fire"></i>
+                  <span>Cooking</span>
+                </div>
+                <div className={`timeline-step ${['READY', 'SERVED'].indexOf(currentOrderStatus || orderSuccess.status) >= 0 ? 'completed' : ''}`}>
+                  <i className="fas fa-bell"></i>
+                  <span>Ready</span>
+                </div>
+                <div className={`timeline-step ${currentOrderStatus === 'SERVED' ? 'completed' : ''}`}>
+                  <i className="fas fa-utensils"></i>
+                  <span>Served</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="order-info mt-4">
               <p><strong>Table:</strong> {tableInfo?.tableNo || orderSuccess.tableNo}</p>
               <p><strong>Restaurant:</strong> {tableInfo?.restaurantName}</p>
-              <p><strong>Status:</strong> <span className="badge bg-primary">{orderSuccess.status}</span></p>
-              <p><strong>Total:</strong> ${orderSuccess.totalAmount}</p>
+              <p><strong>Total:</strong> Rs. {orderSuccess.totalAmount}</p>
             </div>
           </div>
+          
+          {currentOrderStatus === 'READY' && (
+            <div className="alert alert-success mt-3">
+              <i className="fas fa-check-circle me-2"></i>
+              <strong>Your order is ready!</strong> Our staff will bring it to your table shortly.
+            </div>
+          )}
+          
+          {currentOrderStatus === 'CANCELLED' && (
+            <div className="alert alert-danger mt-3">
+              <i className="fas fa-times-circle me-2"></i>
+              <strong>Order Cancelled!</strong> Your order has been cancelled. Please contact our staff for assistance.
+            </div>
+          )}
+          
+          {currentOrderStatus === 'SERVED' && (
+            <div className="alert alert-info mt-3">
+              <i className="fas fa-smile me-2"></i>
+              <strong>Enjoy your meal!</strong> Thank you for dining with us.
+            </div>
+          )}
+          
           <p className="success-message">
-            Your order has been sent to the kitchen. We'll bring it to your table shortly!
+            {currentOrderStatus === 'CANCELLED' 
+              ? 'Please contact our staff if you have any questions.' 
+              : currentOrderStatus === 'SERVED' 
+              ? 'Thank you! We hope you enjoy your meal.' 
+              : currentOrderStatus === 'READY'
+              ? 'Your food will be served shortly!'
+              : 'We\'ll notify you when your order status changes!'}
           </p>
           <button className="btn btn-primary btn-lg" onClick={startNewOrder}>
             <i className="fas fa-plus me-2"></i> Place Another Order
@@ -278,14 +465,14 @@ const CustomerQROrder = () => {
           ) : (
             <div className="food-items-grid">
               {filteredItems.map(item => (
-                <div key={item.foodItemsId} className="food-item-card">
+                <div key={item.foodItemId} className="food-item-card">
                   {item.imageUrl1 && (
                     <div className="food-item-image">
-                      <img src={item.imageUrl1} alt={item.foodItemsName} />
+                      <img src={item.imageUrl1} alt={item.itemName} />
                     </div>
                   )}
                   <div className="food-item-body">
-                    <h5 className="food-item-name">{item.foodItemsName}</h5>
+                    <h5 className="food-item-name">{item.itemName}</h5>
                     {item.description && (
                       <p className="food-item-description">{item.description}</p>
                     )}

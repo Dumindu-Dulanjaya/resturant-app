@@ -11,7 +11,10 @@ import {
   ParseIntPipe,
   Query,
   Header,
+  Headers,
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Req,
 } from '@nestjs/common';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
@@ -67,6 +70,23 @@ export class OrdersController {
   findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const restaurantId = req.user.restaurantId;
     return this.ordersService.findOne(id, restaurantId);
+  }
+
+  // Public endpoint for customers to track their order
+  @Get('track/:id')
+  @SkipThrottle()
+  async trackOrder(@Param('id', ParseIntPipe) id: number, @Headers('x-table-key') tableKey: string) {
+    if (!tableKey) {
+      throw new HttpException('Table key is required', HttpStatus.UNAUTHORIZED);
+    }
+    
+    // Verify table key and get order
+    const order = await this.ordersService.trackOrderByTableKey(id, tableKey);
+    if (!order) {
+      throw new HttpException('Order not found or unauthorized', HttpStatus.NOT_FOUND);
+    }
+    
+    return order;
   }
 
   @Patch(':id/status')

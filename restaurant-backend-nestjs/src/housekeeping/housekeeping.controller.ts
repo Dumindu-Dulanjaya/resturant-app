@@ -85,6 +85,47 @@ export class HousekeepingPublicController {
       );
     }
   }
+
+  /**
+   * GET /api/housekeeping/track/:id
+   * Public endpoint for guests to track request status
+   * Requires x-room-key header
+   */
+  @Get('track/:id')
+  @SkipThrottle()
+  async trackRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-room-key') roomKey: string,
+  ) {
+    if (!roomKey) {
+      throw new BadRequestException('Room key is required in x-room-key header');
+    }
+
+    try {
+      const request = await this.housekeepingService.trackRequestByRoomKey(id, roomKey);
+
+      return {
+        success: true,
+        data: {
+          requestId: request.requestId,
+          roomNo: request.roomNo,
+          requestType: request.requestType,
+          message: request.message,
+          status: request.status,
+          createdAt: request.createdAt,
+          updatedAt: request.updatedAt,
+        },
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to track request',
+        },
+        error.status || HttpStatus.NOT_FOUND,
+      );
+    }
+  }
 }
 
 // ==================== ADMIN ENDPOINTS (JWT + Feature Flag Protected) ====================

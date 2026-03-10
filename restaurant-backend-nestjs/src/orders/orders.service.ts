@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { FoodItem } from '../food-items/entities/food-item.entity';
+import { TableQr } from '../table-qr/entities/table-qr.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
@@ -17,6 +18,8 @@ export class OrdersService {
     private orderItemsRepository: Repository<OrderItem>,
     @InjectRepository(FoodItem)
     private foodItemsRepository: Repository<FoodItem>,
+    @InjectRepository(TableQr)
+    private tableQrRepository: Repository<TableQr>,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, restaurantId: number) {
@@ -164,5 +167,32 @@ export class OrdersService {
     const order = await this.findOne(id, restaurantId);
     await this.ordersRepository.remove(order);
     return { message: 'Order deleted successfully' };
+  }
+
+  // Track order by table key (for customers)
+  async trackOrderByTableKey(orderId: number, tableKey: string) {
+    // Verify table key exists
+    const tableQr = await this.tableQrRepository.findOne({
+      where: { tableKey, isActive: 1 },
+    });
+
+    if (!tableQr) {
+      return null;
+    }
+
+    // Get order and verify it belongs to this table/restaurant
+    const order = await this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.orderItems', 'orderItems')
+      .where('order.orderId = :orderId', { orderId })
+      .andWhere('order.restaurantId = :restaurantId', { 
+        restaurantId: tableQr.restaurantId 
+      })
+      .andWhere('order.tableNo = :tableNo', { 
+        tableNo: tableQr.tableNo 
+      })
+      .getOne();
+
+    return order;
   }
 }

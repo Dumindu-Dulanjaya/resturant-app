@@ -434,9 +434,20 @@
   animation: scaleIn 0.5s ease;
 }
 
+.cancelled-icon {
+  color: #dc3545;
+  animation: shake 0.5s ease;
+}
+
 @keyframes scaleIn {
   from { transform: scale(0); }
   to { transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+  20%, 40%, 60%, 80% { transform: translateX(10px); }
 }
 
 .order-success-screen h1 {
@@ -498,6 +509,160 @@
   max-width: 500px;
 }
 
+/* Order Status Tracker - Real-time Notifications */
+.order-status-tracker {
+  text-align: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.order-status-tracker h5 {
+  margin-bottom: 15px;
+  color: #333;
+  font-weight: 600;
+}
+
+.status-badge {
+  font-size: 1.1rem;
+  padding: 12px 24px;
+  border-radius: 25px;
+  display: inline-block;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Pulse animation for active status */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(102, 126, 234, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+  }
+}
+
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
+
+/* Status Timeline */
+.status-timeline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  padding: 20px 10px;
+  margin-top: 20px;
+}
+
+.status-timeline::before {
+  content: '';
+  position: absolute;
+  top: 35px;
+  left: 10%;
+  right: 10%;
+  height: 3px;
+  background: #e0e0e0;
+  z-index: 0;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+
+.timeline-step i {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s;
+}
+
+.timeline-step span {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+  text-align: center;
+}
+
+.timeline-step.completed i {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  animation: scaleIn 0.5s ease-out;
+}
+
+.timeline-step.completed span {
+  color: #667eea;
+  font-weight: 600;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Alert boxes for order status */
+.alert {
+  border-radius: 10px;
+  padding: 15px;
+  margin: 15px 0;
+  animation: slideInDown 0.5s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.alert-info {
+  background: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+}
+
+.alert-danger {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
 /* Responsive Design */
 @media (max-width: 992px) {
   .customer-content {
@@ -544,5 +709,26 @@
 
   .order-number {
     font-size: 1.5rem;
+  }
+
+  .status-timeline {
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+
+  .timeline-step {
+    flex: 1 1 33%;
+    min-width: 60px;
+    margin-bottom: 20px;
+  }
+
+  .timeline-step i {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .timeline-step span {
+    font-size: 0.75rem;
   }
 }
