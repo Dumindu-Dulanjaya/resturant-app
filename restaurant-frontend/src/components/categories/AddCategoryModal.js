@@ -123,14 +123,42 @@ function AddCategoryModal({ show, onHide, onSuccess }) {
     setSubmitting(true);
 
     try {
+      let uploadedImageUrl = '';
+
+      // Upload image first if a file is selected
+      if (selectedFile) {
+        const formDataToUpload = new FormData();
+        formDataToUpload.append('image', selectedFile);
+
+        try {
+          const uploadResponse = await apiClient.post('/categories/upload-image', formDataToUpload, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          uploadedImageUrl = uploadResponse.data.imageUrl;
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          Swal.fire({
+            icon: 'error',
+            title: 'Upload Error',
+            text: 'Failed to upload image. Please try again.',
+          });
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const payload = {
         categoryName: formData.categoryName.trim(),
         description: formData.description.trim(),
         menuId: parseInt(formData.menuId),
       };
 
-      // Only include imageUrl if provided
-      if (formData.imageUrl.trim()) {
+      // Use uploaded image URL or provided URL
+      if (uploadedImageUrl) {
+        payload.imageUrl = uploadedImageUrl;
+      } else if (formData.imageUrl.trim()) {
         payload.imageUrl = formData.imageUrl.trim();
       }
 

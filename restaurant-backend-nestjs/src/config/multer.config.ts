@@ -42,5 +42,27 @@ export const logoStorage = diskStorage({
   },
 });
 
+// Storage configuration for category images
+export const categoryImageStorage = diskStorage({
+  destination: './uploads/categories',
+  filename: (req, file, callback) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = extname(file.originalname);
+    const filename = `category-${uniqueSuffix}${ext}`;
+    callback(null, filename);
+  },
+});
+
+// Storage configuration for menu images
+export const menuImageStorage = diskStorage({
+  destination: './uploads/menus',
+  filename: (req, file, callback) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = extname(file.originalname);
+    const filename = `menu-${uniqueSuffix}${ext}`;
+    callback(null, filename);
+  },
+});
+
 // File size limit (5MB)
 export const maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
