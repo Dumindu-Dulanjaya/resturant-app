@@ -43,6 +43,12 @@ export const authAPI = {
   
   getProfile: () =>
     apiClient.get('/auth/profile'),
+  
+  updateProfile: (data) =>
+    apiClient.patch('/auth/profile', data),
+  
+  changePassword: (data) =>
+    apiClient.patch('/auth/change-password', data),
 };
 
 export default apiClient;

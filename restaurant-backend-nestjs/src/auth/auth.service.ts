@@ -194,4 +194,120 @@ export class AuthService {
   async deleteAdmin(adminId: number): Promise<void> {
     await this.adminRepository.delete(adminId);
   }
+
+  /**
+   * Change password for authenticated user
+   */
+  async changePassword(
+    userId: number,
+    type: 'admin' | 'super_admin',
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    if (type === 'admin') {
+      const admin = await this.adminRepository.findOne({
+        where: { adminId: userId },
+      });
+
+      if (!admin) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Verify current password
+      const hashToCompare = admin.password.replace(/^\$2y\$/, '$2a$');
+      const isPasswordValid = await bcrypt.compare(currentPassword, hashToCompare);
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+
+      // Hash and update new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      admin.password = hashedPassword;
+      await this.adminRepository.save(admin);
+    } else {
+      const superAdmin = await this.superAdminRepository.findOne({
+        where: { superAdminId: userId },
+      });
+
+      if (!superAdmin) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Verify current password
+      const hashToCompare = superAdmin.password.replace(/^\$2y\$/, '$2a$');
+      const isPasswordValid = await bcrypt.compare(currentPassword, hashToCompare);
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+
+      // Hash and update new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      superAdmin.password = hashedPassword;
+      await this.superAdminRepository.save(superAdmin);
+    }
+  }
+
+  /**
+   * Update profile for authenticated user
+   */
+  async updateProfile(
+    userId: number,
+    type: 'admin' | 'super_admin',
+    email?: string,
+    name?: string,
+  ): Promise<Admin | SuperAdmin> {
+    if (type === 'admin') {
+      const admin = await this.adminRepository.findOne({
+        where: { adminId: userId },
+      });
+
+      if (!admin) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      if (email && email !== admin.email) {
+        // Check if new email already exists
+        const existingAdmin = await this.adminRepository.findOne({
+          where: { email },
+        });
+
+        if (existingAdmin && existingAdmin.adminId !== userId) {
+          throw new ConflictException('Email already in use');
+        }
+
+        admin.email = email;
+      }
+
+      return this.adminRepository.save(admin);
+    } else {
+      const superAdmin = await this.superAdminRepository.findOne({
+        where: { superAdminId: userId },
+      });
+
+      if (!superAdmin) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      if (email && email !== superAdmin.email) {
+        // Check if new email already exists
+        const existingSuperAdmin = await this.superAdminRepository.findOne({
+          where: { email },
+        });
+
+        if (existingSuperAdmin && existingSuperAdmin.superAdminId !== userId) {
+          throw new ConflictException('Email already in use');
+        }
+
+        superAdmin.email = email;
+      }
+
+      if (name) {
+        superAdmin.name = name;
+      }
+
+      return this.superAdminRepository.save(superAdmin);
+    }
+  }
 }

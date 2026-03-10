@@ -5,6 +5,7 @@ import {
   Get,
   Delete,
   Param,
+  Patch,
   UseGuards,
   Request,
   HttpCode,
@@ -13,6 +14,8 @@ import {
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
@@ -103,5 +106,46 @@ export class AuthController {
   async deleteAdmin(@Param('id') id: string) {
     await this.authService.deleteAdmin(parseInt(id));
     return { success: true, message: 'Admin deleted successfully' };
+  }
+
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @Request() req,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(
+      req.user.userId,
+      req.user.type,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword,
+    );
+
+    return {
+      success: true,
+      message: 'Password changed successfully',
+    };
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(
+    @Request() req,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    const updatedUser = await this.authService.updateProfile(
+      req.user.userId,
+      req.user.type,
+      updateProfileDto.email,
+      updateProfileDto.name,
+    );
+
+    return {
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser,
+    };
   }
 }

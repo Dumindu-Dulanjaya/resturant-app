@@ -16,6 +16,8 @@ import OrderManagement from './pages/OrderManagement';
 import ActiveOrders from './pages/ActiveOrders';
 import OrderHistory from './pages/OrderHistory';
 import RestaurantSettings from './pages/RestaurantSettings';
+import Profile from './pages/Profile';
+import ChangePassword from './pages/ChangePassword';
 import HousekeepingMessages from './pages/HousekeepingMessages';
 import RoomQRCodes from './pages/RoomQRCodes';
 import GenerateRoomQRCodes from './pages/GenerateRoomQRCodes';
@@ -290,6 +292,28 @@ function App() {
             <PrivateRoute>
               <RoleRoute allowedRoles={['admin', 'super_admin']}>
                 <RestaurantSettings />
+              </RoleRoute>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/settings/profile"
+          element={
+            <PrivateRoute>
+              <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                <Profile />
+              </RoleRoute>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/settings/password"
+          element={
+            <PrivateRoute>
+              <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                <ChangePassword />
               </RoleRoute>
             </PrivateRoute>
           }
