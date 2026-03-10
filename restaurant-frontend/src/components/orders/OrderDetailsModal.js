@@ -18,8 +18,8 @@ import './OrderDetailsModal.css';
  *    - Requires: node-thermal-printer or escpos npm package
  */
 
-const OrderDetailsModal = ({ order, onClose, onStatusUpdate }) => {
-  const orderStatuses = ['PENDING', 'PREPARING', 'READY', 'SERVED'];
+const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false }) => {
+  const orderStatuses = ['NEW', 'ACCEPTED', 'COOKING', 'READY', 'SERVED'];
   
   // Get restaurant name (can be configured via env variable or fetched from backend)
   // For production: Add REACT_APP_RESTAURANT_NAME to .env file
@@ -42,8 +42,9 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate }) => {
 
   const getStatusBadgeClass = (status) => {
     const statusClasses = {
-      PENDING: 'badge-warning',
-      PREPARING: 'badge-info',
+      NEW: 'badge-primary',
+      ACCEPTED: 'badge-warning',
+      COOKING: 'badge-info',
       READY: 'badge-primary',
       SERVED: 'badge-success',
       CANCELLED: 'badge-danger'
@@ -239,7 +240,7 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate }) => {
           </div>
 
           {/* Quick Status Update */}
-          {order.status !== 'CANCELLED' && order.status !== 'SERVED' && (
+          {!readOnly && order.status !== 'CANCELLED' && order.status !== 'SERVED' && (
             <div className="status-update-section">
               <h5 className="section-title">
                 <i className="fas fa-sync-alt me-2"></i>
@@ -251,8 +252,9 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate }) => {
                     <button
                       key={status}
                       className={`btn btn-sm btn-outline-${
-                        status === 'PENDING' ? 'warning' :
-                        status === 'PREPARING' ? 'info' :
+                        status === 'NEW' ? 'primary' :
+                        status === 'ACCEPTED' ? 'warning' :
+                        status === 'COOKING' ? 'info' :
                         status === 'READY' ? 'primary' :
                         'success'
                       }`}

@@ -4,11 +4,12 @@ import Swal from 'sweetalert2';
 import OrderDetailsModal from '../components/orders/OrderDetailsModal';
 import './OrderManagement.css';
 
-const OrderManagement = () => {
+const ActiveOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -19,35 +20,61 @@ const OrderManagement = () => {
     orderNo: ''
   });
 
-  const orderStatuses = ['NEW', 'ACCEPTED', 'COOKING', 'READY', 'SERVED', 'CANCELLED'];
+  const activeStatuses = ['NEW', 'ACCEPTED', 'COOKING', 'READY'];
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+    
+    // Auto-refresh every 30 seconds if enabled
+    let interval;
+    if (autoRefresh) {
+      interval = setInterval(() => {
+        fetchOrders(filters, true); // silent refresh
+      }, 30000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh]);
 
-  const fetchOrders = async (filterParams = {}) => {
+  const fetchOrders = async (filterParams = {}, silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      
       const params = {};
       
-      // Only add non-empty filters
-      if (filterParams.status) params.status = filterParams.status;
+      // Only fetch active orders (not SERVED or CANCELLED)
+      const statusFilter = filterParams.status || '';
+      if (statusFilter && activeStatuses.includes(statusFilter)) {
+        params.status = statusFilter;
+      }
+      
+      // Add other filters
       if (filterParams.from) params.from = filterParams.from;
       if (filterParams.to) params.to = filterParams.to;
       if (filterParams.tableNo) params.tableNo = filterParams.tableNo;
       if (filterParams.orderNo) params.orderNo = filterParams.orderNo;
 
       const response = await apiClient.get('/orders', { params });
-      setOrders(response.data);
+      
+      // Filter to show only active orders
+      const activeOrders = response.data.filter(order => 
+        activeStatuses.includes(order.status)
+      );
+      
+      setOrders(activeOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to fetch orders. Please try again.',
-      });
+      if (!silent) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to fetch active orders. Please try again.',
+        });
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -150,9 +177,7 @@ const OrderManagement = () => {
       NEW: 'badge-primary',
       ACCEPTED: 'badge-warning',
       COOKING: 'badge-info',
-      READY: 'badge-primary',
-      SERVED: 'badge-success',
-      CANCELLED: 'badge-danger'
+      READY: 'badge-success'
     };
     return statusClasses[status] || 'badge-secondary';
   };
@@ -172,13 +197,43 @@ const OrderManagement = () => {
     });
   };
 
+  const getOrderAge = (dateString) => {
+    const created = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - created;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    const hours = Math.floor(diffMins / 60);
+    return `${hours} hr ${diffMins % 60} min ago`;
+  };
+
   return (
     <div className="order-management-container">
       <div className="page-header">
         <h2>
           <i className="fas fa-clipboard-list me-2"></i>
-          Order Management
+          Active Orders
         </h2>
+        <div className="header-actions">
+          <button
+            className={`btn ${autoRefresh ? 'btn-success' : 'btn-outline-secondary'} btn-sm`}
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            title={autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+          >
+            <i className={`fas fa-sync-alt ${autoRefresh ? 'fa-spin' : ''} me-1`}></i>
+            {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+          </button>
+          <button
+            className="btn btn-primary btn-sm ms-2"
+            onClick={() => fetchOrders(filters)}
+            title="Refresh now"
+          >
+            <i className="fas fa-refresh me-1"></i>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -192,8 +247,8 @@ const OrderManagement = () => {
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
               >
-                <option value="">All Statuses</option>
-                {orderStatuses.map(status => (
+                <option value="">All Active</option>
+                {activeStatuses.map(status => (
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
@@ -269,12 +324,12 @@ const OrderManagement = () => {
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
-              <p className="mt-2 text-muted">Loading orders...</p>
+              <p className="mt-2 text-muted">Loading active orders...</p>
             </div>
           ) : orders.length === 0 ? (
             <div className="text-center py-5">
-              <i className="fas fa-inbox fa-3x text-muted mb-3"></i>
-              <p className="text-muted">No orders found</p>
+              <i className="fas fa-check-circle fa-3x text-success mb-3"></i>
+              <p className="text-muted">No active orders. All caught up!</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -286,7 +341,8 @@ const OrderManagement = () => {
                     <th>Status</th>
                     <th>Items</th>
                     <th>Total Amount</th>
-                    <th>Created At</th>
+                    <th>Order Time</th>
+                    <th>Age</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -296,7 +352,9 @@ const OrderManagement = () => {
                       <td>
                         <strong>{order.orderNo}</strong>
                       </td>
-                      <td>{order.tableNo}</td>
+                      <td>
+                        <span className="badge bg-dark">{order.tableNo}</span>
+                      </td>
                       <td>
                         <span className={`badge ${getStatusBadgeClass(order.status)}`}>
                           {order.status}
@@ -312,6 +370,11 @@ const OrderManagement = () => {
                       </td>
                       <td>{formatDateTime(order.createdAt)}</td>
                       <td>
+                        <span className="text-muted small">
+                          {getOrderAge(order.createdAt)}
+                        </span>
+                      </td>
+                      <td>
                         <button
                           className="btn btn-sm btn-info me-2"
                           onClick={() => handleViewOrder(order.orderId)}
@@ -319,15 +382,13 @@ const OrderManagement = () => {
                         >
                           <i className="fas fa-eye"></i>
                         </button>
-                        {order.status !== 'CANCELLED' && order.status !== 'SERVED' && (
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleCancelOrder(order.orderId)}
-                            title="Cancel Order"
-                          >
-                            <i className="fas fa-ban"></i>
-                          </button>
-                        )}
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleCancelOrder(order.orderId)}
+                          title="Cancel Order"
+                        >
+                          <i className="fas fa-ban"></i>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -350,4 +411,4 @@ const OrderManagement = () => {
   );
 };
 
-export default OrderManagement;
+export default ActiveOrders;

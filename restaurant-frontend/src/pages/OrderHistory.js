@@ -4,22 +4,33 @@ import Swal from 'sweetalert2';
 import OrderDetailsModal from '../components/orders/OrderDetailsModal';
 import './OrderManagement.css';
 
-const OrderManagement = () => {
+const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    servedOrders: 0,
+    cancelledOrders: 0
+  });
   
-  // Filter states
+  // Filter states - default to today
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
   const [filters, setFilters] = useState({
     status: '',
-    from: '',
-    to: '',
+    from: getTodayDate(),
+    to: getTodayDate(),
     tableNo: '',
     orderNo: ''
   });
 
-  const orderStatuses = ['NEW', 'ACCEPTED', 'COOKING', 'READY', 'SERVED', 'CANCELLED'];
+  const historyStatuses = ['SERVED', 'CANCELLED'];
 
   useEffect(() => {
     fetchOrders();
@@ -28,23 +39,53 @@ const OrderManagement = () => {
   const fetchOrders = async (filterParams = {}) => {
     try {
       setLoading(true);
+      
       const params = {};
       
-      // Only add non-empty filters
-      if (filterParams.status) params.status = filterParams.status;
-      if (filterParams.from) params.from = filterParams.from;
-      if (filterParams.to) params.to = filterParams.to;
-      if (filterParams.tableNo) params.tableNo = filterParams.tableNo;
-      if (filterParams.orderNo) params.orderNo = filterParams.orderNo;
+      // Use provided filters or default to current state
+      const activeFilters = Object.keys(filterParams).length > 0 ? filterParams : filters;
+      
+      // Only fetch completed orders (SERVED or CANCELLED)
+      if (activeFilters.status && historyStatuses.includes(activeFilters.status)) {
+        params.status = activeFilters.status;
+      }
+      
+      // Add date filters (default to today)
+      if (activeFilters.from) params.from = activeFilters.from;
+      if (activeFilters.to) params.to = activeFilters.to;
+      if (activeFilters.tableNo) params.tableNo = activeFilters.tableNo;
+      if (activeFilters.orderNo) params.orderNo = activeFilters.orderNo;
 
       const response = await apiClient.get('/orders', { params });
-      setOrders(response.data);
+      
+      // Filter to show only history orders
+      const historyOrders = response.data.filter(order => 
+        historyStatuses.includes(order.status)
+      );
+      
+      setOrders(historyOrders);
+      
+      // Calculate statistics
+      const totalRevenue = historyOrders
+        .filter(order => order.status === 'SERVED')
+        .reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0);
+      
+      const servedCount = historyOrders.filter(order => order.status === 'SERVED').length;
+      const cancelledCount = historyOrders.filter(order => order.status === 'CANCELLED').length;
+      
+      setStats({
+        totalOrders: historyOrders.length,
+        totalRevenue: totalRevenue,
+        servedOrders: servedCount,
+        cancelledOrders: cancelledCount
+      });
+      
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error('Error fetching order history:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Failed to fetch orders. Please try again.',
+        text: 'Failed to fetch order history. Please try again.',
       });
     } finally {
       setLoading(false);
@@ -65,13 +106,13 @@ const OrderManagement = () => {
   const handleClearFilters = () => {
     const clearedFilters = {
       status: '',
-      from: '',
-      to: '',
+      from: getTodayDate(),
+      to: getTodayDate(),
       tableNo: '',
       orderNo: ''
     };
     setFilters(clearedFilters);
-    fetchOrders({});
+    fetchOrders(clearedFilters);
   };
 
   const handleViewOrder = async (orderId) => {
@@ -89,68 +130,8 @@ const OrderManagement = () => {
     }
   };
 
-  const handleCancelOrder = async (orderId) => {
-    const result = await Swal.fire({
-      title: 'Cancel Order?',
-      text: 'Are you sure you want to cancel this order?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, cancel it!',
-      cancelButtonText: 'No, keep it'
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await apiClient.patch(`/orders/${orderId}/status`, { status: 'CANCELLED' });
-        Swal.fire({
-          icon: 'success',
-          title: 'Cancelled',
-          text: 'Order has been cancelled successfully.',
-          timer: 2000,
-          showConfirmButton: false
-        });
-        fetchOrders(filters);
-      } catch (error) {
-        console.error('Error cancelling order:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error.response?.data?.message || 'Failed to cancel order.',
-        });
-      }
-    }
-  };
-
-  const handleStatusUpdate = async (orderId, newStatus) => {
-    try {
-      await apiClient.patch(`/orders/${orderId}/status`, { status: newStatus });
-      Swal.fire({
-        icon: 'success',
-        title: 'Updated',
-        text: 'Order status updated successfully.',
-        timer: 2000,
-        showConfirmButton: false
-      });
-      setShowModal(false);
-      fetchOrders(filters);
-    } catch (error) {
-      console.error('Error updating status:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.response?.data?.message || 'Failed to update status.',
-      });
-    }
-  };
-
   const getStatusBadgeClass = (status) => {
     const statusClasses = {
-      NEW: 'badge-primary',
-      ACCEPTED: 'badge-warning',
-      COOKING: 'badge-info',
-      READY: 'badge-primary',
       SERVED: 'badge-success',
       CANCELLED: 'badge-danger'
     };
@@ -176,9 +157,65 @@ const OrderManagement = () => {
     <div className="order-management-container">
       <div className="page-header">
         <h2>
-          <i className="fas fa-clipboard-list me-2"></i>
-          Order Management
+          <i className="fas fa-history me-2"></i>
+          Order History
         </h2>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="row mb-4">
+        <div className="col-md-3">
+          <div className="card stat-card">
+            <div className="card-body">
+              <div className="stat-icon bg-primary">
+                <i className="fas fa-receipt"></i>
+              </div>
+              <div className="stat-details">
+                <h3>{stats.totalOrders}</h3>
+                <p>Total Orders</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card stat-card">
+            <div className="card-body">
+              <div className="stat-icon bg-success">
+                <i className="fas fa-check-circle"></i>
+              </div>
+              <div className="stat-details">
+                <h3>{stats.servedOrders}</h3>
+                <p>Served Orders</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card stat-card">
+            <div className="card-body">
+              <div className="stat-icon bg-danger">
+                <i className="fas fa-ban"></i>
+              </div>
+              <div className="stat-details">
+                <h3>{stats.cancelledOrders}</h3>
+                <p>Cancelled Orders</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card stat-card">
+            <div className="card-body">
+              <div className="stat-icon bg-info">
+                <i className="fas fa-dollar-sign"></i>
+              </div>
+              <div className="stat-details">
+                <h3>{formatCurrency(stats.totalRevenue)}</h3>
+                <p>Total Revenue</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -192,8 +229,8 @@ const OrderManagement = () => {
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
               >
-                <option value="">All Statuses</option>
-                {orderStatuses.map(status => (
+                <option value="">All Completed</option>
+                {historyStatuses.map(status => (
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
@@ -269,12 +306,12 @@ const OrderManagement = () => {
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
-              <p className="mt-2 text-muted">Loading orders...</p>
+              <p className="mt-2 text-muted">Loading order history...</p>
             </div>
           ) : orders.length === 0 ? (
             <div className="text-center py-5">
               <i className="fas fa-inbox fa-3x text-muted mb-3"></i>
-              <p className="text-muted">No orders found</p>
+              <p className="text-muted">No orders found for the selected period</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -286,7 +323,7 @@ const OrderManagement = () => {
                     <th>Status</th>
                     <th>Items</th>
                     <th>Total Amount</th>
-                    <th>Created At</th>
+                    <th>Order Time</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -296,7 +333,9 @@ const OrderManagement = () => {
                       <td>
                         <strong>{order.orderNo}</strong>
                       </td>
-                      <td>{order.tableNo}</td>
+                      <td>
+                        <span className="badge bg-dark">{order.tableNo}</span>
+                      </td>
                       <td>
                         <span className={`badge ${getStatusBadgeClass(order.status)}`}>
                           {order.status}
@@ -313,21 +352,12 @@ const OrderManagement = () => {
                       <td>{formatDateTime(order.createdAt)}</td>
                       <td>
                         <button
-                          className="btn btn-sm btn-info me-2"
+                          className="btn btn-sm btn-info"
                           onClick={() => handleViewOrder(order.orderId)}
                           title="View Details"
                         >
                           <i className="fas fa-eye"></i>
                         </button>
-                        {order.status !== 'CANCELLED' && order.status !== 'SERVED' && (
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleCancelOrder(order.orderId)}
-                            title="Cancel Order"
-                          >
-                            <i className="fas fa-ban"></i>
-                          </button>
-                        )}
                       </td>
                     </tr>
                   ))}
@@ -343,11 +373,11 @@ const OrderManagement = () => {
         <OrderDetailsModal
           order={selectedOrder}
           onClose={() => setShowModal(false)}
-          onStatusUpdate={handleStatusUpdate}
+          readOnly={true} // History orders cannot be modified
         />
       )}
     </div>
   );
 };
 
-export default OrderManagement;
+export default OrderHistory;

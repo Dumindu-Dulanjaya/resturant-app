@@ -46,13 +46,12 @@ const KitchenKDS = () => {
     try {
       setLoading(true);
       
-      // Fetch orders for each status with cache-busting
-      const timestamp = Date.now();
+      // Fetch orders for each status
       const [newOrders, acceptedOrders, cookingOrders, readyOrders] = await Promise.all([
-        apiClient.get(`/orders?status=NEW&_t=${timestamp}`),
-        apiClient.get(`/orders?status=ACCEPTED&_t=${timestamp}`),
-        apiClient.get(`/orders?status=COOKING&_t=${timestamp}`),
-        apiClient.get(`/orders?status=READY&_t=${timestamp}`),
+        apiClient.get('/orders', { params: { status: 'NEW' } }),
+        apiClient.get('/orders', { params: { status: 'ACCEPTED' } }),
+        apiClient.get('/orders', { params: { status: 'COOKING' } }),
+        apiClient.get('/orders', { params: { status: 'READY' } }),
       ]);
 
       // Detect newly arrived orders using ref instead of state

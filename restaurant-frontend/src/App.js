@@ -13,6 +13,8 @@ import SalesReports from './pages/SalesReports';
 import DailyReport from './pages/DailyReport';
 import MonthlyReport from './pages/MonthlyReport';
 import OrderManagement from './pages/OrderManagement';
+import ActiveOrders from './pages/ActiveOrders';
+import OrderHistory from './pages/OrderHistory';
 import RestaurantSettings from './pages/RestaurantSettings';
 import HousekeepingMessages from './pages/HousekeepingMessages';
 import RoomQRCodes from './pages/RoomQRCodes';
@@ -254,6 +256,28 @@ function App() {
             <PrivateRoute>
               <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'steward']}>
                 <OrderManagement />
+              </RoleRoute>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/kitchen/orders"
+          element={
+            <PrivateRoute>
+              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'steward']}>
+                <ActiveOrders />
+              </RoleRoute>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/kitchen/history"
+          element={
+            <PrivateRoute>
+              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'steward']}>
+                <OrderHistory />
               </RoleRoute>
             </PrivateRoute>
           }
