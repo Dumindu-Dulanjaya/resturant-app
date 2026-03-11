@@ -1,32 +1,118 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { useWebSocket } from '../hooks/useWebSocket';
+import { useNotification } from '../components/common/NotificationToast';
+import { dashboardAPI } from '../api/apiClient';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import './Dashboard.css';
 
 function Dashboard() {
   const { user } = useAuthStore();
+  const { subscribe, connected } = useWebSocket();
+  const { addNotification } = useNotification();
   const [stats, setStats] = useState({
     totalOrders: 0,
     todayOrders: 0,
     totalRevenue: 0,
     activeMenus: 0,
     pendingOrders: 0,
-    completedOrders: 0
+    completedOrders: 0,
+    recentOrders: []
   });
+  const [loading, setLoading] = useState(true);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await dashboardAPI.getStats();
+      setStats(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // TODO: Fetch dashboard stats from API
-    // For now, using dummy data
-    setStats({
-      totalOrders: 1250,
-      todayOrders: 45,
-      totalRevenue: 45890,
-      activeMenus: 8,
-      pendingOrders: 12,
-      completedOrders: 33
+    fetchStats();
+  }, [fetchStats]);
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    if (!connected) return;
+
+    // Listen for dashboard refresh events
+    const unsubscribeRefresh = subscribe('dashboard:refresh', () => {
+      console.log('Dashboard refresh triggered');
+      fetchStats();
     });
+
+    // Listen for new orders
+    const unsubscribeNewOrder = subscribe('order:new', (order) => {
+      console.log('New order received:', order);
+      // Show toast notification
+      addNotification({
+        type: 'success',
+        title: 'New Order!',
+        message: `Order ${order.orderNo} from ${order.tableNo || 'Customer'} - $${parseFloat(order.totalAmount).toFixed(2)}`,
+        duration: 6000,
+      });
+      // Play notification sound (optional)
+      const audio = new Audio('/notification.mp3');
+      audio.play().catch(() => {}); // Ignore if sound file doesn't exist
+      // Refresh stats
+      fetchStats();
+    });
+
+    // Listen for order status updates
+    const unsubscribeStatusUpdate = subscribe('order:status-update', (order) => {
+      console.log('Order status updated:', order);
+      // Show toast notification
+      addNotification({
+        type: 'info',
+        title: 'Order Updated',
+        message: `Order ${order.orderNo} status: ${order.status}`,
+        duration: 4000,
+      });
+      // Refresh stats
+      fetchStats();
+    });
+
+    return () => {
+      unsubscribeRefresh();
+      unsubscribeNewOrder();
+      unsubscribeStatusUpdate();
+    };
+  }, [connected, subscribe, fetchStats, addNotification]);
+
+  // Request notification permission (for browser notifications as backup)
+  useEffect(() => {
+    if (window.Notification && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }, []);
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      'NEW': { class: 'warning', label: 'New' },
+      'ACCEPTED': { class: 'info', label: 'Accepted' },
+      'COOKING': { class: 'primary', label: 'Cooking' },
+      'READY': { class: 'success', label: 'Ready' },
+      'SERVED': { class: 'success', label: 'Completed' },
+      'CANCELLED': { class: 'danger', label: 'Cancelled' }
+    };
+    return statusMap[status] || { class: 'secondary', label: status };
+  };
+
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return `${seconds} sec ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return new Date(date).toLocaleDateString();
+  };
 
   const isSuperAdmin = user?.role === 'super_admin';
 
@@ -41,13 +127,30 @@ function Dashboard() {
             <div className="row mb-4">
               <div className="col-12">
                 <div className="welcome-card">
-                  <h2>
-                    <i className="fas fa-hand-wave me-2"></i>
-                    Welcome back, {user?.name || user?.email.split('@')[0]}!
-                  </h2>
-                  <p className="text-muted mb-0">
-                    Here's what's happening with your restaurant today
-                  </p>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h2>
+                        <i className="fas fa-hand-wave me-2"></i>
+                        Welcome back, {user?.name || user?.email.split('@')[0]}!
+                      </h2>
+                      <p className="text-muted mb-0">
+                        Here's what's happening with your restaurant today
+                      </p>
+                    </div>
+                    <div>
+                      {connected ? (
+                        <span className="badge bg-success">
+                          <i className="fas fa-circle me-1"></i>
+                          Live Updates Active
+                        </span>
+                      ) : (
+                        <span className="badge bg-warning">
+                          <i className="fas fa-circle me-1"></i>
+                          Connecting...
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -128,38 +231,35 @@ function Dashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          <tr>
-                            <td><span className="badge bg-primary">#ORD-1234</span></td>
-                            <td>Table 5</td>
-                            <td>3 items</td>
-                            <td>$45.50</td>
-                            <td><span className="badge bg-warning">Pending</span></td>
-                            <td>2 mins ago</td>
-                          </tr>
-                          <tr>
-                            <td><span className="badge bg-primary">#ORD-1233</span></td>
-                            <td>Room 201</td>
-                            <td>2 items</td>
-                            <td>$32.00</td>
-                            <td><span className="badge bg-info">Preparing</span></td>
-                            <td>5 mins ago</td>
-                          </tr>
-                          <tr>
-                            <td><span className="badge bg-primary">#ORD-1232</span></td>
-                            <td>Table 12</td>
-                            <td>5 items</td>
-                            <td>$78.90</td>
-                            <td><span className="badge bg-success">Completed</span></td>
-                            <td>10 mins ago</td>
-                          </tr>
-                          <tr>
-                            <td><span className="badge bg-primary">#ORD-1231</span></td>
-                            <td>Room 105</td>
-                            <td>1 item</td>
-                            <td>$15.00</td>
-                            <td><span className="badge bg-success">Completed</span></td>
-                            <td>15 mins ago</td>
-                          </tr>
+                          {loading ? (
+                            <tr>
+                              <td colSpan="6" className="text-center py-4">
+                                <div className="spinner-border text-primary" role="status">
+                                  <span className="visually-hidden">Loading...</span>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : stats.recentOrders && stats.recentOrders.length > 0 ? (
+                            stats.recentOrders.map((order) => {
+                              const statusBadge = getStatusBadge(order.status);
+                              return (
+                                <tr key={order.orderId}>
+                                  <td><span className="badge bg-primary">#{order.orderNo}</span></td>
+                                  <td>{order.tableNo || 'N/A'}</td>
+                                  <td>{order.itemCount} item{order.itemCount !== 1 ? 's' : ''}</td>
+                                  <td>${parseFloat(order.totalAmount).toFixed(2)}</td>
+                                  <td><span className={`badge bg-${statusBadge.class}`}>{statusBadge.label}</span></td>
+                                  <td>{getTimeAgo(order.createdAt)}</td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan="6" className="text-center py-4 text-muted">
+                                No recent orders
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -200,34 +300,6 @@ function Dashboard() {
                           Manage Restaurants
                         </button>
                       )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* System Status */}
-                <div className="card shadow-sm mt-4">
-                  <div className="card-header bg-white">
-                    <h5 className="mb-0">
-                      <i className="fas fa-server me-2"></i>
-                      System Status
-                    </h5>
-                  </div>
-                  <div className="card-body">
-                    <div className="status-item">
-                      <span className="status-label">Database</span>
-                      <span className="badge bg-success">Online</span>
-                    </div>
-                    <div className="status-item">
-                      <span className="status-label">API Server</span>
-                      <span className="badge bg-success">Running</span>
-                    </div>
-                    <div className="status-item">
-                      <span className="status-label">Kitchen Display</span>
-                      <span className="badge bg-success">Active</span>
-                    </div>
-                    <div className="status-item">
-                      <span className="status-label">QR Service</span>
-                      <span className="badge bg-success">Ready</span>
                     </div>
                   </div>
                 </div>

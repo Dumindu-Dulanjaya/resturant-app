@@ -60,10 +60,23 @@ function Categories() {
           fetchCategories();
         } catch (error) {
           console.error('Error deleting category:', error);
+          
+          let errorMessage = 'Failed to delete category';
+          
+          // Extract the error message from the backend response
+          if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.response?.data?.error) {
+            errorMessage = error.response.data.error;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           Swal.fire({
             icon: 'error',
-            title: 'Error',
-            text: 'Failed to delete category'
+            title: 'Cannot Delete Category',
+            text: errorMessage,
+            confirmButtonColor: '#3085d6'
           });
         }
       }
@@ -166,7 +179,7 @@ function Categories() {
                             <td>{category.categoryId}</td>
                             <td>
                               <img 
-                                src={category.imageUrl} 
+                                src={category.imageUrl || '/assets/imgs/special-offer.png'} 
                                 alt={category.categoryName}
                                 className="category-thumbnail"
                                 onError={(e) => {

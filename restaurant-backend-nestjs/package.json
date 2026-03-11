@@ -27,8 +27,10 @@
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.16",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@nestjs/websockets": "^11.1.16",
     "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
@@ -36,9 +38,12 @@
     "mysql2": "^3.18.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "typeorm": "^0.3.28"
   },
   "devDependencies": {

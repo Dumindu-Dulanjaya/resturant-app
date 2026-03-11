@@ -17,6 +17,8 @@ import { ReportsModule } from './reports/reports.module';
 import { RoomQrModule } from './room-qr/room-qr.module';
 import { HousekeepingModule } from './housekeeping/housekeeping.module';
 import { OffersModule } from './offers/offers.module';
+import { WebsocketModule } from './websocket/websocket.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { OffersModule } from './offers/offers.module';
     RoomQrModule,
     HousekeepingModule,
     OffersModule,
+    WebsocketModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

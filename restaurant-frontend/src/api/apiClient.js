@@ -51,4 +51,9 @@ export const authAPI = {
     apiClient.patch('/auth/change-password', data),
 };
 
+export const dashboardAPI = {
+  getStats: () =>
+    apiClient.get('/dashboard/stats'),
+};
+
 export default apiClient;

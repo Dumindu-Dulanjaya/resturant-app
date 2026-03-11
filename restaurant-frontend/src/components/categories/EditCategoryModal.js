@@ -138,42 +138,14 @@ function EditCategoryModal({ show, onHide, onSuccess, category }) {
     setSubmitting(true);
 
     try {
-      let uploadedImageUrl = '';
-
-      // Upload image first if a new file is selected
-      if (selectedFile) {
-        const formDataToUpload = new FormData();
-        formDataToUpload.append('image', selectedFile);
-
-        try {
-          const uploadResponse = await apiClient.post('/categories/upload-image', formDataToUpload, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-          uploadedImageUrl = uploadResponse.data.imageUrl;
-        } catch (uploadError) {
-          console.error('Error uploading image:', uploadError);
-          Swal.fire({
-            icon: 'error',
-            title: 'Upload Error',
-            text: 'Failed to upload image. Please try again.',
-          });
-          setSubmitting(false);
-          return;
-        }
-      }
-
       const payload = {
         categoryName: formData.categoryName.trim(),
         description: formData.description.trim(),
         menuId: parseInt(formData.menuId),
       };
 
-      // Use uploaded image URL, or keep existing one
-      if (uploadedImageUrl) {
-        payload.imageUrl = uploadedImageUrl;
-      } else if (formData.imageUrl.trim()) {
+      // Only include imageUrl if provided
+      if (formData.imageUrl.trim()) {
         payload.imageUrl = formData.imageUrl.trim();
       }
 

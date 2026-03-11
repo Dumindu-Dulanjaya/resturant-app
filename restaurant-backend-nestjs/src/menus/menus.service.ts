@@ -22,10 +22,18 @@ export class MenusService {
   }
 
   async findAll(restaurantId: number): Promise<Menu[]> {
-    return await this.menusRepository.find({
+    const menus = await this.menusRepository.find({
       where: { restaurantId },
       order: { menuId: 'DESC' },
     });
+
+    // Add API URL prefix to image URLs
+    return menus.map((menu) => ({
+      ...menu,
+      imageUrl: menu.imageUrl && !menu.imageUrl.startsWith('http')
+        ? `${process.env.API_URL || 'http://localhost:3000'}${menu.imageUrl}`
+        : menu.imageUrl,
+    }));
   }
 
   async findOne(id: number, restaurantId: number): Promise<Menu> {
@@ -54,9 +62,17 @@ export class MenusService {
 
   // Super admin can access all menus
   async findAllForSuperAdmin(): Promise<Menu[]> {
-    return await this.menusRepository.find({
+    const menus = await this.menusRepository.find({
       relations: ['restaurant'],
       order: { menuId: 'DESC' },
     });
+
+    // Add API URL prefix to image URLs
+    return menus.map((menu) => ({
+      ...menu,
+      imageUrl: menu.imageUrl?.startsWith('http')
+        ? menu.imageUrl
+        : `${process.env.API_URL || 'http://localhost:3000'}${menu.imageUrl}`,
+    }));
   }
 }

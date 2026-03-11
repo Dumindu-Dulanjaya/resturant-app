@@ -8,8 +8,6 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
     description: '',
     imageUrl: ''
   });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,8 +19,6 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
         description: menu.description || '',
         imageUrl: menu.imageUrl || ''
       });
-      setImagePreview(menu.imageUrl || null);
-      setSelectedFile(null);
       setErrors({});
     }
   }, [menu]);
@@ -39,47 +35,6 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
         ...prev,
         [name]: ''
       }));
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!validTypes.includes(file.type)) {
-        setErrors(prev => ({
-          ...prev,
-          imageFile: 'Please select a valid image file (JPG, JPEG, PNG, GIF)'
-        }));
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({
-          ...prev,
-          imageFile: 'File size must not exceed 5MB'
-        }));
-        return;
-      }
-
-      setSelectedFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-
-      // Clear error
-      if (errors.imageFile) {
-        setErrors(prev => ({
-          ...prev,
-          imageFile: ''
-        }));
-      }
     }
   };
 
@@ -116,41 +71,13 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
     setSubmitting(true);
 
     try {
-      let uploadedImageUrl = '';
-
-      // Upload image first if a new file is selected
-      if (selectedFile) {
-        const formDataToUpload = new FormData();
-        formDataToUpload.append('image', selectedFile);
-
-        try {
-          const uploadResponse = await apiClient.post('/menus/upload-image', formDataToUpload, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-          uploadedImageUrl = uploadResponse.data.imageUrl;
-        } catch (uploadError) {
-          console.error('Error uploading image:', uploadError);
-          Swal.fire({
-            icon: 'error',
-            title: 'Upload Error',
-            text: 'Failed to upload image. Please try again.',
-          });
-          setSubmitting(false);
-          return;
-        }
-      }
-
       const payload = {
         menuName: formData.menuName.trim(),
         description: formData.description.trim(),
       };
 
-      // Use uploaded image URL, or keep existing one
-      if (uploadedImageUrl) {
-        payload.imageUrl = uploadedImageUrl;
-      } else if (formData.imageUrl.trim()) {
+      // Only include imageUrl if provided
+      if (formData.imageUrl.trim()) {
         payload.imageUrl = formData.imageUrl.trim();
       }
 
@@ -194,8 +121,6 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
   const handleClose = () => {
     if (!submitting) {
       setErrors({});
-      setSelectedFile(null);
-      setImagePreview(null);
       onHide();
     }
   };
@@ -257,42 +182,28 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
                 )}
               </div>
 
-              {/* Image Upload */}
+              {/* Image URL */}
               <div className="mb-3">
-                <label htmlFor="editMenuImage" className="form-label">
-                  Menu Image <span className="text-muted">(Optional)</span>
+                <label htmlFor="editImageUrl" className="form-label">
+                  Image URL <span className="text-muted">(Optional)</span>
                 </label>
                 <input
-                  type="file"
-                  className={`form-control ${errors.imageFile ? 'is-invalid' : ''}`}
-                  id="editMenuImage"
-                  accept="image/jpeg,image/jpg,image/png,image/gif"
-                  onChange={handleFileChange}
+                  type="text"
+                  className={`form-control ${errors.imageUrl ? 'is-invalid' : ''}`}
+                  id="editImageUrl"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  maxLength={255}
+                  placeholder="assets/imgs/menu-img/menu.jpg"
                   disabled={submitting}
                 />
-                {errors.imageFile && (
-                  <div className="invalid-feedback">{errors.imageFile}</div>
+                {errors.imageUrl && (
+                  <div className="invalid-feedback">{errors.imageUrl}</div>
                 )}
                 <small className="form-text text-muted">
-                  Accepted formats: JPG, JPEG, PNG, GIF (max 5MB)
+                  Relative path to the image file
                 </small>
-                
-                {/* Image Preview */}
-                {imagePreview && (
-                  <div className="mt-2">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      style={{
-                        maxWidth: '200px',
-                        maxHeight: '200px',
-                        objectFit: 'cover',
-                        borderRadius: '8px',
-                        border: '1px solid #ddd'
-                      }}
-                    />
-                  </div>
-                )}
               </div>
             </div>
             <div className="modal-footer">

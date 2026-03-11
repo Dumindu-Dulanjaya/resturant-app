@@ -8,6 +8,7 @@ import { TableQr } from '../table-qr/entities/table-qr.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 
 @Injectable()
 export class OrdersService {
@@ -20,6 +21,7 @@ export class OrdersService {
     private foodItemsRepository: Repository<FoodItem>,
     @InjectRepository(TableQr)
     private tableQrRepository: Repository<TableQr>,
+    private websocketGateway: WebsocketGateway,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, restaurantId: number) {
@@ -82,7 +84,23 @@ export class OrdersService {
       orderItems: orderItems as OrderItem[],
     });
 
-    return await this.ordersRepository.save(order);
+    const savedOrder = await this.ordersRepository.save(order);
+
+    // Emit real-time notification for new order
+    this.websocketGateway.emitNewOrder({
+      orderId: savedOrder.orderId,
+      orderNo: savedOrder.orderNo,
+      tableNo: savedOrder.tableNo,
+      totalAmount: savedOrder.totalAmount,
+      itemCount: savedOrder.orderItems.length,
+      status: savedOrder.status,
+      restaurantId: savedOrder.restaurantId,
+    });
+
+    // Emit dashboard update
+    this.websocketGateway.server.emit('dashboard:refresh');
+
+    return savedOrder;
   }
 
   async findAll(restaurantId: number, queryDto: QueryOrdersDto = {}) {
@@ -160,7 +178,21 @@ export class OrdersService {
     const order = await this.findOne(id, restaurantId);
 
     order.status = updateOrderStatusDto.status;
-    return await this.ordersRepository.save(order);
+    const updatedOrder = await this.ordersRepository.save(order);
+
+    // Emit real-time notification for order status update
+    this.websocketGateway.emitOrderStatusUpdate({
+      orderId: updatedOrder.orderId,
+      orderNo: updatedOrder.orderNo,
+      tableNo: updatedOrder.tableNo,
+      status: updatedOrder.status,
+      restaurantId: updatedOrder.restaurantId,
+    });
+
+    // Emit dashboard update
+    this.websocketGateway.server.emit('dashboard:refresh');
+
+    return updatedOrder;
   }
 
   async remove(id: number, restaurantId?: number) {

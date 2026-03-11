@@ -3,10 +3,12 @@ import {
   Column,
   PrimaryGeneratedColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
 import { Restaurant } from '../../restaurants/entities/restaurant.entity';
+import { FoodItem } from '../../food-items/entities/food-item.entity';
 
 @Entity('subcategory_tbl')
 export class Subcategory {
@@ -29,4 +31,10 @@ export class Subcategory {
   @ManyToOne(() => Restaurant)
   @JoinColumn({ name: 'restaurant_id' })
   restaurant: Restaurant;
+
+  @OneToMany(() => FoodItem, (foodItem) => foodItem.subcategory, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  foodItems: FoodItem[];
 }

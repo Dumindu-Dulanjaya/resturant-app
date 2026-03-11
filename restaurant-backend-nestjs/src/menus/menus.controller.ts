@@ -8,11 +8,7 @@ import {
   Delete,
   UseGuards,
   Request,
-  UseInterceptors,
-  UploadedFile,
-  BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { MenusService } from './menus.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
@@ -20,11 +16,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/enums/role.enum';
-import {
-  menuImageStorage,
-  imageFileFilter,
-  maxFileSize,
-} from '../config/multer.config';
 
 interface RequestWithUser extends Request {
   user: {
@@ -40,27 +31,6 @@ interface RequestWithUser extends Request {
 @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 export class MenusController {
   constructor(private readonly menusService: MenusService) {}
-
-  @Post('upload-image')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: menuImageStorage,
-      fileFilter: imageFileFilter,
-      limits: { fileSize: maxFileSize },
-    }),
-  )
-  uploadImage(@UploadedFile() file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-    const imageUrl = `/uploads/menus/${file.filename}`;
-    return {
-      message: 'File uploaded successfully',
-      imageUrl,
-      filename: file.filename,
-      size: file.size,
-    };
-  }
 
   @Post()
   create(@Body() createMenuDto: CreateMenuDto, @Request() req: RequestWithUser) {

@@ -8,8 +8,6 @@ function AddMenuModal({ show, onHide, onSuccess }) {
     description: '',
     imageUrl: ''
   });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,104 +26,31 @@ function AddMenuModal({ show, onHide, onSuccess }) {
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!validTypes.includes(file.type)) {
-        setErrors(prev => ({
-          ...prev,
-          imageFile: 'Please select a valid image file (JPG, JPEG, PNG, GIF)'
-        }));
-        return;
-      }
+  const validateForm = () => {
+    const newErrors = {};
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({
-          ...prev,
-          imageFile: 'File size must not exceed 5MB'
-        }));
-        return;
-      }
+    if (!formData.menuName.trim()) {
+      newErrors.menuName = 'Menu name is required';
+    } else if (formData.menuName.length > 20) {
+      newErrors.menuName = 'Menu name must not exceed 20 characters';
+    }
 
-      setSelectedFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    } else if (formData.description.length > 100) {
+      newErrors.description = 'Description must not exceed 100 characters';
+    }
 
-      // Clear error
-      if (errors.imageFile) {
-      let uploadedImageUrl = '';
-
-      // Upload image first if a file is selected
-      if (selectedFile) {
-        const formDataToUpload = new FormData();
-        formDataToUpload.append('image', selectedFile);
-
-        try {
-          const uploadResponse = await apiClient.post('/menus/upload-image', formDataToUpload, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-          uploadedImageUrl = uploadResponse.data.imageUrl;
-        } catch (uploadError) {
-          console.error('Error uploading image:', uploadError);
-          Swal.fire({
-            icon: 'error',
-            title: 'Upload Error',
-            text: 'Failed to upload image. Please try again.',
-          });
-          setSubmitting(false);
-          return;
-        }
-      }
-
-      const payload = {
-        menuName: formData.menuName.trim(),
-        description: formData.description.trim(),
-      };
-
-      // Use uploaded image URL or provided URL
-      if (uploadedImageUrl) {
-        payload.imageUrl = uploadedImageUrl;
-      } else if (formData.imageUrl.trim()) {
-        payload.imageUrl = formData.imageUrl.trim();
-      }
-
-      const response = await apiClient.post('/menus', payload);
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Menu created successfully',
-        timer: 2000,
-        showConfirmButton: false
-      });
-
-      // Reset form
-      setFormData({
-        menuName: '',
-        description: '',
-        imageUrl: ''
-      });
-      setSelectedFile(null);
-      setImagePreview(null
+    if (formData.imageUrl && formData.imageUrl.length > 255) {
+      newErrors.imageUrl = 'Image URL must not exceed 255 characters';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
-    e.preSelectedFile(null);
-      setImagePreview(null);
-      setventDefault();
+    e.preventDefault();
 
     if (!validateForm()) {
       return;
@@ -226,44 +151,28 @@ function AddMenuModal({ show, onHide, onSuccess }) {
                   className={`form-control ${errors.menuName ? 'is-invalid' : ''}`}
                   id="menuName"
                   name="menuName"
-                  value={pload */}
-              <div className="mb-3">
-                <label htmlFor="imageFile" className="form-label">
-                  Menu Image <span className="text-muted">(Optional)</span>
-                </label>
-                <input
-                  type="file"
-                  className={`form-control ${errors.imageFile ? 'is-invalid' : ''}`}
-                  id="imageFile"
-                  name="imageFile"
-                  onChange={handleFileChange}
-                  accept="image/jpeg,image/jpg,image/png,image/gif"
+                  value={formData.menuName}
+                  onChange={handleChange}
+                  maxLength={20}
+                  placeholder="e.g., Breakfast Menu"
                   disabled={submitting}
                 />
-                {errors.imageFile && (
-                  <div className="invalid-feedback">{errors.imageFile}</div>
+                {errors.menuName && (
+                  <div className="invalid-feedback">{errors.menuName}</div>
                 )}
-                <small className="form-text text-muted">
-                  Allowed formats: JPG, JPEG, PNG, GIF (Max 5MB)
-                </small>
-                
-                {/* Image Preview */}
-                {imagePreview && (
-                  <div className="mt-3">
-                    <p className="mb-2"><strong>Preview:</strong></p>
-                    <img 
-                      src={imagePreview}
-                      alt="Menu preview" 
-                      style={{
-                        maxWidth: '200px',
-                        maxHeight: '200px',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        padding: '5px'
-                      }}
-                    />
-                  </div>
-                )}ge={handleChange}
+              </div>
+
+              {/* Description */}
+              <div className="mb-3">
+                <label htmlFor="description" className="form-label">
+                  Description <span className="text-danger">*</span>
+                </label>
+                <textarea
+                  className={`form-control ${errors.description ? 'is-invalid' : ''}`}
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
                   maxLength={100}
                   rows="3"
                   placeholder="Brief description of the menu"

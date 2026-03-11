@@ -110,7 +110,15 @@ export class SubcategoriesService {
   }
 
   async remove(id: number, restaurantId: number): Promise<void> {
-    const subcategory = await this.findOne(id, restaurantId);
+    const subcategory = await this.subcategoriesRepository.findOne({
+      where: { subcategoryId: id, restaurantId },
+      relations: ['foodItems'],
+    });
+
+    if (!subcategory) {
+      throw new NotFoundException(`Subcategory with ID ${id} not found`);
+    }
+
     await this.subcategoriesRepository.remove(subcategory);
   }
 

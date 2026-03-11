@@ -9,6 +9,7 @@ import {
 import { Menu } from '../../menus/entities/menu.entity';
 import { Restaurant } from '../../restaurants/entities/restaurant.entity';
 import { Subcategory } from '../../subcategories/entities/subcategory.entity';
+import { FoodItem } from '../../food-items/entities/food-item.entity';
 
 @Entity('category_tbl')
 export class Category {
@@ -38,6 +39,15 @@ export class Category {
   @JoinColumn({ name: 'restaurant_id' })
   restaurant: Restaurant;
 
-  @OneToMany(() => Subcategory, (subcategory) => subcategory.category)
+  @OneToMany(() => Subcategory, (subcategory) => subcategory.category, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   subcategories: Subcategory[];
+
+  @OneToMany(() => FoodItem, (foodItem) => foodItem.category, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  foodItems: FoodItem[];
 }

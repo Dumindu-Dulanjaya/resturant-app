@@ -9,11 +9,7 @@ import {
   UseGuards,
   Request,
   Query,
-  UseInterceptors,
-  UploadedFile,
-  BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -21,11 +17,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/enums/role.enum';
-import {
-  categoryImageStorage,
-  imageFileFilter,
-  maxFileSize,
-} from '../config/multer.config';
 
 interface RequestWithUser extends Request {
   user: {
@@ -39,29 +30,6 @@ interface RequestWithUser extends Request {
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
-
-  @Post('upload-image')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: categoryImageStorage,
-      fileFilter: imageFileFilter,
-      limits: { fileSize: maxFileSize },
-    }),
-  )
-  uploadImage(@UploadedFile() file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-    const imageUrl = `/uploads/categories/${file.filename}`;
-    return {
-      message: 'File uploaded successfully',
-      imageUrl,
-      filename: file.filename,
-      size: file.size,
-    };
-  }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -9,6 +9,8 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { WebSocketProvider } from './hooks/useWebSocket';
+import { NotificationProvider } from './components/common/NotificationToast';
 
 // Configure React Query with caching for better performance
 const queryClient = new QueryClient({
@@ -26,7 +28,11 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <WebSocketProvider>
+        <NotificationProvider>
+          <App />
+        </NotificationProvider>
+      </WebSocketProvider>
     </QueryClientProvider>
   </React.StrictMode>
 );
