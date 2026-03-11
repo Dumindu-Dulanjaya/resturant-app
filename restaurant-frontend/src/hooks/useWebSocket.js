@@ -29,7 +29,8 @@ export const WebSocketProvider = ({ children }) => {
     }
 
     // Connect to WebSocket server
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+    // Remove /api suffix if present, as WebSocket is at root server
+    const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace('/api', '');
     const newSocket = io(`${API_URL}/events`, {
       transports: ['websocket', 'polling'],
       reconnection: true,

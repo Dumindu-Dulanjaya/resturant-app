@@ -78,18 +78,16 @@ export class DashboardService {
     // Total revenue (only completed orders)
     const revenueResult: { total: string } | undefined = await revenueQuery
       .select('SUM(order.totalAmount)', 'total')
-      .where('order.status = :status', { status: OrderStatus.SERVED })
+      .andWhere('order.status = :status', { status: OrderStatus.SERVED })
       .getRawOne();
     const totalRevenue = parseFloat(revenueResult?.total || '0');
 
-    // Active menus count
-    const activeMenus = await menusQuery
-      .where('menu.active = :active', { active: true })
-      .getCount();
+    // Active menus count (all menus for the restaurant)
+    const activeMenus = await menusQuery.getCount();
 
     // Pending orders (NEW, ACCEPTED, COOKING, READY)
     const pendingOrders = await pendingQuery
-      .where('order.status IN (:...statuses)', {
+      .andWhere('order.status IN (:...statuses)', {
         statuses: [
           OrderStatus.NEW,
           OrderStatus.ACCEPTED,
@@ -101,7 +99,7 @@ export class DashboardService {
 
     // Completed orders (today)
     const completedOrders = await completedQuery
-      .where('order.status = :status', { status: OrderStatus.SERVED })
+      .andWhere('order.status = :status', { status: OrderStatus.SERVED })
       .andWhere('order.createdAt >= :today', { today })
       .getCount();
 

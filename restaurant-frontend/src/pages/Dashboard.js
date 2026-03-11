@@ -24,11 +24,14 @@ function Dashboard() {
 
   const fetchStats = useCallback(async () => {
     try {
+      console.log('Fetching dashboard stats...');
       const response = await dashboardAPI.getStats();
+      console.log('Dashboard stats response:', response.data);
       setStats(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
+      console.error('Error details:', error.response?.data);
       setLoading(false);
     }
   }, []);
