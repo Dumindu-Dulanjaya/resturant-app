@@ -86,6 +86,11 @@ export class OrdersService {
 
     const savedOrder = await this.ordersRepository.save(order);
 
+    console.log('🔔 ORDER CREATED - Preparing to emit WebSocket event');
+    console.log('Order ID:', savedOrder.orderId);
+    console.log('Order No:', savedOrder.orderNo);
+    console.log('Restaurant ID:', savedOrder.restaurantId);
+
     // Emit real-time notification for new order
     this.websocketGateway.emitNewOrder({
       orderId: savedOrder.orderId,
@@ -99,6 +104,7 @@ export class OrdersService {
 
     // Emit dashboard update
     this.websocketGateway.server.emit('dashboard:refresh');
+    console.log('✅ WebSocket events emitted for order:', savedOrder.orderNo);
 
     return savedOrder;
   }

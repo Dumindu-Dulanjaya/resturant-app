@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import Swal from 'sweetalert2';
 import './Navbar.css';
 
@@ -8,6 +9,89 @@ function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const { subscribe, connected } = useWebSocket();
+
+  // Listen for new orders and update notification count
+  useEffect(() => {
+    if (!connected) return;
+
+    const unsubscribeNewOrder = subscribe('order:new', (order) => {
+      setNotificationCount(prev => prev + 1);
+      
+      // Add to notification history
+      const newNotif = {
+        id: Date.now(),
+        type: 'order',
+        title: 'New Order',
+        message: `Order ${order.orderNo} from Table ${order.tableNo}`,
+        amount: order.totalAmount,
+        time: new Date().toLocaleTimeString(),
+        icon: 'shopping-cart',
+        color: 'success'
+      };
+      
+      setNotifications(prev => [newNotif, ...prev].slice(0, 10)); // Keep last 10
+    });
+
+    const unsubscribeStatusUpdate = subscribe('order:status-update', (order) => {
+      setNotificationCount(prev => prev + 1);
+      
+      // Add to notification history
+      const statusColors = {
+        'READY': 'warning',
+        'SERVED': 'success',
+        'COMPLETED': 'success',
+        'CANCELLED': 'danger'
+      };
+      
+      const newNotif = {
+        id: Date.now(),
+        type: 'status',
+        title: 'Order Updated',
+        message: `Order ${order.orderNo} is ${order.status}`,
+        time: new Date().toLocaleTimeString(),
+        icon: 'info-circle',
+        color: statusColors[order.status] || 'info'
+      };
+      
+      setNotifications(prev => [newNotif, ...prev].slice(0, 10)); // Keep last 10
+    });
+
+    return () => {
+      unsubscribeNewOrder();
+      unsubscribeStatusUpdate();
+    };
+  }, [connected, subscribe]);
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications) {
+      // When opening, mark as read
+      setNotificationCount(0);
+    }
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
+    setNotificationCount(0);
+    setShowNotifications(false);
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown')) {
+        setShowDropdown(false);
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     Swal.fire({
@@ -54,14 +138,79 @@ function Navbar() {
 
         <div className="ms-auto d-flex align-items-center">
           {/* Notifications */}
-          <div className="dropdown me-3">
-            <button className="btn btn-link text-white position-relative" type="button">
+          <div className="dropdown me-3 position-relative">
+            <button 
+              className="btn btn-link text-white position-relative" 
+              type="button"
+              onClick={toggleNotifications}
+              title="Notifications"
+            >
               <i className="fas fa-bell fa-lg"></i>
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                3
-                <span className="visually-hidden">unread messages</span>
-              </span>
+              {notificationCount > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge">
+                  {notificationCount}
+                  <span className="visually-hidden">unread messages</span>
+                </span>
+              )}
             </button>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div className="dropdown-menu dropdown-menu-end show" style={{ 
+                width: '350px', 
+                maxHeight: '400px', 
+                overflowY: 'auto',
+                position: 'absolute',
+                right: 0,
+                top: '100%',
+                marginTop: '0.5rem'
+              }}>
+                <div className="dropdown-header d-flex justify-content-between align-items-center">
+                  <span><i className="fas fa-bell me-2"></i>Notifications</span>
+                  {notifications.length > 0 && (
+                    <button 
+                      className="btn btn-sm btn-link text-danger p-0"
+                      onClick={clearAllNotifications}
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+                <div className="dropdown-divider"></div>
+                
+                {notifications.length === 0 ? (
+                  <div className="text-center py-4 text-muted">
+                    <i className="fas fa-bell-slash fa-2x mb-2"></i>
+                    <p className="mb-0">No notifications</p>
+                  </div>
+                ) : (
+                  notifications.map((notif) => (
+                    <div key={notif.id} className="dropdown-item-text border-bottom">
+                      <div className="d-flex align-items-start py-2">
+                        <div className={`me-3 text-${notif.color}`}>
+                          <i className={`fas fa-${notif.icon} fa-lg`}></i>
+                        </div>
+                        <div className="flex-grow-1">
+                          <h6 className="mb-1" style={{ fontSize: '0.9rem' }}>
+                            {notif.title}
+                          </h6>
+                          <p className="mb-1 text-muted" style={{ fontSize: '0.85rem' }}>
+                            {notif.message}
+                          </p>
+                          {notif.amount && (
+                            <p className="mb-0 text-success fw-bold" style={{ fontSize: '0.85rem' }}>
+                              Rs. {parseFloat(notif.amount).toFixed(2)}
+                            </p>
+                          )}
+                          <small className="text-muted">{notif.time}</small>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           {/* User Profile */}

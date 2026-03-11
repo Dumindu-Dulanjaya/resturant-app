@@ -4,6 +4,7 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
@@ -14,24 +15,34 @@ import { Logger } from '@nestjs/common';
   cors: {
     origin: process.env.CORS_ORIGIN?.split(',') || '*',
     credentials: true,
+    methods: ['GET', 'POST'],
   },
   namespace: 'events',
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
 })
-export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
   private logger = new Logger('WebsocketGateway');
   private connectedClients = new Map<string, { socketId: string; userId?: number; role?: string }>();
 
+  afterInit(server: Server) {
+    this.logger.log('WebSocket Gateway initialized');
+    this.logger.log(`WebSocket server is ready on namespace: /events`);
+  }
+
   handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
+    this.logger.log(`✅ Client connected: ${client.id}`);
     this.connectedClients.set(client.id, { socketId: client.id });
+    this.logger.log(`📊 Total connected clients: ${this.connectedClients.size}`);
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`❌ Client disconnected: ${client.id}`);
     this.connectedClients.delete(client.id);
+    this.logger.log(`📊 Total connected clients: ${this.connectedClients.size}`);
   }
 
   @SubscribeMessage('authenticate')
@@ -56,14 +67,24 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   // Emit new order notification
   emitNewOrder(order: any) {
+    const clientCount = this.connectedClients.size;
+    this.logger.log(`🔔 EMITTING NEW ORDER EVENT to ${clientCount} clients`);
+    this.logger.log(`Order details: ${JSON.stringify(order)}`);
+    
     this.server.emit('order:new', order);
-    this.logger.log(`New order notification sent: ${order.id}`);
+    
+    this.logger.log(`✅ New order notification sent to all ${clientCount} connected clients`);
   }
 
   // Emit order status update
   emitOrderStatusUpdate(order: any) {
+    const clientCount = this.connectedClients.size;
+    this.logger.log(`📋 EMITTING ORDER STATUS UPDATE to ${clientCount} clients`);
+    this.logger.log(`Order details: ${JSON.stringify(order)}`);
+    
     this.server.emit('order:status-update', order);
-    this.logger.log(`Order status update sent: ${order.id}`);
+    
+    this.logger.log(`✅ Order status update sent to all ${clientCount} connected clients`);
   }
 
   // Emit notification to specific user role

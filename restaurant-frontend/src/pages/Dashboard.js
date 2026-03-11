@@ -42,41 +42,92 @@ function Dashboard() {
 
   // Subscribe to real-time updates
   useEffect(() => {
-    if (!connected) return;
+    if (!connected) {
+      console.log('⏸️ WebSocket not connected, skipping subscriptions');
+      return;
+    }
+
+    console.log('🔔 Setting up notification subscriptions...');
 
     // Listen for dashboard refresh events
     const unsubscribeRefresh = subscribe('dashboard:refresh', () => {
-      console.log('Dashboard refresh triggered');
+      console.log('📊 Dashboard refresh triggered');
       fetchStats();
     });
 
     // Listen for new orders
     const unsubscribeNewOrder = subscribe('order:new', (order) => {
-      console.log('New order received:', order);
+      console.log('🆕 NEW ORDER EVENT RECEIVED:', order);
+      
       // Show toast notification
       addNotification({
         type: 'success',
-        title: 'New Order!',
-        message: `Order ${order.orderNo} from ${order.tableNo || 'Customer'} - $${parseFloat(order.totalAmount).toFixed(2)}`,
-        duration: 6000,
+        title: '🔔 New Order!',
+        message: `Order ${order.orderNo} from Table ${order.tableNo || 'Customer'} - Rs. ${parseFloat(order.totalAmount).toFixed(2)}`,
+        duration: 8000,
       });
-      // Play notification sound (optional)
-      const audio = new Audio('/notification.mp3');
-      audio.play().catch(() => {}); // Ignore if sound file doesn't exist
+      
+      // Browser notification (if permission granted)
+      if (window.Notification && Notification.permission === 'granted') {
+        new Notification('New Order Received!', {
+          body: `Order ${order.orderNo} - Table ${order.tableNo} - Rs. ${parseFloat(order.totalAmount).toFixed(2)}`,
+          icon: '/logo192.png',
+          badge: '/logo192.png',
+          tag: 'new-order',
+          requireInteraction: true,
+        });
+      }
+      
+      // Play notification sound
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.volume = 0.7;
+        audio.play().catch(err => console.log('Sound play failed:', err));
+      } catch (err) {
+        console.log('Sound not available');
+      }
+      
       // Refresh stats
       fetchStats();
     });
 
+    console.log('✅ Notification subscriptions active');
+
     // Listen for order status updates
     const unsubscribeStatusUpdate = subscribe('order:status-update', (order) => {
       console.log('Order status updated:', order);
+      
+      // Determine notification type based on status
+      let notifType = 'info';
+      let emoji = 'ℹ️';
+      if (order.status === 'SERVED' || order.status === 'COMPLETED') {
+        notifType = 'success';
+        emoji = '✅';
+      } else if (order.status === 'CANCELLED') {
+        notifType = 'error';
+        emoji = '❌';
+      } else if (order.status === 'READY') {
+        notifType = 'warning';
+        emoji = '🔔';
+      }
+      
       // Show toast notification
       addNotification({
-        type: 'info',
-        title: 'Order Updated',
-        message: `Order ${order.orderNo} status: ${order.status}`,
-        duration: 4000,
+        type: notifType,
+        title: `${emoji} Order ${order.status}`,
+        message: `Order ${order.orderNo} - Table ${order.tableNo}`,
+        duration: 5000,
       });
+      
+      // Browser notification for important status
+      if (window.Notification && Notification.permission === 'granted' && order.status === 'READY') {
+        new Notification('Order Ready!', {
+          body: `Order ${order.orderNo} for Table ${order.tableNo} is ready to serve`,
+          icon: '/logo192.png',
+          tag: 'order-ready',
+        });
+      }
+      
       // Refresh stats
       fetchStats();
     });

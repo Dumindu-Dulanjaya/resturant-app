@@ -31,16 +31,21 @@ export const WebSocketProvider = ({ children }) => {
     // Connect to WebSocket server
     // Remove /api suffix if present, as WebSocket is at root server
     const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace('/api', '');
+    console.log('Connecting to WebSocket:', `${API_URL}/events`);
+    
     const newSocket = io(`${API_URL}/events`, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
+      timeout: 20000,
+      autoConnect: true,
+      forceNew: true,
     });
 
     newSocket.on('connect', () => {
-      console.log('WebSocket connected:', newSocket.id);
+      console.log('✅ WebSocket connected:', newSocket.id);
       setConnected(true);
 
       // Authenticate with user info
@@ -50,14 +55,27 @@ export const WebSocketProvider = ({ children }) => {
       });
     });
 
-    newSocket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
+    newSocket.on('disconnect', (reason) => {
+      console.log('❌ WebSocket disconnected:', reason);
       setConnected(false);
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+      console.error('🔴 WebSocket connection error:', error.message);
       setConnected(false);
+    });
+
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log('🔄 WebSocket reconnected after', attemptNumber, 'attempts');
+      setConnected(true);
+    });
+
+    newSocket.on('reconnect_error', (error) => {
+      console.error('🔴 WebSocket reconnection error:', error.message);
+    });
+
+    newSocket.on('reconnect_failed', () => {
+      console.error('❌ WebSocket reconnection failed');
     });
 
     setSocket(newSocket);

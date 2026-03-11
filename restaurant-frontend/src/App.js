@@ -34,12 +34,16 @@ import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
 import FeatureRoute from './components/auth/FeatureRoute';
 import RoleBasedRedirect from './components/auth/RoleBasedRedirect';
+import { NotificationProvider } from './components/common/NotificationToast';
+import { WebSocketProvider } from './hooks/useWebSocket';
 
 import './App.css';
 
 function App() {
   return (
-    <BrowserRouter>
+    <NotificationProvider>
+      <WebSocketProvider>
+        <BrowserRouter>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
@@ -369,6 +373,8 @@ function App() {
         <Route path="*" element={<RoleBasedRedirect />} />
       </Routes>
     </BrowserRouter>
+      </WebSocketProvider>
+    </NotificationProvider>
   );
 }
 
