@@ -261,6 +261,11 @@ const PendingSettingsRequests = () => {
                   rows={4}
                   required={reviewAction === 'REJECT'}
                 />
+                {reviewAction === 'REJECT' && !reviewNotes.trim() && (
+                  <p className="notes-required-hint">
+                    ⚠ A reason is required to reject this request.
+                  </p>
+                )}
               </div>
             </div>
 

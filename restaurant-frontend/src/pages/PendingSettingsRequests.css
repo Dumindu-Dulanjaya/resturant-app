@@ -133,6 +133,18 @@
   background: #5a6268;
 }
 
+.btn-approve:disabled,
+.btn-reject:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notes-required-hint {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
