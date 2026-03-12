@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import './HeroSection.css';
+import HeroImageShowcase from './HeroImageShowcase';
 
 const HeroSection = () => {
   const orb1Ref = useRef(null);
@@ -69,41 +70,8 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* Right: Hero Image */}
-          <div className="hero-image-wrap">
-            <div className="hero-image-card">
-              <img
-                src="/assets/images/hero/bg-image.png"
-                alt="Anawuma QR Ordering Platform"
-                className="hero-img"
-              />
-              <div className="image-glow-border"></div>
-              {/* Corner brackets */}
-              <div className="corner tl"></div>
-              <div className="corner tr"></div>
-              <div className="corner bl"></div>
-              <div className="corner br"></div>
-            </div>
-
-            {/* Floating icons */}
-            <div className="float-icon fi-1">
-              <i className="fas fa-utensils"></i>
-            </div>
-            <div className="float-icon fi-2">
-              <i className="fas fa-wine-glass"></i>
-            </div>
-            <div className="float-icon fi-3">
-              <i className="fas fa-concierge-bell"></i>
-            </div>
-            <div className="float-icon fi-4">
-              <i className="fas fa-cocktail"></i>
-            </div>
-
-            {/* Sparkle dots */}
-            <div className="sparkle sp-1"></div>
-            <div className="sparkle sp-2"></div>
-            <div className="sparkle sp-3"></div>
-          </div>
+          {/* Right: Animated Hero Image */}
+          <HeroImageShowcase />
         </div>
       </div>
     </section>
