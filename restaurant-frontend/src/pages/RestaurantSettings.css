@@ -1,7 +1,19 @@
-.restaurant-settings-container {
+/* Layout wrapper — offsets content from the fixed 250px sidebar */
+.page-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fa;
+}
+
+.content-wrapper {
+  margin-left: 250px;
+  flex: 1;
   padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  min-width: 0; /* prevent flex overflow */
+}
+
+.restaurant-settings-container {
+  max-width: 1000px;
 }
 
 .page-header {
@@ -326,7 +338,8 @@ input:checked + .slider:before {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .restaurant-settings-container {
+  .content-wrapper {
+    margin-left: 0;
     padding: 1rem;
   }
 
