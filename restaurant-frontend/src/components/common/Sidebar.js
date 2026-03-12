@@ -37,10 +37,10 @@ function Sidebar() {
   // Restaurant feature flags
   const restaurantSettings = user?.restaurantSettings || {};
   // Reserved for future use: individual feature flags can be checked here
-  // const isStewardEnabled = restaurantSettings.enableSteward !== false;
-  const isHousekeepingEnabled = restaurantSettings.enableHousekeeping !== false;
-  const isKdsEnabled = restaurantSettings.enableKds !== false;
-  const isReportsEnabled = restaurantSettings.enableReports !== false;
+  // const isStewardEnabled = restaurantSettings.enableSteward == null || Boolean(restaurantSettings.enableSteward);
+  const isHousekeepingEnabled = restaurantSettings.enableHousekeeping == null || Boolean(restaurantSettings.enableHousekeeping);
+  const isKdsEnabled = restaurantSettings.enableKds == null || Boolean(restaurantSettings.enableKds);
+  const isReportsEnabled = restaurantSettings.enableReports == null || Boolean(restaurantSettings.enableReports);
 
   // Permission helpers
   const canAccessAdminFeatures = isSuperAdmin || isAdmin;

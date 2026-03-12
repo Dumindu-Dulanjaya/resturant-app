@@ -18,16 +18,16 @@ function FeatureRoute({ children, requiredFeature }) {
   if (requiredFeature) {
     switch (requiredFeature) {
       case 'STEWARD':
-        isFeatureEnabled = restaurantSettings.enableSteward !== false;
+        isFeatureEnabled = restaurantSettings.enableSteward == null || Boolean(restaurantSettings.enableSteward);
         break;
       case 'HOUSEKEEPING':
-        isFeatureEnabled = restaurantSettings.enableHousekeeping !== false;
+        isFeatureEnabled = restaurantSettings.enableHousekeeping == null || Boolean(restaurantSettings.enableHousekeeping);
         break;
       case 'KDS':
-        isFeatureEnabled = restaurantSettings.enableKds !== false;
+        isFeatureEnabled = restaurantSettings.enableKds == null || Boolean(restaurantSettings.enableKds);
         break;
       case 'REPORTS':
-        isFeatureEnabled = restaurantSettings.enableReports !== false;
+        isFeatureEnabled = restaurantSettings.enableReports == null || Boolean(restaurantSettings.enableReports);
         break;
       default:
         isFeatureEnabled = true;

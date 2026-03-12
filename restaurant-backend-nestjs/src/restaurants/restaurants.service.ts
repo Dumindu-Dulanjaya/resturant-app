@@ -30,10 +30,10 @@ export class RestaurantsService {
     }
 
     return {
-      enableSteward: restaurant.enableSteward,
-      enableHousekeeping: restaurant.enableHousekeeping,
-      enableKds: restaurant.enableKds,
-      enableReports: restaurant.enableReports,
+      enableSteward: Boolean(restaurant.enableSteward),
+      enableHousekeeping: Boolean(restaurant.enableHousekeeping),
+      enableKds: Boolean(restaurant.enableKds),
+      enableReports: Boolean(restaurant.enableReports),
     };
   }
 
@@ -63,10 +63,10 @@ export class RestaurantsService {
     await this.restaurantRepository.save(restaurant);
 
     return {
-      enableSteward: restaurant.enableSteward,
-      enableHousekeeping: restaurant.enableHousekeeping,
-      enableKds: restaurant.enableKds,
-      enableReports: restaurant.enableReports,
+      enableSteward: Boolean(restaurant.enableSteward),
+      enableHousekeeping: Boolean(restaurant.enableHousekeeping),
+      enableKds: Boolean(restaurant.enableKds),
+      enableReports: Boolean(restaurant.enableReports),
     };
   }
 
