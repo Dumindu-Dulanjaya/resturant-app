@@ -1,1 +1,0 @@
-category images goes here

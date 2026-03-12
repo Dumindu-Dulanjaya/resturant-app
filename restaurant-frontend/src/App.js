@@ -30,6 +30,7 @@ import AddRestaurant from './pages/AddRestaurant';
 import AddAdmin from './pages/AddAdmin';
 import RestaurantProfile from './pages/RestaurantProfile';
 import PendingSettingsRequests from './pages/PendingSettingsRequests';
+import LandingPage from './pages/LandingPage';
 
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -441,7 +442,7 @@ function App() {
         />
 
         {/* Redirect Routes */}
-        <Route path="/" element={<RoleBasedRedirect />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="*" element={<RoleBasedRedirect />} />
       </Routes>
     </BrowserRouter>

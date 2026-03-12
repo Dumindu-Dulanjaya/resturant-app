@@ -1,0 +1,78 @@
+/* ======================
+   LANDING PAGE GLOBALS
+   ====================== */
+
+/* Import Google Fonts used across all landing sections */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap');
+
+/* Shared container used by all landing sections */
+.landing-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Shared sub-label used across section headings */
+.section-sub-label {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #43a047;
+  background: rgba(67, 160, 71, 0.1);
+  padding: 6px 14px;
+  border-radius: 50px;
+  border-left: 3px solid #43a047;
+  margin-bottom: 14px;
+}
+
+/* Shared gradient text */
+.text-green-gradient {
+  background: linear-gradient(135deg, #1b5e20, #66bb6a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scroll-to-top button */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #43a047, #2e7d32);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(67, 160, 71, 0.4);
+  z-index: 998;
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.3s ease;
+}
+
+.scroll-top-btn i {
+  font-size: 20px;
+  color: #fff;
+}
+
+.scroll-top-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(67, 160, 71, 0.55);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Base font for landing page body */
+body {
+  font-family: 'Inter', 'Trebuchet MS', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
