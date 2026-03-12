@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import apiClient from '../api/apiClient';
 import { useNotification } from '../components/common/NotificationToast';
-import { useAuthStore } from '../store/authStore';
 import SuperAdminDashboard from './SuperAdminDashboard';
 import './PendingSettingsRequests.css';
 
@@ -13,17 +12,12 @@ const PendingSettingsRequests = () => {
   const [reviewNotes, setReviewNotes] = useState('');
   const [reviewAction, setReviewAction] = useState('');
   const { addNotification } = useNotification();
-  const { token } = useAuthStore();
-
-  const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.8.127:3000';
 
   const fetchPendingRequests = useCallback(async () => {
     try {
       setLoading(true);
       
-      const response = await axios.get(`${API_URL}/settings-requests`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get('/settings-requests');
 
       if (response.data.success) {
         // Filter for pending requests only
@@ -43,7 +37,7 @@ const PendingSettingsRequests = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_URL, addNotification, token]);
+  }, [addNotification]);
 
   useEffect(() => {
     fetchPendingRequests();
@@ -61,14 +55,11 @@ const PendingSettingsRequests = () => {
 
     try {
       
-      const response = await axios.patch(
-        `${API_URL}/settings-requests/${selectedRequest.requestId}/review`,
+      const response = await apiClient.patch(
+        `/settings-requests/${selectedRequest.requestId}/review`,
         {
           action: reviewAction,
           reviewNotes: reviewNotes || undefined,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
