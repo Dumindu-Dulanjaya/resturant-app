@@ -6,8 +6,8 @@
 .his-wrapper {
   position: relative;
   width: 100%;
-  max-width: 580px;
-  aspect-ratio: 9 / 10;
+  max-width: 740px;
+  aspect-ratio: 4 / 3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,8 +58,8 @@
 .his-frame-outer {
   position: relative;
   z-index: 3;
-  width: 78%;
-  aspect-ratio: 3 / 4;
+  width: 90%;
+  aspect-ratio: 4 / 3;
   transform-style: preserve-3d;
   will-change: transform;
 }
@@ -104,7 +104,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;
+  object-position: center center;
   display: block;
   border-radius: 18px;
   user-select: none;
@@ -187,26 +187,27 @@
 }
 
 /* ── Badge positions ── */
-.badge-orders  { top:  8%;  left: -16%; }
-.badge-revenue { top: 38%;  right: -14%; }
-.badge-rating  { bottom: 9%; left: -10%; }
+.badge-orders  { top:  -8%;  left: 4%; }
+.badge-revenue { top:  28%;  right: -15%; }
+.badge-rating  { bottom: -10%; left: 4%; }
 
 /* ════════════════════════════════════════════════════════
    Responsive
    ════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .his-wrapper {
-    max-width: 460px;
+    max-width: 580px;
+    aspect-ratio: 4 / 3;
   }
-  .badge-orders  { left: -8%; }
-  .badge-revenue { right: -8%; }
-  .badge-rating  { left: -4%; }
+  .badge-orders  { top: -7%;  left: 3%; }
+  .badge-revenue { right: -10%; }
+  .badge-rating  { bottom: -9%; left: 3%; }
 }
 
 @media (max-width: 768px) {
   .his-wrapper {
-    max-width: 90vw;
-    aspect-ratio: 1 / 1;
+    max-width: 92vw;
+    aspect-ratio: 4 / 3;
     margin-top: 2rem;
   }
 
@@ -225,9 +226,9 @@
   .badge-label { font-size: 9px; }
   .badge-value { font-size: 11.5px; }
 
-  .badge-orders  { top: 5%;    left: 2%; }
-  .badge-revenue { top: 35%;   right: 2%; }
-  .badge-rating  { bottom: 5%; left: 6%; }
+  .badge-orders  { top: -9%;   left: 4%; }
+  .badge-revenue { top: 30%;   right: 2%; }
+  .badge-rating  { bottom: -9%; left: 4%; }
 
   .his-shape--1 { width: 94%; height: 94%; }
   .his-shape--2 { width: 76%; height: 76%; }
