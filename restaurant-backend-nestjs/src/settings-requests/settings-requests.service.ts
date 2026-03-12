@@ -185,13 +185,18 @@ export class SettingsRequestsService {
       );
     }
 
-    // Notify restaurant admin
+    // Notify restaurant admin — include approvedSettings when approved so the
+    // frontend can immediately update the auth store without an extra API call
     this.websocketGateway.server.emit('settings-request:reviewed', {
       requestId: request.requestId,
       restaurantId: request.restaurantId,
       status: request.status,
       reviewNotes: request.reviewNotes,
       reviewedAt: request.reviewedAt,
+      approvedSettings:
+        reviewDto.action === ReviewAction.APPROVE
+          ? request.requestedChanges
+          : null,
     });
 
     return {

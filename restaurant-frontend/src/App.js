@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -36,14 +36,74 @@ import RoleRoute from './components/auth/RoleRoute';
 import FeatureRoute from './components/auth/FeatureRoute';
 import RoleBasedRedirect from './components/auth/RoleBasedRedirect';
 import { NotificationProvider } from './components/common/NotificationToast';
-import { WebSocketProvider } from './hooks/useWebSocket';
+import { WebSocketProvider, useWebSocket } from './hooks/useWebSocket';
+import { useAuthStore } from './store/authStore';
+import apiClient from './api/apiClient';
 
 import './App.css';
+
+// Keeps user.restaurantSettings in the auth store in sync whenever settings
+// are changed (approved request or direct super-admin save). Runs globally so
+// Sidebar and FeatureRoute always reflect current feature flags.
+function SettingsSyncProvider() {
+  const { user, updateUser } = useAuthStore();
+  const { subscribe } = useWebSocket();
+
+  // On mount: refresh settings so stale persisted values are corrected
+  useEffect(() => {
+    if (!user || user.role !== 'admin' || !user.restaurantId) return;
+    apiClient
+      .get('/restaurant/settings')
+      .then((res) => {
+        if (res?.data?.success) {
+          updateUser({ restaurantSettings: res.data.data });
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Real-time: update auth store whenever settings change for this restaurant
+  useEffect(() => {
+    if (!user || user.role !== 'admin' || !user.restaurantId) return;
+
+    const unsubReviewed = subscribe('settings-request:reviewed', (data) => {
+      if (data.restaurantId !== user.restaurantId) return;
+      if (data.status !== 'APPROVED') return;
+      if (data.approvedSettings) {
+        updateUser({ restaurantSettings: data.approvedSettings });
+      } else {
+        // Fallback: fetch fresh settings
+        apiClient
+          .get('/restaurant/settings')
+          .then((res) => {
+            if (res?.data?.success) updateUser({ restaurantSettings: res.data.data });
+          })
+          .catch(() => {});
+      }
+    });
+
+    const unsubUpdated = subscribe('settings:updated', (data) => {
+      if (data.restaurantId !== user.restaurantId) return;
+      if (data.settings) {
+        updateUser({ restaurantSettings: data.settings });
+      }
+    });
+
+    return () => {
+      unsubReviewed();
+      unsubUpdated();
+    };
+  }, [subscribe, user, updateUser]);
+
+  return null;
+}
 
 function App() {
   return (
     <NotificationProvider>
       <WebSocketProvider>
+        <SettingsSyncProvider />
         <BrowserRouter>
       <Routes>
         {/* Public Routes */}

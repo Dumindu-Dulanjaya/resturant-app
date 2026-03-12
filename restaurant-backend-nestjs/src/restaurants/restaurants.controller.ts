@@ -24,6 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/enums/role.enum';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 import {
   logoFileFilter,
   restaurantLogoStorage,
@@ -36,6 +37,7 @@ export class RestaurantsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
     private readonly settingsRequestsService: SettingsRequestsService,
+    private readonly websocketGateway: WebsocketGateway,
   ) {}
 
   @Get('settings')
@@ -76,7 +78,14 @@ export class RestaurantsController {
       restaurantId,
       updateDto,
     );
-    
+
+    // Notify admins of this restaurant so their auth store (and sidebar/route
+    // guards) reflect the new feature flags without requiring a page refresh
+    this.websocketGateway.server.emit('settings:updated', {
+      restaurantId,
+      settings,
+    });
+
     return {
       success: true,
       data: settings,

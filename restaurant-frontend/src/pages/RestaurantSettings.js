@@ -10,7 +10,7 @@ import './RestaurantSettings.css';
 
 function RestaurantSettings() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const { addNotification } = useNotification();
   const { subscribe } = useWebSocket();
 
@@ -63,6 +63,9 @@ function RestaurantSettings() {
           if (fresh) {
             setSavedSettings(fresh);
             setLocalChanges({ ...fresh });
+            // Keep the global auth store in sync so Sidebar and FeatureRoute
+            // immediately reflect the new (possibly disabled) feature flags
+            updateUser({ restaurantSettings: fresh });
           }
         });
         setPendingRequest(null);
