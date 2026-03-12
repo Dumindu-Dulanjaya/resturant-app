@@ -5,6 +5,7 @@ const Footer = () => (
   <footer className="landing-footer">
     {/* CTA Banner */}
     <div className="footer-cta-banner">
+      <span className="fcta-dot" aria-hidden="true"></span>
       <div className="landing-container">
         <div className="fcta-inner">
           <div className="fcta-text">
@@ -39,6 +40,9 @@ const Footer = () => (
                 className="footer-logo"
               />
             </a>
+            <p className="footer-logo-desc">
+              Anawuma is a smart hospitality platform helping restaurants and hotels streamline orders, menus, and guest experiences.
+            </p>
             <div className="footer-social">
               <a href="#facebook" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
               <a href="#twitter" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
