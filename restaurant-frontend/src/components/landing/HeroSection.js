@@ -98,14 +98,11 @@ const HeroSection = () => {
 
             {/* stats row */}
             <motion.div className="hs-stats" variants={itemVariants}>
-              {STATS.map((s, i) => (
-                <React.Fragment key={s.lbl}>
-                  {i > 0 && <div className="hs-stat-div" />}
-                  <div className="hs-stat">
-                    <div className="hs-stat-num">{s.num}</div>
-                    <div className="hs-stat-lbl">{s.lbl}</div>
-                  </div>
-                </React.Fragment>
+              {STATS.map((s) => (
+                <div className="hs-stat" key={s.lbl}>
+                  <div className="hs-stat-num">{s.num}</div>
+                  <div className="hs-stat-lbl">{s.lbl}</div>
+                </div>
               ))}
             </motion.div>
           </motion.div>
