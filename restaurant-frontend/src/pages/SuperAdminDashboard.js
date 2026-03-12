@@ -1,12 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useWebSocket } from '../hooks/useWebSocket';
+import axios from 'axios';
 import './SuperAdminDashboard.css';
 
 function SuperAdminDashboard({ children }) {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('manage-restaurants');
   const { user, token, isAuthenticated, logout } = useAuthStore();
+  const { socket, isConnected } = useWebSocket();
+  const [pendingCount, setPendingCount] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.8.127:3000';
+
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/settings-requests/pending/count`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        setPendingCount(response.data.data.count);
+      }
+    } catch (error) {
+      console.error('Error fetching pending count:', error);
+    }
+  }, [API_URL, token]);
 
   useEffect(() => {
     // Check if user is logged in and is super admin
@@ -20,14 +44,41 @@ function SuperAdminDashboard({ children }) {
       navigate('/login');
       return;
     }
-  }, [isAuthenticated, token, user, navigate]);
+
+    // Fetch pending count
+    fetchPendingCount();
+  }, [isAuthenticated, token, user, navigate, fetchPendingCount]);
+
+  // WebSocket subscription for new settings requests
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    console.log('🔔 Subscribing to settings request events');
+
+    const handleNewRequest = (data) => {
+      console.log('🆕 New settings request received:', data);
+      setPendingCount(prev => prev + 1);
+    };
+
+    const handleReviewedRequest = (data) => {
+      console.log('✅ Settings request reviewed:', data);
+      // Refresh count when request is approved/rejected
+      fetchPendingCount();
+    };
+
+    socket.on('settings-request:new', handleNewRequest);
+    socket.on('settings-request:reviewed', handleReviewedRequest);
+
+    return () => {
+      socket.off('settings-request:new', handleNewRequest);
+      socket.off('settings-request:reviewed', handleReviewedRequest);
+    };
+  }, [socket, isConnected, fetchPendingCount]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
   const closeSidebar = () => setSidebarOpen(false);
@@ -35,6 +86,10 @@ function SuperAdminDashboard({ children }) {
   const loadContent = (view) => {
     setActiveView(view);
     navigate(`/super-admin/${view}`);
+    // Refresh pending count when navigating away from pending approvals
+    if (view !== 'pending-approvals') {
+      fetchPendingCount();
+    }
   };
 
   return (
@@ -81,6 +136,16 @@ function SuperAdminDashboard({ children }) {
               onClick={(e) => { e.preventDefault(); loadContent('add-admin'); closeSidebar(); }}
             >
               <i className="fas fa-user-plus"></i> Add Admin
+            </a>
+            <a
+              className={`sa-nav-link${activeView === 'pending-approvals' ? ' active' : ''}`}
+              href="#"
+              onClick={(e) => { e.preventDefault(); loadContent('pending-approvals'); closeSidebar(); }}
+            >
+              <i className="fas fa-bell"></i> Pending Approvals
+              {pendingCount > 0 && (
+                <span className="sa-notification-badge">{pendingCount}</span>
+              )}
             </a>
           </nav>
           <div className="sa-sidebar-footer">

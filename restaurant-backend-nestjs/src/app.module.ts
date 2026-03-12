@@ -19,6 +19,7 @@ import { HousekeepingModule } from './housekeeping/housekeeping.module';
 import { OffersModule } from './offers/offers.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { SettingsRequestsModule } from './settings-requests/settings-requests.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     OffersModule,
     WebsocketModule,
     DashboardModule,
+    SettingsRequestsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -29,6 +29,7 @@ import ManageRestaurants from './pages/ManageRestaurants';
 import AddRestaurant from './pages/AddRestaurant';
 import AddAdmin from './pages/AddAdmin';
 import RestaurantProfile from './pages/RestaurantProfile';
+import PendingSettingsRequests from './pages/PendingSettingsRequests';
 
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -363,6 +364,17 @@ function App() {
             <PrivateRoute>
               <RoleRoute allowedRoles={['super_admin']}>
                 <RestaurantProfile />
+              </RoleRoute>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/super-admin/pending-approvals"
+          element={
+            <PrivateRoute>
+              <RoleRoute allowedRoles={['super_admin']}>
+                <PendingSettingsRequests />
               </RoleRoute>
             </PrivateRoute>
           }

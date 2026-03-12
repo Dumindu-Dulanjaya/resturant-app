@@ -1,7 +1,7 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-export class UpdateRestaurantSettingsDto {
+export class CreateSettingsRequestDto {
   @IsOptional()
   @Transform(({ value }) => {
     if (typeof value === 'boolean') return value;
@@ -41,4 +41,8 @@ export class UpdateRestaurantSettingsDto {
   })
   @IsBoolean()
   enableReports?: boolean;
+
+  @IsOptional()
+  @IsString()
+  requestReason?: string;
 }

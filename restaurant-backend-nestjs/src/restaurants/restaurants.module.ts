@@ -3,9 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RestaurantsService } from './restaurants.service';
 import { RestaurantsController } from './restaurants.controller';
 import { Restaurant } from './entities/restaurant.entity';
+import { SettingsRequestsModule } from '../settings-requests/settings-requests.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Restaurant])],
+  imports: [
+    TypeOrmModule.forFeature([Restaurant]),
+    SettingsRequestsModule,
+  ],
   controllers: [RestaurantsController],
   providers: [RestaurantsService],
   exports: [RestaurantsService], // Export so ApiKeyGuard can use it

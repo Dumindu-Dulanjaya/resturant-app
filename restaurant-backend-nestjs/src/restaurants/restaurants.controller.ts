@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RestaurantsService } from './restaurants.service';
+import { SettingsRequestsService } from '../settings-requests/settings-requests.service';
 import { UpdateRestaurantSettingsDto } from './dto/update-restaurant-settings.dto';
 import { RestaurantSettingsResponseDto } from './dto/restaurant-settings-response.dto';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
@@ -32,7 +33,10 @@ import {
 @Controller('restaurant')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class RestaurantsController {
-  constructor(private readonly restaurantsService: RestaurantsService) {}
+  constructor(
+    private readonly restaurantsService: RestaurantsService,
+    private readonly settingsRequestsService: SettingsRequestsService,
+  ) {}
 
   @Get('settings')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
@@ -53,12 +57,26 @@ export class RestaurantsController {
   async updateSettings(
     @Request() req,
     @Body() updateDto: UpdateRestaurantSettingsDto,
-  ): Promise<{ success: boolean; data: RestaurantSettingsResponseDto; message: string }> {
+  ): Promise<{ success: boolean; data?: any; message: string }> {
     const restaurantId = req.user.restaurantId;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    
+    // If admin, create a settings request (requires approval)
+    if (userRole === UserRole.ADMIN) {
+      return await this.settingsRequestsService.create(
+        updateDto,
+        restaurantId,
+        userId,
+      );
+    }
+    
+    // If super_admin, update directly
     const settings = await this.restaurantsService.updateSettings(
       restaurantId,
       updateDto,
     );
+    
     return {
       success: true,
       data: settings,

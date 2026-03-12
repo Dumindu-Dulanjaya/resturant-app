@@ -194,6 +194,94 @@ input:checked + .slider:before {
   color: #721c24;
 }
 
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+
+/* Badge group: current + pending stacked */
+.badge-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+/* Locked (disabled) toggle appearance */
+.switch-locked .slider {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Setting item with a pending request */
+.setting-item.has-pending {
+  border-color: #ffc107;
+  background: #fffdf0;
+}
+
+/* Pending banner at the top of the page */
+.pending-banner {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1.5rem;
+  color: #856404;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* Request reason section */
+.request-reason-section {
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #dee2e6;
+}
+
+.reason-label {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 0.95rem;
+}
+
+.optional-label {
+  font-weight: 400;
+  color: #6c757d;
+  font-size: 0.85rem;
+}
+
+.reason-textarea {
+  width: 100%;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
+  resize: vertical;
+  color: #2c3e50;
+  transition: border-color 0.2s;
+}
+
+.reason-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* Pending awaiting label in actions area */
+.pending-action-label {
+  color: #856404;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+}
+
 /* Actions */
 .settings-actions {
   margin-top: 2rem;
