@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Post,
   Body,
@@ -10,18 +11,26 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { RegisterRestaurantDto } from './dto/register-restaurant.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { UserRole } from './enums/role.enum';
 import { AuthResponse } from './interfaces/auth.interface';
 import { RestaurantsService } from '../restaurants/restaurants.service';
+import {
+  logoFileFilter,
+  restaurantLogoStorage,
+} from '../config/restaurant-logo-multer.config';
 
 @Controller('auth')
 export class AuthController {
@@ -34,6 +43,35 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
     return this.authService.login(loginDto);
+  }
+
+  @Post('register-restaurant')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileInterceptor('logo', {
+      storage: restaurantLogoStorage,
+      fileFilter: logoFileFilter,
+      limits: { fileSize: 1024 * 1024 }, // 1MB
+    }),
+  )
+  async registerRestaurant(
+    @Body() registerRestaurantDto: RegisterRestaurantDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Logo file is required');
+    }
+
+    const result = await this.authService.registerRestaurant(
+      registerRestaurantDto,
+      `/uploads/restaurants/${file.filename}`,
+    );
+
+    return {
+      success: true,
+      data: result,
+      message: 'Registration successful! Your 30-day free trial is now active.',
+    };
   }
 
   @Get('profile')

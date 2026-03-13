@@ -4,7 +4,7 @@ import { BadRequestException } from '@nestjs/common';
 
 // File validation for restaurant logos
 export const logoFileFilter = (req, file, callback) => {
-  if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
+  if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp|ico)$/i)) {
     return callback(
       new BadRequestException('Only image files are allowed!'),
       false,

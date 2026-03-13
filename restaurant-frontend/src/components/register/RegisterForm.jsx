@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import apiClient from '../../api/apiClient';
 
 const RegisterForm = () => {
-  const [form, setForm] = useState({
+  const initialFormState = {
     restaurant_name: '',
     address: '',
     contact_number: '',
@@ -11,34 +12,86 @@ const RegisterForm = () => {
     opening_time: '',
     closing_time: '',
     logo: null,
-  });
+  };
+
+  const [form, setForm] = useState(initialFormState);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setForm((prev) => ({ ...prev, [name]: files ? files[0] : value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (form.password !== form.confirm_password) {
       setError('Passwords do not match.');
       return;
     }
+
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+
     if (form.logo && form.logo.size > 1024 * 1024) {
       setError('Logo file must be less than 1MB.');
       return;
     }
-    // TODO: wire up to NestJS API endpoint
-    alert('Registration submitted! (Backend integration pending)');
+
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('restaurantName', form.restaurant_name.trim());
+      formData.append('address', form.address.trim());
+      formData.append('contactNumber', form.contact_number.trim());
+      formData.append('email', form.email.trim());
+      formData.append('password', form.password);
+      formData.append('confirmPassword', form.confirm_password);
+      formData.append('openingTime', form.opening_time);
+      formData.append('closingTime', form.closing_time);
+
+      if (form.logo) {
+        formData.append('logo', form.logo);
+      }
+
+      const response = await apiClient.post('/auth/register-restaurant', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setSuccess(
+        response?.data?.message ||
+          'Registration successful! Please log in with your email and password.',
+      );
+      setForm(initialFormState);
+      setShowPwd(false);
+      setShowConfirmPwd(false);
+    } catch (submitError) {
+      const message = submitError?.response?.data?.message;
+      setError(Array.isArray(message) ? message.join(', ') : message || 'Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <form className="reg-form" onSubmit={handleSubmit} encType="multipart/form-data" noValidate>
+
+      {success && (
+        <div className="reg-success" role="status">
+          {success}
+        </div>
+      )}
 
       {error && (
         <div className="reg-error" role="alert">
@@ -200,8 +253,8 @@ const RegisterForm = () => {
       </div>
 
       {/* Submit */}
-      <button type="submit" className="reg-submit-btn">
-        Register
+      <button type="submit" className="reg-submit-btn" disabled={isSubmitting}>
+        {isSubmitting ? 'Registering...' : 'Register'}
       </button>
 
       <p className="reg-login-text">

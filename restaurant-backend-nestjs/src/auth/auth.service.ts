@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -7,6 +12,7 @@ import { Admin } from './entities/admin.entity';
 import { SuperAdmin } from './entities/super-admin.entity';
 import { LoginDto } from './dto/login.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { RegisterRestaurantDto } from './dto/register-restaurant.dto';
 import { AuthResponse, JwtPayload } from './interfaces/auth.interface';
 import { Restaurant } from '../restaurants/entities/restaurant.entity';
 
@@ -152,6 +158,91 @@ export class AuthService {
       });
       return superAdmin;
     }
+  }
+
+  async registerRestaurant(
+    registerDto: RegisterRestaurantDto,
+    logoPath: string,
+  ): Promise<{
+    restaurantId: number;
+    adminId: number;
+    email: string;
+    subscriptionStatus: string;
+    subscriptionExpiryDate: Date;
+  }> {
+    const {
+      restaurantName,
+      address,
+      contactNumber,
+      email,
+      password,
+      confirmPassword,
+      openingTime,
+      closingTime,
+    } = registerDto;
+
+    if (password !== confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const trialExpiryDate = new Date();
+    trialExpiryDate.setDate(trialExpiryDate.getDate() + 30);
+
+    return this.restaurantRepository.manager.transaction(async (manager) => {
+      const restaurantRepo = manager.getRepository(Restaurant);
+      const adminRepo = manager.getRepository(Admin);
+      const superAdminRepo = manager.getRepository(SuperAdmin);
+
+      const [existingRestaurant, existingAdmin, existingSuperAdmin] =
+        await Promise.all([
+          restaurantRepo.findOne({ where: { email } }),
+          adminRepo.findOne({ where: { email } }),
+          superAdminRepo.findOne({ where: { email } }),
+        ]);
+
+      if (existingRestaurant || existingAdmin || existingSuperAdmin) {
+        throw new ConflictException('Email already exists');
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const restaurant = restaurantRepo.create({
+        restaurantName,
+        address,
+        contactNumber,
+        email,
+        password: hashedPassword,
+        openingTime,
+        closingTime,
+        logo: logoPath,
+        subscriptionStatus: 'active',
+        subscriptionExpiryDate: trialExpiryDate,
+        packageId: 3,
+        enableSteward: true,
+        enableHousekeeping: true,
+        enableKds: true,
+        enableReports: true,
+      });
+
+      const savedRestaurant = await restaurantRepo.save(restaurant);
+
+      const admin = adminRepo.create({
+        email,
+        password: hashedPassword,
+        role: 'admin',
+        restaurantId: savedRestaurant.restaurantId,
+      });
+
+      const savedAdmin = await adminRepo.save(admin);
+
+      return {
+        restaurantId: savedRestaurant.restaurantId,
+        adminId: savedAdmin.adminId,
+        email: savedRestaurant.email,
+        subscriptionStatus: savedRestaurant.subscriptionStatus,
+        subscriptionExpiryDate: savedRestaurant.subscriptionExpiryDate,
+      };
+    });
   }
 
   /**

@@ -176,6 +176,27 @@
   cursor: pointer;
 }
 
+/* ---- Messages ---- */
+.reg-success {
+  background: #eefbf2;
+  border: 1px solid #b7e6c5;
+  color: #1c7a36;
+  font-size: 13.5px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+
+.reg-error {
+  background: #fff3f3;
+  border: 1px solid #f5c6c6;
+  color: #c0392b;
+  font-size: 13.5px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+
 /* ---- Submit Button ---- */
 .reg-submit-btn {
   display: inline-block;
@@ -195,6 +216,12 @@
 .reg-submit-btn:hover {
   background: #225f61;
   transform: translateY(-1px);
+}
+
+.reg-submit-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ---- Login link ---- */
