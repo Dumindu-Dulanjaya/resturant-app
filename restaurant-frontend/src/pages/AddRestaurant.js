@@ -13,7 +13,6 @@ function AddRestaurant() {
     closingTime: '22:00',
     subscriptionExpiryDate: '',
     password: '',
-    enableSteward: true,
     enableHousekeeping: true,
     enableKds: true,
     enableReports: true,
@@ -130,7 +129,6 @@ function AddRestaurant() {
           closingTime: '22:00',
           subscriptionExpiryDate: '',
           password: '',
-          enableSteward: true,
           enableHousekeeping: true,
           enableKds: true,
           enableReports: true,
@@ -270,16 +268,6 @@ function AddRestaurant() {
           <div className="mb-3">
             <label className="form-label">Privileges</label>
             <div>
-              <div className="form-check">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  name="enableSteward"
-                  checked={formData.enableSteward}
-                  onChange={handleChange}
-                />
-                <label className="form-check-label">QR Menu System</label>
-              </div>
               <div className="form-check">
                 <input
                   className="form-check-input"

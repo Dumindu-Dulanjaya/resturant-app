@@ -21,7 +21,6 @@ function RestaurantSettings() {
 
   // The actual committed settings stored in DB
   const [savedSettings, setSavedSettings] = useState({
-    enableSteward: false,
     enableHousekeeping: false,
     enableKds: false,
     enableReports: false,
@@ -29,7 +28,6 @@ function RestaurantSettings() {
 
   // Admin's locally desired changes (starts as copy of savedSettings)
   const [localChanges, setLocalChanges] = useState({
-    enableSteward: false,
     enableHousekeeping: false,
     enableKds: false,
     enableReports: false,
@@ -119,7 +117,6 @@ function RestaurantSettings() {
       if (response.data.success) {
         const d = response.data.data;
         return {
-          enableSteward: Boolean(d.enableSteward),
           enableHousekeeping: Boolean(d.enableHousekeeping),
           enableKds: Boolean(d.enableKds),
           enableReports: Boolean(d.enableReports),
@@ -178,7 +175,6 @@ function RestaurantSettings() {
 
       if (isAdmin) {
         const payload = {
-          enableSteward: Boolean(localChanges.enableSteward),
           enableHousekeeping: Boolean(localChanges.enableHousekeeping),
           enableKds: Boolean(localChanges.enableKds),
           enableReports: Boolean(localChanges.enableReports),
@@ -205,7 +201,6 @@ function RestaurantSettings() {
       } else {
         // Super admin: direct update
         const payload = {
-          enableSteward: Boolean(localChanges.enableSteward),
           enableHousekeeping: Boolean(localChanges.enableHousekeeping),
           enableKds: Boolean(localChanges.enableKds),
           enableReports: Boolean(localChanges.enableReports),
@@ -257,14 +252,6 @@ function RestaurantSettings() {
   }
 
   const modules = [
-    {
-      key: 'enableSteward',
-      icon: 'fas fa-user-tie',
-      iconClass: 'steward',
-      title: 'Steward Module',
-      description:
-        'Enable Steward role and table service features. Stewards can manage orders and coordinate with kitchen staff.',
-    },
     {
       key: 'enableHousekeeping',
       icon: 'fas fa-broom',

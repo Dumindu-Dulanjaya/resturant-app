@@ -91,8 +91,30 @@ export class AuthService {
         };
       }
 
+      if (admin.role === 'steward') {
+        return {
+          success: false,
+          message: 'Steward access is no longer supported in this project.',
+        };
+      }
+
       // Check if restaurant subscription is active (for non-housekeeper roles)
       if (admin.role !== 'housekeeper' && admin.restaurant) {
+        // Check approval status first
+        if (admin.restaurant.approvalStatus === 'pending') {
+          return {
+            success: false,
+            message: 'Your registration is pending approval by the super admin. You will be notified once approved.',
+          };
+        }
+
+        if (admin.restaurant.approvalStatus === 'rejected') {
+          return {
+            success: false,
+            message: 'Your registration has been rejected. Please contact support for more information.',
+          };
+        }
+
         if (admin.restaurant.subscriptionStatus !== 'active') {
           return {
             success: false,
@@ -168,7 +190,7 @@ export class AuthService {
     adminId: number;
     email: string;
     subscriptionStatus: string;
-    subscriptionExpiryDate: Date;
+    approvalStatus: string;
   }> {
     const {
       restaurantName,
@@ -179,7 +201,6 @@ export class AuthService {
       confirmPassword,
       openingTime,
       closingTime,
-      enableSteward,
       enableHousekeeping,
       enableKds,
       enableReports,
@@ -219,10 +240,10 @@ export class AuthService {
         openingTime,
         closingTime,
         logo: logoPath,
-        subscriptionStatus: 'active',
-        subscriptionExpiryDate: trialExpiryDate,
+        subscriptionStatus: 'inactive',
+        approvalStatus: 'pending',
         packageId: 3,
-        enableSteward: enableSteward ?? true,
+        enableSteward: false,
         enableHousekeeping: enableHousekeeping ?? true,
         enableKds: enableKds ?? true,
         enableReports: enableReports ?? true,
@@ -244,7 +265,7 @@ export class AuthService {
         adminId: savedAdmin.adminId,
         email: savedRestaurant.email,
         subscriptionStatus: savedRestaurant.subscriptionStatus,
-        subscriptionExpiryDate: savedRestaurant.subscriptionExpiryDate,
+        approvalStatus: savedRestaurant.approvalStatus,
       };
     });
   }

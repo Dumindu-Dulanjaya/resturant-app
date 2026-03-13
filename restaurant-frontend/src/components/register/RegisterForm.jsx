@@ -12,7 +12,6 @@ const RegisterForm = () => {
     opening_time: '',
     closing_time: '',
     logo: null,
-    enable_steward: true,
     enable_housekeeping: true,
     enable_kds: true,
     enable_reports: true,
@@ -67,7 +66,6 @@ const RegisterForm = () => {
       formData.append('confirmPassword', form.confirm_password);
       formData.append('openingTime', form.opening_time);
       formData.append('closingTime', form.closing_time);
-      formData.append('enableSteward', String(form.enable_steward));
       formData.append('enableHousekeeping', String(form.enable_housekeeping));
       formData.append('enableKds', String(form.enable_kds));
       formData.append('enableReports', String(form.enable_reports));
@@ -84,7 +82,7 @@ const RegisterForm = () => {
 
       setSuccess(
         response?.data?.message ||
-          'Registration successful! Please log in with your email and password.',
+          'Registration submitted! Your application is pending super admin approval. You will be able to log in once approved.',
       );
       setForm(initialFormState);
       setShowPwd(false);
@@ -240,22 +238,11 @@ const RegisterForm = () => {
         </div>
       </div>
 
-      {/* Row 5: Select Features */}
+      {/* Row 5: Select Optional Features */}
       <div className="reg-row-full">
         <div className="reg-feature-box">
-          <p className="reg-feature-title">Select Features</p>
+          <p className="reg-feature-title">Select Optional Features</p>
           <div className="reg-feature-grid">
-            <label className="reg-feature-item" htmlFor="enable_steward">
-              <input
-                type="checkbox"
-                id="enable_steward"
-                name="enable_steward"
-                checked={form.enable_steward}
-                onChange={handleFeatureToggle}
-              />
-              <span>QR Menu System</span>
-            </label>
-
             <label className="reg-feature-item" htmlFor="enable_housekeeping">
               <input
                 type="checkbox"

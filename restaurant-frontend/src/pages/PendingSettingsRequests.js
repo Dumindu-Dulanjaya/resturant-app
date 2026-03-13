@@ -91,7 +91,6 @@ const PendingSettingsRequests = () => {
     const changes = [];
     
     const moduleNames = {
-      enableSteward: 'Steward',
       enableHousekeeping: 'Housekeeping',
       enableKds: 'KDS',
       enableReports: 'Reports',

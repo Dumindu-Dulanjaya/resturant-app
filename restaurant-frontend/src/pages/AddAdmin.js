@@ -1,15 +1,30 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import Swal from 'sweetalert2';
 import SuperAdminDashboard from './SuperAdminDashboard';
 
+const ALLOWED_ROLES = ['admin', 'super_admin', 'housekeeper', 'kitchen'];
+
+const ROLE_LABELS = {
+  admin: 'Admin',
+  super_admin: 'Super Admin',
+  housekeeper: 'Housekeeper',
+  kitchen: 'Kitchen',
+};
+
 function AddAdmin() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialRole = searchParams.get('role');
+  const initialRestaurantId = searchParams.get('restaurantId');
+  const returnTo = searchParams.get('returnTo');
   const [restaurants, setRestaurants] = useState([]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: 'admin',
-    restaurantId: '',
+    role: ALLOWED_ROLES.includes(initialRole) ? initialRole : 'admin',
+    restaurantId: initialRestaurantId || '',
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -17,6 +32,19 @@ function AddAdmin() {
   useEffect(() => {
     fetchRestaurants();
   }, []);
+
+  useEffect(() => {
+    const nextRole = ALLOWED_ROLES.includes(searchParams.get('role'))
+      ? searchParams.get('role')
+      : 'admin';
+    const nextRestaurantId = searchParams.get('restaurantId') || '';
+
+    setFormData((prev) => ({
+      ...prev,
+      role: nextRole,
+      restaurantId: nextRestaurantId || prev.restaurantId,
+    }));
+  }, [searchParams]);
 
   const fetchRestaurants = async () => {
     try {
@@ -35,6 +63,12 @@ function AddAdmin() {
     setFormData({
       ...formData,
       [name]: value,
+      restaurantId:
+        name === 'role' && value === 'super_admin'
+          ? ''
+          : name === 'restaurantId'
+            ? value
+            : formData.restaurantId,
     });
   };
 
@@ -53,7 +87,7 @@ function AddAdmin() {
     }
 
     if (!formData.restaurantId && formData.role !== 'super_admin') {
-      Swal.fire('Error!', 'Please select a restaurant for admin role', 'error');
+      Swal.fire('Error!', 'Please select a restaurant for this role', 'error');
       return;
     }
 
@@ -71,15 +105,20 @@ function AddAdmin() {
         Swal.fire({
           icon: 'success',
           title: 'Success!',
-          text: 'Admin created successfully',
+          text: `${ROLE_LABELS[formData.role] || 'User'} created successfully`,
         });
+
+        if (returnTo) {
+          navigate(returnTo);
+          return;
+        }
 
         // Reset form
         setFormData({
           email: '',
           password: '',
-          role: 'admin',
-          restaurantId: '',
+          role: ALLOWED_ROLES.includes(initialRole) ? initialRole : 'admin',
+          restaurantId: initialRestaurantId || '',
         });
       }
     } catch (error) {
@@ -98,7 +137,7 @@ function AddAdmin() {
           <div className="col-md-8">
             <div className="card">
               <div className="card-header">
-                <h4 className="mb-0">Add New Admin</h4>
+                <h4 className="mb-0">Add New User</h4>
               </div>
               <div className="card-body">
                 <form onSubmit={handleSubmit}>
@@ -145,6 +184,8 @@ function AddAdmin() {
                       required
                     >
                       <option value="admin">Admin</option>
+                      <option value="kitchen">Kitchen</option>
+                      <option value="housekeeper">Housekeeper</option>
                       <option value="super_admin">Super Admin</option>
                     </select>
                   </div>
@@ -174,7 +215,7 @@ function AddAdmin() {
                   </div>
 
                   <button type="submit" className="btn btn-primary w-100">
-                    Add User
+                    Create {ROLE_LABELS[formData.role] || 'User'}
                   </button>
                 </form>
               </div>

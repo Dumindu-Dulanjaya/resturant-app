@@ -1,9 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import Swal from 'sweetalert2';
 import SuperAdminDashboard from './SuperAdminDashboard';
 import './RestaurantProfile.css';
+
+const PACKAGE_NAMES = {
+  1: 'Basic',
+  2: 'Standard',
+  3: 'Premium',
+};
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+const formatRole = (role) => {
+  const labels = {
+    admin: 'Admin',
+    super_admin: 'Super Admin',
+    housekeeper: 'Housekeeper',
+    kitchen: 'Kitchen',
+  };
+
+  return labels[role] || role;
+};
+
+const formatStatus = (status) => {
+  if (!status) {
+    return 'Unknown';
+  }
+
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
 
 function RestaurantProfile() {
   const { id } = useParams();
@@ -11,16 +38,14 @@ function RestaurantProfile() {
   const [restaurant, setRestaurant] = useState(null);
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
+  const hasShownNetworkErrorRef = useRef(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       // Fetch restaurant data
       const restRes = await apiClient.get(`/restaurant/${id}`);
       if (restRes.data.success) {
+        hasShownNetworkErrorRef.current = false;
         setRestaurant(restRes.data.data);
       } else {
         Swal.fire('Error!', 'Restaurant not found', 'error');
@@ -28,8 +53,19 @@ function RestaurantProfile() {
         return;
       }
     } catch (error) {
-      console.error('Restaurant fetch error:', error.response || error);
-      Swal.fire('Error!', `Failed to load restaurant: ${error.response?.data?.message || error.message}`, 'error');
+      const isBackendUnavailable = !error?.response;
+
+      if (!isBackendUnavailable || !hasShownNetworkErrorRef.current) {
+        Swal.fire(
+          isBackendUnavailable ? 'Backend unavailable' : 'Error!',
+          isBackendUnavailable
+            ? 'Backend server is unavailable. Start the Nest backend on port 3000 and refresh this page.'
+            : `Failed to load restaurant: ${error.response?.data?.message || error.message}`,
+          isBackendUnavailable ? 'warning' : 'error',
+        );
+      }
+
+      hasShownNetworkErrorRef.current = isBackendUnavailable;
       setLoading(false);
       return;
     }
@@ -44,11 +80,15 @@ function RestaurantProfile() {
         setAdmins(filtered);
       }
     } catch (error) {
-      console.warn('Admins fetch failed (non-critical):', error.response || error);
+      setAdmins([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleDeleteAdmin = async (adminId) => {
     const result = await Swal.fire({
@@ -68,6 +108,20 @@ function RestaurantProfile() {
     } catch {
       Swal.fire('Error!', 'Failed to delete admin.', 'error');
     }
+  };
+
+  const openAddUser = (role) => {
+    if (!restaurant?.restaurantId) {
+      return;
+    }
+
+    const params = new URLSearchParams({
+      restaurantId: String(restaurant.restaurantId),
+      role,
+      returnTo: `/super-admin/hotel-profile/${restaurant.restaurantId}`,
+    });
+
+    navigate(`/super-admin/add-admin?${params.toString()}`);
   };
 
   if (loading) {
@@ -92,8 +146,40 @@ function RestaurantProfile() {
     ? `http://localhost:3000${restaurant.logo.startsWith('/') ? '' : '/'}${restaurant.logo}`
     : null;
 
+  const expiryDate = restaurant.subscriptionExpiryDate
+    ? new Date(restaurant.subscriptionExpiryDate)
+    : null;
+  const daysRemaining = expiryDate
+    ? Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / MS_PER_DAY))
+    : null;
+  const isTrialAccess =
+    restaurant.subscriptionStatus === 'active' &&
+    !restaurant.packageId &&
+    daysRemaining !== null &&
+    daysRemaining > 0 &&
+    daysRemaining <= 30;
+  const packageName = restaurant.packageId
+    ? PACKAGE_NAMES[restaurant.packageId] || `Package #${restaurant.packageId}`
+    : isTrialAccess
+      ? 'Premium'
+      : 'Not assigned';
+  const countryName = restaurant.countryId
+    ? `Country #${restaurant.countryId}`
+    : 'Unknown Country';
+  const currencyName = restaurant.currencyId
+    ? `Currency #${restaurant.currencyId}`
+    : 'Unknown Currency';
+  const subscriptionLabel = isTrialAccess
+    ? 'Trial'
+    : formatStatus(restaurant.subscriptionStatus);
+  const subscriptionVariant = isTrialAccess
+    ? 'trial'
+    : restaurant.subscriptionStatus === 'active'
+      ? 'active'
+      : 'inactive';
+
   const privileges = [
-    restaurant.enableSteward && 'QR Menu System',
+    'QR Menu System',
     restaurant.enableHousekeeping && 'QR Housekeeping System',
     restaurant.enableKds && 'Kitchen Display System',
     restaurant.enableReports && 'Reports',
@@ -102,121 +188,170 @@ function RestaurantProfile() {
 
   return (
     <SuperAdminDashboard>
+      <div className="rp-shell">
+        {isTrialAccess && (
+          <section className="rp-trial-banner">
+            <div className="rp-trial-copy">
+              <h2 className="rp-trial-title">
+                <i className="fas fa-star"></i>
+                30 days Free Trial
+              </h2>
+              <p className="rp-trial-text">
+                You are currently using our free trial. Enjoy all features for {daysRemaining} more day{daysRemaining === 1 ? '' : 's'}!
+              </p>
+              <div className="rp-trial-countdown">
+                <i className="fas fa-clock"></i>
+                {daysRemaining} days remaining
+              </div>
+            </div>
+            <div className="rp-trial-action">
+              <p>Upgrade now to continue using the service without interruption after the trial ends.</p>
+              <button
+                type="button"
+                className="rp-upgrade-btn"
+                onClick={() => navigate('/super-admin/manage-restaurants')}
+              >
+                Manage Hotels
+              </button>
+            </div>
+          </section>
+        )}
 
-      {/* ── Page Header Bar ── */}
-      <div className="rp-page-header">
-        <div className="rp-page-header-inner">
-          <h1 className="rp-page-title">Restaurant Details</h1>
-          <nav className="rp-breadcrumb">
-            <span
-              className="rp-bc-link"
-              onClick={() => navigate('/super-admin/manage-restaurants')}
-            >
-              <i className="fas fa-home"></i> Home
-            </span>
-            <span className="rp-bc-sep">/</span>
-            <span className="rp-bc-current">Restaurant Details</span>
-          </nav>
-        </div>
-      </div>
-
-      <div className="rp-wrapper">
-        <div className="rp-grid">
-
-          {/* ── Left Panel ── */}
-          <div className="rp-left">
-            <div className="rp-logo-wrap">
+        <div className="rp-layout">
+          <aside className="rp-left-card">
+            <div className="rp-avatar-wrap">
               {logoUrl ? (
-                <img src={logoUrl} alt="logo" className="rp-logo" />
+                <img src={logoUrl} alt="logo" className="rp-avatar" />
               ) : (
-                <div className="rp-logo-placeholder">
+                <div className="rp-avatar-placeholder">
                   <i className="fas fa-hotel"></i>
                 </div>
               )}
             </div>
-            <h2 className="rp-name">{restaurant.restaurantName}</h2>
-            <p className="rp-address">{restaurant.address}</p>
-
-            <div className="rp-privileges">
-              <h5 className="rp-priv-title">Privileges</h5>
-              {privileges.map((p) => (
-                <div key={p} className="rp-priv-item">{p}</div>
-              ))}
+            <div className="rp-identity">
+              <h1 className="rp-name">{restaurant.restaurantName}</h1>
+              <p className="rp-address">{restaurant.address}</p>
             </div>
-          </div>
 
-          {/* ── Right Panel ── */}
-          <div className="rp-right">
-            <table className="rp-detail-table">
-              <tbody>
-                <tr>
-                  <td className="rp-label">Restaurant Name</td>
-                  <td className="rp-value">{restaurant.restaurantName}</td>
-                </tr>
-                <tr>
-                  <td className="rp-label">Email</td>
-                  <td className="rp-value">{restaurant.email}</td>
-                </tr>
-                <tr>
-                  <td className="rp-label">Contact Number</td>
-                  <td className="rp-value">{restaurant.contactNumber}</td>
-                </tr>
-                <tr>
-                  <td className="rp-label">Address</td>
-                  <td className="rp-value">{restaurant.address}</td>
-                </tr>
-                <tr>
-                  <td className="rp-label">Subscription Status</td>
-                  <td className="rp-value">
-                    <span
-                      className={`rp-badge ${
-                        restaurant.subscriptionStatus === 'active'
-                          ? 'rp-badge-active'
-                          : 'rp-badge-inactive'
-                      }`}
+            <div className="rp-privilege-card">
+              <h5 className="rp-section-title">Privileges</h5>
+              <div className="rp-privilege-list">
+                {privileges.map((privilege) => (
+                  <div key={privilege} className="rp-privilege-item">{privilege}</div>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          <section className="rp-right-card">
+            <div className="rp-detail-list">
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Restaurant Name</div>
+                <div className="rp-detail-value">{restaurant.restaurantName}</div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Email</div>
+                <div className="rp-detail-value">{restaurant.email}</div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Contact Number</div>
+                <div className="rp-detail-value">{restaurant.contactNumber}</div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Country</div>
+                <div className="rp-detail-value">{countryName}</div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Currency</div>
+                <div className="rp-detail-value">{currencyName}</div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Address</div>
+                <div className="rp-detail-value">{restaurant.address}</div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Subscription Status</div>
+                <div className="rp-detail-value">
+                  <span className={`rp-status-badge rp-status-${subscriptionVariant}`}>
+                    {subscriptionLabel}
+                  </span>
+                </div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Subscription Expiry</div>
+                <div className="rp-detail-value">
+                  {expiryDate ? expiryDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  }) : 'Not set'}
+                </div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Package</div>
+                <div className="rp-detail-value">{packageName}</div>
+              </div>
+              <div className="rp-detail-row rp-detail-row-action">
+                <div className="rp-detail-label"></div>
+                <div className="rp-detail-value">
+                  <button
+                    type="button"
+                    className="rp-primary-btn"
+                    onClick={() => navigate('/super-admin/manage-restaurants')}
+                  >
+                    Back to Hotel List
+                  </button>
+                </div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Opening Time</div>
+                <div className="rp-detail-value">{restaurant.openingTime}</div>
+              </div>
+              <div className="rp-detail-row">
+                <div className="rp-detail-label">Closing Time</div>
+                <div className="rp-detail-value">{restaurant.closingTime}</div>
+              </div>
+            </div>
+
+            <div className="rp-admin-section">
+              <div className="rp-admins-header">
+                <h5 className="rp-section-title">Admins</h5>
+                <div className="rp-admin-buttons">
+                  <button
+                    type="button"
+                    className="rp-action-btn rp-action-btn-primary"
+                    onClick={() => openAddUser('admin')}
+                  >
+                    Add Admin
+                  </button>
+                  {restaurant.enableHousekeeping && (
+                    <button
+                      type="button"
+                      className="rp-action-btn rp-action-btn-success"
+                      onClick={() => openAddUser('housekeeper')}
                     >
-                      {restaurant.subscriptionStatus}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="rp-label">Subscription Expiry</td>
-                  <td className="rp-value">
-                    {restaurant.subscriptionExpiryDate
-                      ? new Date(restaurant.subscriptionExpiryDate).toLocaleDateString()
-                      : 'N/A'}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="rp-label">Opening Time</td>
-                  <td className="rp-value">{restaurant.openingTime}</td>
-                </tr>
-                <tr>
-                  <td className="rp-label">Closing Time</td>
-                  <td className="rp-value">{restaurant.closingTime}</td>
-                </tr>
-              </tbody>
-            </table>
+                      Add Housekeeper
+                    </button>
+                  )}
+                </div>
+              </div>
 
-            {/* Admins Table */}
-            <div className="rp-admins">
-              <h5 className="rp-admins-title">Admins</h5>
               {admins.length === 0 ? (
-                <p className="rp-no-admins">No admins found for this restaurant.</p>
+                <p className="rp-empty-state">No admins found for this restaurant.</p>
               ) : (
                 <table className="rp-admins-table">
                   <thead>
                     <tr>
                       <th>Email</th>
                       <th>Role</th>
-                      <th>Actions</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {admins.map((admin) => (
                       <tr key={admin.adminId}>
                         <td>{admin.email}</td>
-                        <td>{admin.role}</td>
+                        <td>{formatRole(admin.role)}</td>
                         <td>
                           <button
                             className="rp-btn-delete"
@@ -231,8 +366,7 @@ function RestaurantProfile() {
                 </table>
               )}
             </div>
-          </div>
-
+          </section>
         </div>
       </div>
     </SuperAdminDashboard>

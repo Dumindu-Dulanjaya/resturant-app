@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -11,7 +11,9 @@ function SuperAdminDashboard({ children }) {
   const { user, token, isAuthenticated, logout } = useAuthStore();
   const { socket, isConnected } = useWebSocket();
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingRegCount, setPendingRegCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const hasLoggedBackendUnavailableRef = useRef(false);
 
   const API_URL = (() => {
     const envApiUrl = (
@@ -41,10 +43,47 @@ function SuperAdminDashboard({ children }) {
       );
 
       if (response.data.success) {
+        hasLoggedBackendUnavailableRef.current = false;
         setPendingCount(response.data.data.count);
       }
     } catch (error) {
+      if (!error?.response) {
+        setPendingCount(0);
+        if (!hasLoggedBackendUnavailableRef.current) {
+          console.warn('Backend unavailable. Pending approval counters will resume once the API is reachable.');
+          hasLoggedBackendUnavailableRef.current = true;
+        }
+        return;
+      }
+
       console.error('Error fetching pending count:', error);
+    }
+  }, [API_URL, token]);
+
+  const fetchPendingRegCount = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/restaurant/registrations/pending/count`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        hasLoggedBackendUnavailableRef.current = false;
+        setPendingRegCount(response.data.data.count);
+      }
+    } catch (error) {
+      if (!error?.response) {
+        setPendingRegCount(0);
+        if (!hasLoggedBackendUnavailableRef.current) {
+          console.warn('Backend unavailable. Pending registration counters will resume once the API is reachable.');
+          hasLoggedBackendUnavailableRef.current = true;
+        }
+        return;
+      }
+
+      console.error('Error fetching pending registration count:', error);
     }
   }, [API_URL, token]);
 
@@ -63,22 +102,18 @@ function SuperAdminDashboard({ children }) {
 
     // Fetch pending count
     fetchPendingCount();
-  }, [isAuthenticated, token, user, navigate, fetchPendingCount]);
+    fetchPendingRegCount();
+  }, [isAuthenticated, token, user, navigate, fetchPendingCount, fetchPendingRegCount]);
 
   // WebSocket subscription for new settings requests
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    console.log('🔔 Subscribing to settings request events');
-
-    const handleNewRequest = (data) => {
-      console.log('🆕 New settings request received:', data);
+    const handleNewRequest = () => {
       setPendingCount(prev => prev + 1);
     };
 
-    const handleReviewedRequest = (data) => {
-      console.log('✅ Settings request reviewed:', data);
-      // Refresh count when request is approved/rejected
+    const handleReviewedRequest = () => {
       fetchPendingCount();
     };
 
@@ -102,9 +137,12 @@ function SuperAdminDashboard({ children }) {
   const loadContent = (view) => {
     setActiveView(view);
     navigate(`/super-admin/${view}`);
-    // Refresh pending count when navigating away from pending approvals
+    // Refresh counts when navigating
     if (view !== 'pending-approvals') {
       fetchPendingCount();
+    }
+    if (view !== 'pending-registrations') {
+      fetchPendingRegCount();
     }
   };
 
@@ -132,37 +170,47 @@ function SuperAdminDashboard({ children }) {
         <aside className={`sa-sidebar${sidebarOpen ? ' open' : ''}`}>
 
           <nav className="sa-sidebar-nav">
-            <a
+            <button
+              type="button"
               className={`sa-nav-link${activeView === 'manage-restaurants' ? ' active' : ''}`}
-              href="#"
-              onClick={(e) => { e.preventDefault(); loadContent('manage-restaurants'); closeSidebar(); }}
+              onClick={() => { loadContent('manage-restaurants'); closeSidebar(); }}
             >
               <i className="fas fa-hotel"></i> All Hotels
-            </a>
-            <a
+            </button>
+            <button
+              type="button"
               className={`sa-nav-link${activeView === 'add-hotel' ? ' active' : ''}`}
-              href="#"
-              onClick={(e) => { e.preventDefault(); loadContent('add-hotel'); closeSidebar(); }}
+              onClick={() => { loadContent('add-hotel'); closeSidebar(); }}
             >
               <i className="fas fa-plus-square"></i> Add Hotel
-            </a>
-            <a
+            </button>
+            <button
+              type="button"
               className={`sa-nav-link${activeView === 'add-admin' ? ' active' : ''}`}
-              href="#"
-              onClick={(e) => { e.preventDefault(); loadContent('add-admin'); closeSidebar(); }}
+              onClick={() => { loadContent('add-admin'); closeSidebar(); }}
             >
               <i className="fas fa-user-plus"></i> Add Admin
-            </a>
-            <a
+            </button>
+            <button
+              type="button"
               className={`sa-nav-link${activeView === 'pending-approvals' ? ' active' : ''}`}
-              href="#"
-              onClick={(e) => { e.preventDefault(); loadContent('pending-approvals'); closeSidebar(); }}
+              onClick={() => { loadContent('pending-approvals'); closeSidebar(); }}
             >
               <i className="fas fa-bell"></i> Pending Approvals
               {pendingCount > 0 && (
                 <span className="sa-notification-badge">{pendingCount}</span>
               )}
-            </a>
+            </button>
+            <button
+              type="button"
+              className={`sa-nav-link${activeView === 'pending-registrations' ? ' active' : ''}`}
+              onClick={() => { loadContent('pending-registrations'); closeSidebar(); }}
+            >
+              <i className="fas fa-user-clock"></i> Pending Registrations
+              {pendingRegCount > 0 && (
+                <span className="sa-notification-badge">{pendingRegCount}</span>
+              )}
+            </button>
           </nav>
           <div className="sa-sidebar-footer">
             <div className="sa-footer-label">Logged in as:</div>

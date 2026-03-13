@@ -57,9 +57,6 @@ export class CreateRestaurantDto {
 
   // Feature flags
   @IsOptional()
-  enableSteward?: boolean;
-
-  @IsOptional()
   enableHousekeeping?: boolean;
 
   @IsOptional()

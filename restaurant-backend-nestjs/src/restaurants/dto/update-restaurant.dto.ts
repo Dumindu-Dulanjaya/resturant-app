@@ -12,10 +12,6 @@ export class UpdateRestaurantDto extends PartialType(CreateRestaurantDto) {
 
   @IsOptional()
   @IsBoolean()
-  enableSteward?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
   enableHousekeeping?: boolean;
 
   @IsOptional()

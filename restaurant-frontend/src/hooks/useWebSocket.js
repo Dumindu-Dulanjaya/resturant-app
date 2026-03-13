@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from 'react';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '../store/authStore';
 
@@ -16,20 +23,37 @@ export const WebSocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
   const { user } = useAuthStore();
+  const socketRef = useRef(null);
+  const retryTimeoutRef = useRef(null);
+  const hasLoggedUnavailableRef = useRef(false);
+
+  const clearRetryTimer = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      window.clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, []);
+
+  const disconnectSocket = useCallback(() => {
+    clearRetryTimer();
+
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners();
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
+    setSocket(null);
+    setConnected(false);
+  }, [clearRetryTimer]);
 
   useEffect(() => {
     if (!user) {
-      // Disconnect if user logs out
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setConnected(false);
-      }
+      hasLoggedUnavailableRef.current = false;
+      disconnectSocket();
       return;
     }
 
-    // Connect to WebSocket server
-    // Remove /api suffix if present, as WebSocket is at root server.
     const API_URL = (() => {
       const envApiUrl = (
         process.env.REACT_APP_API_URL ||
@@ -47,60 +71,117 @@ export const WebSocketProvider = ({ children }) => {
 
       return envApiUrl.replace(/\/api\/?$/, '');
     })();
-    console.log('Connecting to WebSocket:', `${API_URL}/events`);
-    
-    const newSocket = io(`${API_URL}/events`, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-      timeout: 20000,
-      autoConnect: true,
-      forceNew: true,
-    });
 
-    newSocket.on('connect', () => {
-      console.log('✅ WebSocket connected:', newSocket.id);
-      setConnected(true);
+    let disposed = false;
 
-      // Authenticate with user info
-      newSocket.emit('authenticate', {
-        userId: user.id,
-        role: user.role,
+    const scheduleReconnect = () => {
+      if (disposed || retryTimeoutRef.current || socketRef.current) {
+        return;
+      }
+
+      retryTimeoutRef.current = window.setTimeout(() => {
+        retryTimeoutRef.current = null;
+        void connectSocket();
+      }, 10000);
+    };
+
+    const logUnavailableOnce = () => {
+      if (hasLoggedUnavailableRef.current) {
+        return;
+      }
+
+      console.warn(
+        'Backend is unavailable on port 3000. WebSocket connection will retry automatically once the API is reachable.',
+      );
+      hasLoggedUnavailableRef.current = true;
+    };
+
+    const connectSocket = async () => {
+      if (disposed || socketRef.current) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/api/health`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Health check failed with status ${response.status}`);
+        }
+      } catch (error) {
+        setConnected(false);
+        logUnavailableOnce();
+        scheduleReconnect();
+        return;
+      }
+
+      hasLoggedUnavailableRef.current = false;
+
+      const newSocket = io(`${API_URL}/events`, {
+        transports: ['websocket', 'polling'],
+        reconnection: false,
+        timeout: 10000,
+        autoConnect: true,
       });
-    });
 
-    newSocket.on('disconnect', (reason) => {
-      console.log('❌ WebSocket disconnected:', reason);
-      setConnected(false);
-    });
+      socketRef.current = newSocket;
+      setSocket(newSocket);
 
-    newSocket.on('connect_error', (error) => {
-      console.error('🔴 WebSocket connection error:', error.message);
-      setConnected(false);
-    });
+      newSocket.on('connect', () => {
+        if (disposed) {
+          return;
+        }
 
-    newSocket.on('reconnect', (attemptNumber) => {
-      console.log('🔄 WebSocket reconnected after', attemptNumber, 'attempts');
-      setConnected(true);
-    });
+        setConnected(true);
+        newSocket.emit('authenticate', {
+          userId: user.id,
+          role: user.role,
+        });
+      });
 
-    newSocket.on('reconnect_error', (error) => {
-      console.error('🔴 WebSocket reconnection error:', error.message);
-    });
+      newSocket.on('disconnect', (reason) => {
+        if (disposed) {
+          return;
+        }
 
-    newSocket.on('reconnect_failed', () => {
-      console.error('❌ WebSocket reconnection failed');
-    });
+        if (socketRef.current === newSocket) {
+          socketRef.current = null;
+          setSocket(null);
+        }
 
-    setSocket(newSocket);
+        setConnected(false);
+
+        if (reason !== 'io client disconnect') {
+          scheduleReconnect();
+        }
+      });
+
+      newSocket.on('connect_error', () => {
+        if (disposed) {
+          return;
+        }
+
+        if (socketRef.current === newSocket) {
+          socketRef.current = null;
+          setSocket(null);
+        }
+
+        setConnected(false);
+        logUnavailableOnce();
+        newSocket.disconnect();
+        scheduleReconnect();
+      });
+    };
+
+    void connectSocket();
 
     return () => {
-      newSocket.disconnect();
+      disposed = true;
+      disconnectSocket();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, disconnectSocket]);
 
   const subscribe = useCallback((event, callback) => {
     if (socket) {
@@ -119,6 +200,7 @@ export const WebSocketProvider = ({ children }) => {
   const value = {
     socket,
     connected,
+    isConnected: connected,
     subscribe,
     emit,
   };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuthStore } from '../store/authStore';
@@ -11,32 +11,39 @@ function ManageRestaurants() {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState({ show: false, restaurant: null });
+  const hasShownNetworkErrorRef = useRef(false);
 
-  useEffect(() => {
-    fetchRestaurants();
-  }, []);
-
-  const getApiErrorMessage = (error, fallbackMessage) => {
+  const getApiErrorMessage = useCallback((error, fallbackMessage) => {
     const responseMessage = error?.response?.data?.message;
     if (Array.isArray(responseMessage)) return responseMessage.join(', ');
     if (typeof responseMessage === 'string' && responseMessage.trim()) {
       return responseMessage;
     }
     return fallbackMessage;
-  };
+  }, []);
 
-  const fetchRestaurants = async () => {
+  const fetchRestaurants = useCallback(async () => {
     try {
       const response = await apiClient.get('/restaurant');
 
       if (response.data.success) {
+        hasShownNetworkErrorRef.current = false;
         setRestaurants(response.data.data);
       }
     } catch (error) {
-      console.error('Error fetching restaurants:', error);
+      const isBackendUnavailable = !error?.response;
+
+      if (isBackendUnavailable && hasShownNetworkErrorRef.current) {
+        setLoading(false);
+        return;
+      }
+
+      hasShownNetworkErrorRef.current = isBackendUnavailable;
 
       const status = error?.response?.status;
-      const message = getApiErrorMessage(error, 'Failed to load restaurants');
+      const message = isBackendUnavailable
+        ? 'Backend server is unavailable. Start the Nest backend on port 3000 and refresh this page.'
+        : getApiErrorMessage(error, 'Failed to load restaurants');
 
       if (status === 401 || status === 403) {
         await Swal.fire({
@@ -53,14 +60,18 @@ function ManageRestaurants() {
       }
 
       Swal.fire({
-        icon: 'error',
-        title: 'Error!',
+        icon: isBackendUnavailable ? 'warning' : 'error',
+        title: isBackendUnavailable ? 'Backend unavailable' : 'Error!',
         text: message,
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [getApiErrorMessage, logout, navigate]);
+
+  useEffect(() => {
+    fetchRestaurants();
+  }, [fetchRestaurants]);
 
   const handleDelete = async (restaurantId) => {
     const result = await Swal.fire({
@@ -107,7 +118,6 @@ function ManageRestaurants() {
     const updateData = {
       subscriptionStatus: formData.get('subscription_status'),
       subscriptionExpiryDate: formData.get('subscription_expiry_date'),
-      enableSteward: formData.get('enable_steward') === 'on',
       enableHousekeeping: formData.get('enable_housekeeping') === 'on',
       enableKds: formData.get('enable_kds') === 'on',
       enableReports: formData.get('enable_reports') === 'on',
@@ -180,9 +190,7 @@ function ManageRestaurants() {
                   </td>
                   <td>
                     <div className="privileges-list">
-                      {restaurant.enableSteward && (
-                        <div className="privilege-item">QR Menu System</div>
-                      )}
+                      <div className="privilege-item">QR Menu System</div>
                       {restaurant.enableHousekeeping && (
                         <div className="privilege-item">QR Housekeeping System</div>
                       )}
@@ -260,18 +268,6 @@ function ManageRestaurants() {
                   <div className="mb-3">
                     <label className="form-label">Privileges</label>
                     <div>
-                      <div className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          name="enable_steward"
-                          id="enable_steward"
-                          defaultChecked={editModal.restaurant.enableSteward}
-                        />
-                        <label className="form-check-label" htmlFor="enable_steward">
-                          QR Menu System
-                        </label>
-                      </div>
                       <div className="form-check">
                         <input
                           className="form-check-input"

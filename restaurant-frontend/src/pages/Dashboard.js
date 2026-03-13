@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useNotification } from '../components/common/NotificationToast';
@@ -169,6 +170,10 @@ function Dashboard() {
   };
 
   const isSuperAdmin = user?.role === 'super_admin';
+
+  if (user?.role === 'kitchen') {
+    return <Navigate to="/kitchen/dashboard" replace />;
+  }
 
   return (
     <div className="dashboard-layout">

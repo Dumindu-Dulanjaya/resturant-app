@@ -22,6 +22,7 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
+import { KitchenDashboardQueryDto } from './dto/kitchen-dashboard-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -54,7 +55,7 @@ export class OrdersController {
   @Get()
   @SkipThrottle() // Skip rate limiting for authenticated GET requests
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.STEWARD)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN)
   @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
   @Header('Pragma', 'no-cache')
   @Header('Expires', '0')
@@ -66,10 +67,25 @@ export class OrdersController {
   @Get(':id')
   @SkipThrottle() // Skip rate limiting for authenticated requests
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.STEWARD)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN)
   findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const restaurantId = req.user.restaurantId;
     return this.ordersService.findOne(id, restaurantId);
+  }
+
+  @Get('kitchen/dashboard-summary')
+  @SkipThrottle()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN)
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
+  getKitchenDashboardSummary(
+    @Query() queryDto: KitchenDashboardQueryDto,
+    @Request() req,
+  ) {
+    const restaurantId = req.user.restaurantId;
+    return this.ordersService.getKitchenDashboardSummary(restaurantId, queryDto);
   }
 
   // Public endpoint for customers to track their order
@@ -92,7 +108,7 @@ export class OrdersController {
   @Patch(':id/status')
   @SkipThrottle() // Skip rate limiting for authenticated requests
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.STEWARD)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN)
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,

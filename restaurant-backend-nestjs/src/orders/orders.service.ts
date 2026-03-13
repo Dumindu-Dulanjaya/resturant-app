@@ -8,6 +8,7 @@ import { TableQr } from '../table-qr/entities/table-qr.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
+import { KitchenDashboardQueryDto } from './dto/kitchen-dashboard-query.dto';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 
 @Injectable()
@@ -174,6 +175,87 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  async getKitchenDashboardSummary(
+    restaurantId: number,
+    queryDto: KitchenDashboardQueryDto = {},
+  ) {
+    const limit = queryDto.limit ?? 8;
+    const urgentThresholdMinutes = queryDto.urgentThresholdMinutes ?? 15;
+
+    const activeStatuses: OrderStatus[] = [
+      OrderStatus.NEW,
+      OrderStatus.ACCEPTED,
+      OrderStatus.COOKING,
+      OrderStatus.READY,
+    ];
+
+    const statusCountsRaw = await this.ordersRepository
+      .createQueryBuilder('order')
+      .select('order.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('order.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('order.status IN (:...activeStatuses)', { activeStatuses })
+      .groupBy('order.status')
+      .getRawMany();
+
+    const statusCounts = {
+      NEW: 0,
+      ACCEPTED: 0,
+      COOKING: 0,
+      READY: 0,
+    };
+
+    for (const row of statusCountsRaw) {
+      const status = row.status as keyof typeof statusCounts;
+      if (status in statusCounts) {
+        statusCounts[status] = Number(row.count) || 0;
+      }
+    }
+
+    const urgentBefore = new Date(
+      Date.now() - urgentThresholdMinutes * 60 * 1000,
+    );
+
+    const urgentCount = await this.ordersRepository
+      .createQueryBuilder('order')
+      .where('order.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('order.status IN (:...urgentStatuses)', {
+        urgentStatuses: [OrderStatus.NEW, OrderStatus.ACCEPTED],
+      })
+      .andWhere('order.createdAt <= :urgentBefore', { urgentBefore })
+      .getCount();
+
+    const queue = await this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.orderItems', 'orderItems')
+      .where('order.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('order.status IN (:...activeStatuses)', { activeStatuses })
+      .orderBy('order.createdAt', 'DESC')
+      .take(limit)
+      .getMany();
+
+    return {
+      summary: {
+        newCount: statusCounts.NEW,
+        acceptedCount: statusCounts.ACCEPTED,
+        cookingCount: statusCounts.COOKING,
+        readyCount: statusCounts.READY,
+        totalOpen:
+          statusCounts.NEW +
+          statusCounts.ACCEPTED +
+          statusCounts.COOKING +
+          statusCounts.READY,
+        urgentCount,
+      },
+      queue,
+      meta: {
+        limit,
+        urgentThresholdMinutes,
+        generatedAt: new Date().toISOString(),
+      },
+    };
   }
 
   async updateStatus(

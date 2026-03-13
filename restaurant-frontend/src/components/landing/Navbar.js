@@ -42,7 +42,6 @@ const Navbar = () => {
                   <li><a href="/dashboard">Restaurant Admin</a></li>
                   <li><a href="/super-admin">Super Admin</a></li>
                   <li><a href="/login">Login</a></li>
-                  <li><a href="/steward">Steward Login</a></li>
                   <li><a href="/housekeeper">HouseKeeper Login</a></li>
                 </ul>
               )}

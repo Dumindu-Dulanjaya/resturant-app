@@ -3,7 +3,7 @@ import {
   IsNotEmpty,
   IsString,
   MinLength,
-  IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
 } from 'class-validator';
@@ -18,9 +18,9 @@ export class CreateAdminDto {
   @MinLength(6)
   password: string;
 
-  @IsEnum(['admin', 'super_admin'])
+  @IsIn(['admin', 'super_admin', 'housekeeper', 'kitchen'])
   @IsNotEmpty()
-  role: 'admin' | 'super_admin';
+  role: 'admin' | 'super_admin' | 'housekeeper' | 'kitchen';
 
   @IsNumber()
   @IsOptional()

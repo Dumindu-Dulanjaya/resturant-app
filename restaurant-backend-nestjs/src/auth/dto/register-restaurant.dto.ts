@@ -81,11 +81,6 @@ export class RegisterRestaurantDto {
   @IsOptional()
   @Transform(({ value }) => parseBoolean(value))
   @IsBoolean()
-  enableSteward?: boolean;
-
-  @IsOptional()
-  @Transform(({ value }) => parseBoolean(value))
-  @IsBoolean()
   enableHousekeeping?: boolean;
 
   @IsOptional()

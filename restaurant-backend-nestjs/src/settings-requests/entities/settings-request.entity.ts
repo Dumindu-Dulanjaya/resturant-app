@@ -32,7 +32,6 @@ export class SettingsRequest {
 
   @Column({ type: 'json' })
   requestedChanges: {
-    enableSteward?: boolean;
     enableHousekeeping?: boolean;
     enableKds?: boolean;
     enableReports?: boolean;
@@ -40,7 +39,6 @@ export class SettingsRequest {
 
   @Column({ type: 'json' })
   currentSettings: {
-    enableSteward: boolean;
     enableHousekeeping: boolean;
     enableKds: boolean;
     enableReports: boolean;

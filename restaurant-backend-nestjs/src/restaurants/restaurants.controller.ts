@@ -123,6 +123,46 @@ export class RestaurantsController {
     };
   }
 
+  // ── Pending Registration Endpoints (must be before :id routes) ──
+
+  @Get('registrations/pending')
+  @Roles(UserRole.SUPER_ADMIN)
+  async getPendingRegistrations() {
+    const restaurants = await this.restaurantsService.getPendingRegistrations();
+    return { success: true, data: restaurants };
+  }
+
+  @Get('registrations/pending/count')
+  @Roles(UserRole.SUPER_ADMIN)
+  async getPendingRegistrationsCount() {
+    const count = await this.restaurantsService.getPendingRegistrationsCount();
+    return { success: true, data: { count } };
+  }
+
+  @Patch(':id/approve')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async approveRegistration(@Param('id') id: string) {
+    const restaurant = await this.restaurantsService.approveRegistration(+id);
+    return {
+      success: true,
+      data: restaurant,
+      message: `${restaurant.restaurantName} has been approved and their 30-day trial is now active.`,
+    };
+  }
+
+  @Patch(':id/reject')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async rejectRegistration(@Param('id') id: string) {
+    const restaurant = await this.restaurantsService.rejectRegistration(+id);
+    return {
+      success: true,
+      data: restaurant,
+      message: `${restaurant.restaurantName} registration has been rejected.`,
+    };
+  }
+
   @Get()
   @Roles(UserRole.SUPER_ADMIN)
   async findAll() {

@@ -31,22 +31,20 @@ function Sidebar() {
   const isSuperAdmin = user?.role === 'super_admin';
   const isAdmin = user?.role === 'admin';
   const isKitchen = user?.role === 'kitchen';
-  const isSteward = user?.role === 'steward';
   const isHousekeeper = user?.role === 'housekeeper';
 
   // Restaurant feature flags
   const restaurantSettings = user?.restaurantSettings || {};
-  // Reserved for future use: individual feature flags can be checked here
-  // const isStewardEnabled = restaurantSettings.enableSteward == null || Boolean(restaurantSettings.enableSteward);
   const isHousekeepingEnabled = restaurantSettings.enableHousekeeping == null || Boolean(restaurantSettings.enableHousekeeping);
   const isKdsEnabled = restaurantSettings.enableKds == null || Boolean(restaurantSettings.enableKds);
   const isReportsEnabled = restaurantSettings.enableReports == null || Boolean(restaurantSettings.enableReports);
 
   // Permission helpers
   const canAccessAdminFeatures = isSuperAdmin || isAdmin;
-  const canAccessKitchen = (isSuperAdmin || isAdmin || isKitchen || isSteward) && isKdsEnabled;
+  const canAccessKitchen = (isSuperAdmin || isAdmin || isKitchen) && isKdsEnabled;
   const canAccessHousekeeping = (isSuperAdmin || isAdmin || isHousekeeper) && isHousekeepingEnabled;
   const canAccessReports = canAccessAdminFeatures && isReportsEnabled;
+  const dashboardPath = isKitchen ? '/kitchen/dashboard' : '/dashboard';
 
   return (
     <div className="sidebar" id="sidebar">
@@ -56,8 +54,8 @@ function Sidebar() {
       </div>
       
       <ul className="sidebar-menu">
-        <li className={isActive('/dashboard')}>
-          <Link to="/dashboard">
+        <li className={isActive(dashboardPath)}>
+          <Link to={dashboardPath}>
             <i className="fas fa-home"></i>
             <span>Dashboard</span>
           </Link>

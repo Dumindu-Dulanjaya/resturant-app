@@ -42,9 +42,6 @@ export class FeatureFlagGuard implements CanActivate {
     // Check feature flag based on required feature
     let isEnabled = false;
     switch (requiredFeature) {
-      case RestaurantFeature.STEWARD:
-        isEnabled = restaurant.enableSteward;
-        break;
       case RestaurantFeature.HOUSEKEEPING:
         isEnabled = restaurant.enableHousekeeping;
         break;

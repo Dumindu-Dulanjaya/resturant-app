@@ -17,9 +17,6 @@ function FeatureRoute({ children, requiredFeature }) {
   
   if (requiredFeature) {
     switch (requiredFeature) {
-      case 'STEWARD':
-        isFeatureEnabled = restaurantSettings.enableSteward == null || Boolean(restaurantSettings.enableSteward);
-        break;
       case 'HOUSEKEEPING':
         isFeatureEnabled = restaurantSettings.enableHousekeeping == null || Boolean(restaurantSettings.enableHousekeeping);
         break;

@@ -30,7 +30,6 @@ export class RestaurantsService {
     }
 
     return {
-      enableSteward: Boolean(restaurant.enableSteward),
       enableHousekeeping: Boolean(restaurant.enableHousekeeping),
       enableKds: Boolean(restaurant.enableKds),
       enableReports: Boolean(restaurant.enableReports),
@@ -47,9 +46,7 @@ export class RestaurantsService {
     }
 
     // Update only provided fields
-    if (updateDto.enableSteward !== undefined) {
-      restaurant.enableSteward = updateDto.enableSteward;
-    }
+    restaurant.enableSteward = false;
     if (updateDto.enableHousekeeping !== undefined) {
       restaurant.enableHousekeeping = updateDto.enableHousekeeping;
     }
@@ -63,7 +60,6 @@ export class RestaurantsService {
     await this.restaurantRepository.save(restaurant);
 
     return {
-      enableSteward: Boolean(restaurant.enableSteward),
       enableHousekeeping: Boolean(restaurant.enableHousekeeping),
       enableKds: Boolean(restaurant.enableKds),
       enableReports: Boolean(restaurant.enableReports),
@@ -102,7 +98,7 @@ export class RestaurantsService {
         ? new Date(createRestaurantDto.subscriptionExpiryDate)
         : undefined,
       password: hashedPassword,
-      enableSteward: createRestaurantDto.enableSteward ?? true,
+      enableSteward: false,
       enableHousekeeping: createRestaurantDto.enableHousekeeping ?? true,
       enableKds: createRestaurantDto.enableKds ?? true,
       enableReports: createRestaurantDto.enableReports ?? true,
@@ -159,9 +155,7 @@ export class RestaurantsService {
     }
 
     // Update feature flags
-    if (updateRestaurantDto.enableSteward !== undefined) {
-      restaurant.enableSteward = updateRestaurantDto.enableSteward;
-    }
+    restaurant.enableSteward = false;
     if (updateRestaurantDto.enableHousekeeping !== undefined) {
       restaurant.enableHousekeeping = updateRestaurantDto.enableHousekeeping;
     }
@@ -186,5 +180,52 @@ export class RestaurantsService {
 
     await this.restaurantRepository.remove(restaurant);
   }
-}
 
+  /**
+   * Get all pending registration requests (Super Admin only)
+   */
+  async getPendingRegistrations(): Promise<Restaurant[]> {
+    return this.restaurantRepository.find({
+      where: { approvalStatus: 'pending' },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Count pending registration requests for badge
+   */
+  async getPendingRegistrationsCount(): Promise<number> {
+    return this.restaurantRepository.count({ where: { approvalStatus: 'pending' } });
+  }
+
+  /**
+   * Approve a restaurant registration — activates subscription with 30-day trial
+   */
+  async approveRegistration(restaurantId: number): Promise<Restaurant> {
+    const restaurant = await this.findById(restaurantId);
+    if (!restaurant) {
+      throw new NotFoundException(`Restaurant with ID ${restaurantId} not found`);
+    }
+
+    const trialExpiry = new Date();
+    trialExpiry.setDate(trialExpiry.getDate() + 30);
+
+    restaurant.approvalStatus = 'approved';
+    restaurant.subscriptionStatus = 'active';
+    restaurant.subscriptionExpiryDate = trialExpiry;
+    return this.restaurantRepository.save(restaurant);
+  }
+
+  /**
+   * Reject a restaurant registration
+   */
+  async rejectRegistration(restaurantId: number): Promise<Restaurant> {
+    const restaurant = await this.findById(restaurantId);
+    if (!restaurant) {
+      throw new NotFoundException(`Restaurant with ID ${restaurantId} not found`);
+    }
+
+    restaurant.approvalStatus = 'rejected';
+    return this.restaurantRepository.save(restaurant);
+  }
+}

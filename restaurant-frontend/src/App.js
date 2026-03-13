@@ -7,6 +7,7 @@ import Categories from './pages/Categories';
 import Subcategories from './pages/Subcategories';
 import FoodItems from './pages/FoodItems';
 import KitchenKDS from './pages/KitchenKDS';
+import KitchenDashboard from './pages/KitchenDashboard';
 import CustomerQROrder from './pages/CustomerQROrder';
 import GenerateQRCodes from './pages/GenerateQRCodes';
 import SalesReports from './pages/SalesReports';
@@ -30,6 +31,7 @@ import AddRestaurant from './pages/AddRestaurant';
 import AddAdmin from './pages/AddAdmin';
 import RestaurantProfile from './pages/RestaurantProfile';
 import PendingSettingsRequests from './pages/PendingSettingsRequests';
+import PendingRegistrations from './pages/PendingRegistrations';
 import LandingPage from './pages/LandingPage';
 import RegisterPage from './pages/RegisterPage';
 
@@ -123,11 +125,23 @@ function App() {
                   'admin',
                   'super_admin',
                   'kitchen',
-                  'steward',
                   'housekeeper'
                 ]}
               >
                 <Dashboard />
+              </RoleRoute>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/kitchen/dashboard"
+          element={
+            <PrivateRoute>
+              <RoleRoute allowedRoles={['kitchen', 'admin', 'super_admin']}>
+                <FeatureRoute requiredFeature="KDS">
+                  <KitchenDashboard />
+                </FeatureRoute>
               </RoleRoute>
             </PrivateRoute>
           }
@@ -217,7 +231,7 @@ function App() {
           path="/kitchen/kds"
           element={
             <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'steward']}>
+              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
                 <FeatureRoute requiredFeature="KDS">
                   <KitchenKDS />
                 </FeatureRoute>
@@ -323,7 +337,7 @@ function App() {
           path="/orders/manage"
           element={
             <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'steward']}>
+              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
                 <OrderManagement />
               </RoleRoute>
             </PrivateRoute>
@@ -334,7 +348,7 @@ function App() {
           path="/kitchen/orders"
           element={
             <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'steward']}>
+              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
                 <ActiveOrders />
               </RoleRoute>
             </PrivateRoute>
@@ -345,7 +359,7 @@ function App() {
           path="/kitchen/history"
           element={
             <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'steward']}>
+              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
                 <OrderHistory />
               </RoleRoute>
             </PrivateRoute>
@@ -437,6 +451,17 @@ function App() {
             <PrivateRoute>
               <RoleRoute allowedRoles={['super_admin']}>
                 <PendingSettingsRequests />
+              </RoleRoute>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/super-admin/pending-registrations"
+          element={
+            <PrivateRoute>
+              <RoleRoute allowedRoles={['super_admin']}>
+                <PendingRegistrations />
               </RoleRoute>
             </PrivateRoute>
           }

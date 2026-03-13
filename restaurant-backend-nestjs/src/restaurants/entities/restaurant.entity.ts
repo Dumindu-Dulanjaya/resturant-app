@@ -62,8 +62,16 @@ export class Restaurant {
   @Column({ name: 'api_key', type: 'varchar', length: 64, unique: true, nullable: true })
   apiKey: string | null;
 
+  @Column({
+    name: 'approval_status',
+    type: 'enum',
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved',
+  })
+  approvalStatus: string;
+
   // Feature flags for optional modules
-  @Column({ name: 'enable_steward', type: 'tinyint', width: 1, default: 1 })
+  @Column({ name: 'enable_steward', type: 'tinyint', width: 1, default: 0 })
   enableSteward: boolean;
 
   @Column({ name: 'enable_housekeeping', type: 'tinyint', width: 1, default: 1 })

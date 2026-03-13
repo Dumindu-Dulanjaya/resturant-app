@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api/apiClient';
 import { useAuthStore } from '../store/authStore';
 import Swal from 'sweetalert2';
@@ -11,8 +10,6 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const navigate = useNavigate();
   const { login } = useAuthStore();
 
   const getRedirectPathByRole = (role) => {
@@ -23,9 +20,10 @@ function Login() {
       case 'superadmin':
         return '/super-admin/manage-restaurants';
 
-      case 'admin':
       case 'kitchen':
-      case 'steward':
+        return '/kitchen/dashboard';
+
+      case 'admin':
       case 'housekeeper':
       case 'manager':
       case 'cashier':

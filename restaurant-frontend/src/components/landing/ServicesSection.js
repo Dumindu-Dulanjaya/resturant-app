@@ -30,7 +30,7 @@ const services = [
     icon: 'fas fa-bell',
     img: '/assets/images/services/alerts.png',
     title: 'Waiter Coordination Alerts',
-    desc: "Notify stewards instantly when an order is ready for pickup, minimizing food sitting time and ensuring faster delivery.",
+    desc: 'Notify service staff instantly when an order is ready for pickup, minimizing food sitting time and ensuring faster delivery.',
   },
   {
     icon: 'fas fa-tag',

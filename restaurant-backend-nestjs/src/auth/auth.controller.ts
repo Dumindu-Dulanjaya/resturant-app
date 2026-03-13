@@ -70,7 +70,7 @@ export class AuthController {
     return {
       success: true,
       data: result,
-      message: 'Registration successful! Your 30-day free trial is now active.',
+      message: 'Registration submitted! Your application is pending super admin approval. You will be notified once approved.',
     };
   }
 
@@ -92,7 +92,6 @@ export class AuthController {
       } catch (error) {
         // If restaurant not found, set default settings
         restaurantSettings = {
-          enableSteward: true,
           enableHousekeeping: true,
           enableKds: true,
           enableReports: true,
