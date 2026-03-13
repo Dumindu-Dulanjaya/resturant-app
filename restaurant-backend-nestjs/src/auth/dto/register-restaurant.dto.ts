@@ -1,11 +1,36 @@
 import {
   IsEmail,
+  IsBoolean,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Length,
   Matches,
   MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+const parseBoolean = (value: unknown): boolean | undefined => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'on') {
+      return true;
+    }
+    if (normalized === 'false' || normalized === '0' || normalized === 'off') {
+      return false;
+    }
+  }
+
+  return Boolean(value);
+};
 
 export class RegisterRestaurantDto {
   @IsString()
@@ -52,4 +77,24 @@ export class RegisterRestaurantDto {
     message: 'Closing time must be in HH:MM format',
   })
   closingTime: string;
+
+  @IsOptional()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  enableSteward?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  enableHousekeeping?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  enableKds?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  enableReports?: boolean;
 }

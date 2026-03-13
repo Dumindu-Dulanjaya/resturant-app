@@ -179,6 +179,10 @@ export class AuthService {
       confirmPassword,
       openingTime,
       closingTime,
+      enableSteward,
+      enableHousekeeping,
+      enableKds,
+      enableReports,
     } = registerDto;
 
     if (password !== confirmPassword) {
@@ -218,10 +222,10 @@ export class AuthService {
         subscriptionStatus: 'active',
         subscriptionExpiryDate: trialExpiryDate,
         packageId: 3,
-        enableSteward: true,
-        enableHousekeeping: true,
-        enableKds: true,
-        enableReports: true,
+        enableSteward: enableSteward ?? true,
+        enableHousekeeping: enableHousekeeping ?? true,
+        enableKds: enableKds ?? true,
+        enableReports: enableReports ?? true,
       });
 
       const savedRestaurant = await restaurantRepo.save(restaurant);

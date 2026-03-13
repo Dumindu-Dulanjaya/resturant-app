@@ -168,6 +168,42 @@
   margin-top: 4px;
 }
 
+/* Feature selection */
+.reg-feature-box {
+  border: 1px solid #d9e0e7;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #fbfdff;
+}
+
+.reg-feature-title {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #3a4555;
+}
+
+.reg-feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 18px;
+}
+
+.reg-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #506070;
+  cursor: pointer;
+}
+
+.reg-feature-item input {
+  accent-color: #2D7C7E;
+}
+
 /* File input */
 .reg-field input[type='file'] {
   padding: 6px 0;
@@ -295,5 +331,9 @@
   .reg-submit-btn {
     width: 100%;
     text-align: center;
+  }
+
+  .reg-feature-grid {
+    grid-template-columns: 1fr;
   }
 }
