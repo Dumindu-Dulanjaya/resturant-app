@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { authAPI } from '../api/apiClient';
 import { useAuthStore } from '../store/authStore';
 import Swal from 'sweetalert2';
+import Navbar from '../components/landing/Navbar';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './Login.css';
@@ -10,6 +11,7 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuthStore();
 
   const getRedirectPathByRole = (role) => {
@@ -116,100 +118,83 @@ function Login() {
   };
 
   return (
-    <div className="login-page">
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-lg-5">
-            <div className="card shadow-lg border-0 rounded-lg mt-5">
-              <div className="card-header bg-gradient-primary">
-                <h3 className="text-center font-weight-light my-4 text-white">
-                  <i className="fas fa-utensils me-2"></i>
-                  Restaurant Management
-                </h3>
+    <>
+      <Navbar />
+      <div className="login-page">
+        <div className="container">
+          <div className="row align-items-center login-row">
+            {/* Left: illustration + heading */}
+            <div className="col-lg-6 login-left">
+              <span className="login-badge">Welcome Back</span>
+              <h1 className="login-heading">Login to Your Hotel / Restaurant Account</h1>
+              <div className="login-illustration">
+                <img
+                  src="/assets/images/features/20824342_6343845.jpg"
+                  alt="Login illustration"
+                />
               </div>
+            </div>
 
-              <div className="card-body">
+            {/* Right: form */}
+            <div className="col-lg-6">
+              <div className="login-form-wrap">
                 <form onSubmit={handleSubmit}>
-                  <div className="form-floating mb-3">
+                  <div className="mb-4">
                     <input
-                      className="form-control"
-                      id="inputEmail"
+                      className="login-input"
                       type="email"
                       placeholder="name@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
-                    <label htmlFor="inputEmail">
-                      <i className="fas fa-envelope me-2"></i>
-                      Email address
-                    </label>
                   </div>
 
-                  <div className="form-floating mb-3">
+                  <div className="mb-4 password-wrap">
                     <input
-                      className="form-control"
-                      id="inputPassword"
-                      type="password"
+                      className="login-input"
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
-                    <label htmlFor="inputPassword">
-                      <i className="fas fa-lock me-2"></i>
-                      Password
-                    </label>
-                  </div>
-
-                  <div className="d-grid gap-2">
                     <button
-                      className="btn btn-primary btn-lg"
-                      type="submit"
-                      disabled={loading}
+                      type="button"
+                      className="toggle-password"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label="Toggle password visibility"
                     >
-                      {loading ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                          ></span>
-                          Logging in...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-sign-in-alt me-2"></i>
-                          Login
-                        </>
-                      )}
+                      <i className={`fas fa-eye${showPassword ? '-slash' : ''}`}></i>
                     </button>
                   </div>
+
+                  <button className="login-btn" type="submit" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
+                        Logging in...
+                      </>
+                    ) : (
+                      'Login'
+                    )}
+                  </button>
                 </form>
 
-                <div className="mt-4 text-center">
-                  <p className="mb-2">
-                    <strong>Test Credentials:</strong>
-                  </p>
-                  <div className="credential-box">
-                    <small className="text-muted d-block">Super Admin</small>
-                    <small className="d-block">
-                      info@knowebsolutions.com / Knoweb@123
-                    </small>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card-footer text-center py-3">
-                <div className="small">
-                  <a href="#!">Forgot Password?</a>
-                </div>
+                <p className="mt-3 login-register-text">
+                  Don't have an account?{' '}
+                  <a href="/register" className="register-link">Register here</a>
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
+import SuperAdminLogin from './pages/SuperAdminLogin';
 import Dashboard from './pages/Dashboard';
 import Menus from './pages/Menus';
 import Categories from './pages/Categories';
@@ -112,6 +113,7 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/super-admin/login" element={<SuperAdminLogin />} />
         <Route path="/qr/:tableKey" element={<CustomerQROrder />} />
         <Route path="/room/:roomKey" element={<GuestRequestForm />} />
 

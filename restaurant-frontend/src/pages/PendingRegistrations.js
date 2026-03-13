@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import apiClient from '../api/apiClient';
 import Swal from 'sweetalert2';
 import SuperAdminDashboard from './SuperAdminDashboard';
-import './PendingSettingsRequests.css';
+import './PendingRegistrations.css';
 
 const PendingRegistrations = () => {
   const [restaurants, setRestaurants] = useState([]);

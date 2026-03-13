@@ -40,7 +40,7 @@ const Navbar = () => {
               {moreOpen && (
                 <ul className="dropdown-menu-custom">
                   <li><a href="/dashboard">Restaurant Admin</a></li>
-                  <li><a href="/super-admin">Super Admin</a></li>
+                  <li><a href="/super-admin/login">Super Admin</a></li>
                   <li><a href="/login">Login</a></li>
                   <li><a href="/housekeeper">HouseKeeper Login</a></li>
                 </ul>
