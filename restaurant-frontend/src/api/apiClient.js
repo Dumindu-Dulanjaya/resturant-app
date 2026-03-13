@@ -14,13 +14,18 @@ const apiClient = axios.create({
 
 // Add token to requests
 apiClient.interceptors.request.use((config) => {
-  const authData = localStorage.getItem('auth-storage');
-  if (authData) {
-    const { state } = JSON.parse(authData);
-    if (state.token) {
-      config.headers.Authorization = `Bearer ${state.token}`;
+  try {
+    const authData = localStorage.getItem('auth-storage');
+    if (authData) {
+      const { state } = JSON.parse(authData);
+      if (state?.token) {
+        config.headers.Authorization = `Bearer ${state.token}`;
+      }
     }
+  } catch (parseError) {
+    localStorage.removeItem('auth-storage');
   }
+
   return config;
 });
 

@@ -13,7 +13,7 @@ function SuperAdminDashboard({ children }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.8.127:3000';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
   const fetchPendingCount = useCallback(async () => {
     try {

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
+import { useAuthStore } from '../store/authStore';
 import Swal from 'sweetalert2';
 import SuperAdminDashboard from './SuperAdminDashboard';
 
 function ManageRestaurants() {
   const navigate = useNavigate();
+  const { logout } = useAuthStore();
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState({ show: false, restaurant: null });
@@ -13,6 +15,15 @@ function ManageRestaurants() {
   useEffect(() => {
     fetchRestaurants();
   }, []);
+
+  const getApiErrorMessage = (error, fallbackMessage) => {
+    const responseMessage = error?.response?.data?.message;
+    if (Array.isArray(responseMessage)) return responseMessage.join(', ');
+    if (typeof responseMessage === 'string' && responseMessage.trim()) {
+      return responseMessage;
+    }
+    return fallbackMessage;
+  };
 
   const fetchRestaurants = async () => {
     try {
@@ -23,10 +34,28 @@ function ManageRestaurants() {
       }
     } catch (error) {
       console.error('Error fetching restaurants:', error);
+
+      const status = error?.response?.status;
+      const message = getApiErrorMessage(error, 'Failed to load restaurants');
+
+      if (status === 401 || status === 403) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Access denied',
+          text:
+            status === 403
+              ? 'Your session does not have super admin privileges. Please login again using a super admin account.'
+              : 'Your session has expired. Please login again.',
+        });
+        logout();
+        navigate('/login');
+        return;
+      }
+
       Swal.fire({
         icon: 'error',
         title: 'Error!',
-        text: 'Failed to load restaurants',
+        text: message,
       });
     } finally {
       setLoading(false);
