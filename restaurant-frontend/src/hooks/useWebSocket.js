@@ -29,8 +29,24 @@ export const WebSocketProvider = ({ children }) => {
     }
 
     // Connect to WebSocket server
-    // Remove /api suffix if present, as WebSocket is at root server
-    const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace('/api', '');
+    // Remove /api suffix if present, as WebSocket is at root server.
+    const API_URL = (() => {
+      const envApiUrl = (
+        process.env.REACT_APP_API_URL ||
+        process.env.REACT_APP_API_BASE_URL ||
+        'http://localhost:3000/api'
+      ).trim();
+
+      if (typeof window !== 'undefined') {
+        const host = window.location.hostname;
+        const isLocalFrontend = host === 'localhost' || host === '127.0.0.1';
+        if (isLocalFrontend) {
+          return 'http://localhost:3000';
+        }
+      }
+
+      return envApiUrl.replace(/\/api\/?$/, '');
+    })();
     console.log('Connecting to WebSocket:', `${API_URL}/events`);
     
     const newSocket = io(`${API_URL}/events`, {

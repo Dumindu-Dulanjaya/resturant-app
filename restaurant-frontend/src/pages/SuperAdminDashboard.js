@@ -13,7 +13,23 @@ function SuperAdminDashboard({ children }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+  const API_URL = (() => {
+    const envApiUrl = (
+      process.env.REACT_APP_API_URL ||
+      process.env.REACT_APP_API_BASE_URL ||
+      ''
+    ).trim();
+
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const isLocalFrontend = host === 'localhost' || host === '127.0.0.1';
+      if (isLocalFrontend) {
+        return 'http://localhost:3000/api';
+      }
+    }
+
+    return envApiUrl || 'http://localhost:3000/api';
+  })();
 
   const fetchPendingCount = useCallback(async () => {
     try {

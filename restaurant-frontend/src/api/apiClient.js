@@ -1,6 +1,28 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const LOCAL_API_BASE_URL = 'http://localhost:3000/api';
+
+const resolveApiBaseUrl = () => {
+  const envApiUrl = (
+    process.env.REACT_APP_API_URL ||
+    process.env.REACT_APP_API_BASE_URL ||
+    ''
+  ).trim();
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const isLocalFrontend = host === 'localhost' || host === '127.0.0.1';
+
+    // Prevent stale LAN IP config from breaking local development sessions.
+    if (isLocalFrontend) {
+      return LOCAL_API_BASE_URL;
+    }
+  }
+
+  return envApiUrl || LOCAL_API_BASE_URL;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
