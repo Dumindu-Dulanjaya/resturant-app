@@ -1,4 +1,5 @@
 import React from 'react';
+import Swal from 'sweetalert2';
 import './OrderDetailsModal.css';
 
 /**
@@ -20,6 +21,7 @@ import './OrderDetailsModal.css';
 
 const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false }) => {
   const orderStatuses = ['NEW', 'ACCEPTED', 'COOKING', 'READY', 'SERVED'];
+  const canSendBill = order.status === 'READY' || order.status === 'SERVED';
   
   // Get restaurant name (can be configured via env variable or fetched from backend)
   // For production: Add REACT_APP_RESTAURANT_NAME to .env file
@@ -53,7 +55,31 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false })
   };
 
   const calculateLineTotal = (item) => {
-    return item.quantity * item.unitPrice;
+    if (item.lineTotal !== undefined && item.lineTotal !== null) {
+      return Number(item.lineTotal);
+    }
+
+    const qty = item.qty || item.quantity || 0;
+    return qty * Number(item.unitPrice || 0);
+  };
+
+  const normalizeWhatsAppNumber = (phone) => {
+    if (!phone) return '';
+
+    let cleaned = String(phone).trim().replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('+')) {
+      cleaned = cleaned.slice(1);
+    }
+    cleaned = cleaned.replace(/\D/g, '');
+
+    if (cleaned.startsWith('00')) {
+      cleaned = cleaned.slice(2);
+    }
+
+    if (cleaned.startsWith('94')) return cleaned;
+    if (cleaned.startsWith('0')) return `94${cleaned.slice(1)}`;
+    if (cleaned.length === 9) return `94${cleaned}`;
+    return cleaned;
   };
 
   const handleBackdropClick = (e) => {
@@ -72,6 +98,47 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false })
         onClose();
       }, 500);
     }, 200);
+  };
+
+  const sendWhatsAppBill = () => {
+    const normalizedWhatsapp = normalizeWhatsAppNumber(order.whatsappNumber);
+
+    if (!normalizedWhatsapp) {
+      Swal.fire('Error', 'No WhatsApp number found for this customer.', 'error');
+      return;
+    }
+
+    const itemsList = order.orderItems.map(item => {
+      const name = item.foodItem?.itemName || item.itemName || 'Item';
+      const qty = item.qty || item.quantity || 1;
+      const total = item.lineTotal || (qty * item.unitPrice) || 0;
+      return `${name} x${qty} - Rs. ${total}`;
+    }).join('\n');
+
+    const message = `Hello 👋\nYour order is ready!\n\nOrder ID: #${order.orderNo}\nItems:\n${itemsList}\n\nTotal: Rs. ${parseFloat(order.totalAmount).toFixed(2)}\n\nThank you for ordering with us 🍔`;
+    
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${normalizedWhatsapp}&text=${encodedMessage}`;
+    const popup = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+
+    if (!popup) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Popup blocked',
+        text: 'Allow popups for this site and try sending the bill again.',
+      });
+      return;
+    }
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'WhatsApp message ready',
+      text: 'WhatsApp opened in a new tab. Tap Send in WhatsApp to deliver.',
+      timer: 2000,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
   };
 
   return (
@@ -109,12 +176,12 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false })
             {order.orderItems && order.orderItems.map((item, index) => (
               <div key={item.orderItemId} style={{ marginBottom: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
-                  <span>{item.foodItem?.name || 'Unknown Item'} x {item.quantity}</span>
+                  <span>{item.foodItem?.itemName || item.itemName || 'Unknown Item'} x {item.qty || item.quantity || 1}</span>
                   <span>Rs. {calculateLineTotal(item).toFixed(2)}</span>
                 </div>
-                {item.specialInstructions && (
+                {item.notes && (
                   <div style={{ fontSize: '11px', color: '#666', marginTop: '3px', fontStyle: 'italic' }}>
-                    Note: {item.specialInstructions}
+                    Note: {item.notes}
                   </div>
                 )}
               </div>
@@ -164,6 +231,21 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false })
                   <label>Total Amount:</label>
                   <span className="info-value total-amount">{formatCurrency(order.totalAmount)}</span>
                 </div>
+                {order.customerName && (
+                  <div className="info-group">
+                    <label>Customer:</label>
+                    <span className="info-value">{order.customerName}</span>
+                  </div>
+                )}
+                {order.whatsappNumber && (
+                  <div className="info-group">
+                    <label>WhatsApp:</label>
+                    <span className="info-value">
+                      <i className="fa-brands fa-whatsapp text-success me-1"></i>
+                      {order.whatsappNumber}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -200,16 +282,16 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false })
                       <tr key={item.orderItemId}>
                         <td>{index + 1}</td>
                         <td>
-                          <strong>{item.foodItem?.name || 'Unknown Item'}</strong>
-                          {item.specialInstructions && (
+                          <strong>{item.foodItem?.itemName || item.itemName || 'Unknown Item'}</strong>
+                          {item.notes && (
                             <div className="item-notes">
                               <i className="fas fa-comment-dots me-1"></i>
-                              {item.specialInstructions}
+                              {item.notes}
                             </div>
                           )}
                         </td>
                         <td>
-                          <span className="quantity-badge">{item.quantity}</span>
+                          <span className="quantity-badge">{item.qty || item.quantity || 1}</span>
                         </td>
                         <td>{formatCurrency(item.unitPrice)}</td>
                         <td>
@@ -270,6 +352,17 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false })
         </div>
 
         <div className="modal-footer-custom">
+          {order.whatsappNumber && (
+            <button 
+              className={`btn btn-success ${!canSendBill ? 'disabled opacity-50' : ''}`} 
+              onClick={sendWhatsAppBill}
+              title={canSendBill ? 'Send bill message via WhatsApp' : 'Only available for READY or SERVED orders'}
+              disabled={!canSendBill}
+            >
+              <i className="fa-brands fa-whatsapp me-2"></i>
+              Send Bill to {order.customerName || 'Customer'}
+            </button>
+          )}
           <button className="btn btn-dark" onClick={handlePrint}>
             <i className="fas fa-print me-2"></i>
             Print Ticket

@@ -2,7 +2,29 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 import './CustomerQROrder.css';
+
+const normalizeWhatsAppNumber = (phone) => {
+  if (!phone) return '';
+
+  let cleaned = String(phone).trim().replace(/[^\d+]/g, '');
+  if (cleaned.startsWith('+')) {
+    cleaned = cleaned.slice(1);
+  }
+  cleaned = cleaned.replace(/\D/g, '');
+
+  if (cleaned.startsWith('00')) {
+    cleaned = cleaned.slice(2);
+  }
+
+  if (!cleaned) return '';
+  if (cleaned.startsWith('94')) return cleaned;
+  if (cleaned.startsWith('0')) return `94${cleaned.slice(1)}`;
+  if (cleaned.length === 9) return `94${cleaned}`;
+  return cleaned;
+};
 
 const CustomerQROrder = () => {
   const { tableKey } = useParams();
@@ -12,6 +34,8 @@ const CustomerQROrder = () => {
   const [filteredItems, setFilteredItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [cart, setCart] = useState([]);
+  const [customerName, setCustomerName] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [showCart, setShowCart] = useState(false);
@@ -241,8 +265,22 @@ const CustomerQROrder = () => {
       return;
     }
 
+    if (!customerName.trim()) {
+      Swal.fire('Validation Error', 'Please enter your name', 'warning');
+      return;
+    }
+
+    const normalizedWhatsapp = normalizeWhatsAppNumber(whatsappNumber);
+
+    if (!normalizedWhatsapp || normalizedWhatsapp.length < 10 || normalizedWhatsapp.length > 15) {
+      Swal.fire('Validation Error', 'Please enter a valid WhatsApp number', 'warning');
+      return;
+    }
+
     try {
       const orderPayload = {
+        customerName: customerName.trim(),
+        whatsappNumber: normalizedWhatsapp,
         notes: orderNotes.trim() || null,
         items: cart.map(item => ({
           foodItemId: item.foodItemId,
@@ -278,6 +316,8 @@ const CustomerQROrder = () => {
   const startNewOrder = () => {
     setOrderSuccess(null);
     setCurrentOrderStatus(null);
+    setCustomerName('');
+    setWhatsappNumber('');
     setShownNotifications(new Set());
   };
 
@@ -551,9 +591,34 @@ const CustomerQROrder = () => {
 
               <div className="cart-footer">
                 <div className="order-inputs">
-                  <div className="table-info-display">
+                  <div className="table-info-display mb-3">
                     <i className="fas fa-chair me-2"></i>
                     <strong>Table:</strong> {tableInfo.tableNo}
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Your Name <span className="text-danger">*</span></label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter your name"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">WhatsApp Number <span className="text-danger">*</span></label>
+                    <PhoneInput
+                      country={'lk'}
+                      value={whatsappNumber}
+                      onChange={setWhatsappNumber}
+                      inputStyle={{ width: '100%' }}
+                      containerClass="phone-input-container"
+                      placeholder="Enter WhatsApp Number"
+                      enableSearch={true}
+                    />
+                    <small className="text-muted">We'll send your bill to this WhatsApp number.</small>
                   </div>
                   
                   <div className="mb-3">

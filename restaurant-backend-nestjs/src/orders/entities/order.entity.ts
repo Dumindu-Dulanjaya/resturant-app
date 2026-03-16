@@ -25,6 +25,12 @@ export class Order {
   @Column({ name: 'order_no', type: 'varchar', length: 50, unique: true, nullable: true })
   orderNo: string;
 
+  @Column({ name: 'customer_name', type: 'varchar', length: 255, nullable: true })
+  customerName: string;
+
+  @Column({ name: 'whatsapp_number', type: 'varchar', length: 50, nullable: true })
+  whatsappNumber: string;
+
   @Column({
     type: 'enum',
     enum: OrderStatus,

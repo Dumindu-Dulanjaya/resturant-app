@@ -146,7 +146,8 @@ const KitchenKDS = () => {
       });
 
       // Refresh all orders
-      fetchAllOrders();
+      await fetchAllOrders();
+      return true;
     } catch (error) {
       console.error('Error updating order status:', error);
       Swal.fire({
@@ -154,10 +155,11 @@ const KitchenKDS = () => {
         title: 'Error',
         text: 'Failed to update order status',
       });
+      return false;
     }
   };
 
-  const handleStatusChange = (orderId, currentStatus) => {
+  const handleStatusChange = (order, currentStatus) => {
     let nextStatus;
     let actionText;
 
@@ -184,15 +186,35 @@ const KitchenKDS = () => {
 
     Swal.fire({
       title: actionText,
-      text: `Are you sure you want to ${actionText.toLowerCase()}?`,
+      text:
+        currentStatus === 'READY' && order.whatsappNumber
+          ? `Are you sure you want to ${actionText.toLowerCase()}? After that, you can send the bill on WhatsApp.`
+          : `Are you sure you want to ${actionText.toLowerCase()}?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#28a745',
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Yes, proceed',
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        updateOrderStatus(orderId, nextStatus);
+        const updated = await updateOrderStatus(order.orderId, nextStatus);
+
+        if (updated && currentStatus === 'READY' && order.whatsappNumber) {
+          const sendBillResult = await Swal.fire({
+            icon: 'success',
+            title: 'Order marked as served',
+            text: 'Do you want to open WhatsApp and send the bill now?',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Send Bill',
+            cancelButtonText: 'Later',
+          });
+
+          if (sendBillResult.isConfirmed) {
+            sendWhatsAppBill({ ...order, status: 'SERVED' });
+          }
+        }
       }
     });
   };
@@ -239,6 +261,74 @@ const KitchenKDS = () => {
   const handleOrderClick = (order, status) => {
     setSelectedOrder({ ...order, currentStatus: status });
     setShowDetailsModal(true);
+  };
+
+  const canSendWhatsAppBill = (status) => status === 'READY' || status === 'SERVED';
+
+  const normalizeWhatsAppNumber = (phone) => {
+    if (!phone) return '';
+
+    let cleaned = String(phone).trim().replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('+')) cleaned = cleaned.slice(1);
+    cleaned = cleaned.replace(/\D/g, '');
+
+    if (cleaned.startsWith('00')) cleaned = cleaned.slice(2);
+    if (!cleaned) return '';
+    if (cleaned.startsWith('94')) return cleaned;
+    if (cleaned.startsWith('0')) return `94${cleaned.slice(1)}`;
+    if (cleaned.length === 9) return `94${cleaned}`;
+
+    return cleaned;
+  };
+
+  const sendWhatsAppBill = (order) => {
+    const normalizedWhatsapp = normalizeWhatsAppNumber(order.whatsappNumber);
+
+    if (!normalizedWhatsapp) {
+      Swal.fire('Error', 'No WhatsApp number found for this customer.', 'error');
+      return;
+    }
+
+    const itemsList = (order.orderItems || [])
+      .map((item) => {
+        const name = item.itemName || item.foodItem?.itemName || 'Item';
+        const qty = item.qty || 1;
+        const total = item.lineTotal || qty * Number(item.unitPrice || 0);
+        return `${name} x${qty} - Rs. ${parseFloat(total).toFixed(2)}`;
+      })
+      .join('\n');
+
+    const message =
+      `Hello ${order.customerName || ''} 👋\n` +
+      `Here is your bill for order #${order.orderNo}.\n\n` +
+      `Order ID: #${order.orderNo}\n` +
+      `Table: ${order.tableNo || '-'}\n\n` +
+      `Items:\n${itemsList}\n\n` +
+      `Total: Rs. ${parseFloat(order.totalAmount).toFixed(2)}\n\n` +
+      `Thank you for ordering with us 🍔`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${normalizedWhatsapp}&text=${encodedMessage}`;
+    const popup = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+
+    if (!popup) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Popup blocked',
+        text: 'Allow popups for this site and try again.',
+      });
+      return;
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'WhatsApp opened',
+      text: 'Bill message is ready. Tap Send in WhatsApp.',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2200,
+    });
   };
 
   const OrderCard = ({ order, status }) => {
@@ -299,6 +389,23 @@ const KitchenKDS = () => {
           </span>
         </div>
         <div className="card-body">
+          {(order.customerName || order.whatsappNumber) && (
+            <div className="customer-info-box mb-2">
+              {order.customerName && (
+                <div>
+                  <i className="fas fa-user me-2 text-secondary"></i>
+                  <strong>{order.customerName}</strong>
+                </div>
+              )}
+              {order.whatsappNumber && (
+                <div>
+                  <i className="fa-brands fa-whatsapp me-2 text-success"></i>
+                  <span>{order.whatsappNumber}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {order.notes && (
             <div className="alert alert-info py-2 mb-2">
               <i className="fas fa-info-circle me-2"></i>
@@ -330,21 +437,36 @@ const KitchenKDS = () => {
             <strong>Total: ${parseFloat(order.totalAmount).toFixed(2)}</strong>
           </div>
         </div>
-        <div className="card-footer d-flex justify-content-between">
+        <div className="card-footer kds-card-footer">
           {statusButton && (
             <button
-              className={`btn btn-${statusButton.color} btn-sm flex-grow-1 me-2`}
+              className={`btn btn-${statusButton.color} btn-sm kds-action-btn`}
               onClick={(e) => {
                 e.stopPropagation();
-                handleStatusChange(order.orderId, status);
+                handleStatusChange(order, status);
               }}
             >
               <i className={`fas ${statusButton.icon} me-1`}></i>
               {statusButton.text}
             </button>
           )}
+
+          {canSendWhatsAppBill(status) && order.whatsappNumber && (
+            <button
+              className="btn btn-sm kds-action-btn btn-whatsapp-send"
+              onClick={(e) => {
+                e.stopPropagation();
+                sendWhatsAppBill(order);
+              }}
+              title="Send bill via WhatsApp"
+            >
+              <i className="fa-brands fa-whatsapp me-2"></i>
+              Send Bill
+            </button>
+          )}
+
           <button
-            className="btn btn-outline-danger btn-sm"
+            className="btn btn-outline-danger btn-sm kds-icon-btn"
             onClick={(e) => {
               e.stopPropagation();
               handleCancelOrder(order.orderId, order.orderNo);
@@ -415,7 +537,7 @@ const KitchenKDS = () => {
     const handleModalStatusUpdate = () => {
       if (nextStatusButton) {
         setShowDetailsModal(false);
-        handleStatusChange(selectedOrder.orderId, selectedOrder.currentStatus);
+        handleStatusChange(selectedOrder, selectedOrder.currentStatus);
       }
     };
 
@@ -494,6 +616,23 @@ const KitchenKDS = () => {
             </div>
           )}
 
+          {(selectedOrder.customerName || selectedOrder.whatsappNumber) && (
+            <div className="alert alert-light border mb-3">
+              {selectedOrder.customerName && (
+                <div className="mb-1">
+                  <i className="fas fa-user me-2 text-secondary"></i>
+                  <strong>Customer:</strong> {selectedOrder.customerName}
+                </div>
+              )}
+              {selectedOrder.whatsappNumber && (
+                <div>
+                  <i className="fa-brands fa-whatsapp me-2 text-success"></i>
+                  <strong>WhatsApp:</strong> {selectedOrder.whatsappNumber}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="order-items-section">
             <h6 className="mb-3">
               <i className="fas fa-list me-2"></i>
@@ -562,6 +701,16 @@ const KitchenKDS = () => {
             Cancel Order
           </Button>
           <div>
+            {canSendWhatsAppBill(selectedOrder.currentStatus) && selectedOrder.whatsappNumber && (
+              <Button
+                variant="success"
+                onClick={() => sendWhatsAppBill(selectedOrder)}
+                className="me-2 btn-whatsapp-send"
+              >
+                <i className="fa-brands fa-whatsapp me-2"></i>
+                Send Bill
+              </Button>
+            )}
             <Button 
               variant="secondary" 
               onClick={() => setShowDetailsModal(false)}

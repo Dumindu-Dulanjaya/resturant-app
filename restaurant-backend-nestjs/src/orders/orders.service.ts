@@ -4,12 +4,16 @@ import { Repository } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { FoodItem } from '../food-items/entities/food-item.entity';
-import { TableQr } from '../table-qr/entities/table-qr.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { KitchenDashboardQueryDto } from './dto/kitchen-dashboard-query.dto';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { TableQrService } from '../table-qr/table-qr.service';
+import {
+  isLikelyWhatsAppNumber,
+  normalizeWhatsAppNumber,
+} from '../common/utils/phone.utils';
 
 @Injectable()
 export class OrdersService {
@@ -20,13 +24,23 @@ export class OrdersService {
     private orderItemsRepository: Repository<OrderItem>,
     @InjectRepository(FoodItem)
     private foodItemsRepository: Repository<FoodItem>,
-    @InjectRepository(TableQr)
-    private tableQrRepository: Repository<TableQr>,
     private websocketGateway: WebsocketGateway,
+    private tableQrService: TableQrService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, restaurantId: number) {
-    const { tableNo, notes, items } = createOrderDto;
+    const { tableNo, customerName, whatsappNumber, notes, items } = createOrderDto;
+
+    // Normalize WhatsApp number if provided
+    const normalizedWhatsapp = whatsappNumber 
+      ? normalizeWhatsAppNumber(whatsappNumber)
+      : undefined;
+
+    if (whatsappNumber && !isLikelyWhatsAppNumber(normalizedWhatsapp || '')) {
+      throw new BadRequestException(
+        'Please enter a valid WhatsApp number with country code',
+      );
+    }
 
     if (!items || items.length === 0) {
       throw new BadRequestException('Order must contain at least one item');
@@ -78,6 +92,8 @@ export class OrdersService {
     const order = this.ordersRepository.create({
       orderNo,
       tableNo,
+      customerName,
+      whatsappNumber: normalizedWhatsapp,
       notes,
       totalAmount,
       restaurantId,
@@ -291,10 +307,7 @@ export class OrdersService {
 
   // Track order by table key (for customers)
   async trackOrderByTableKey(orderId: number, tableKey: string) {
-    // Verify table key exists
-    const tableQr = await this.tableQrRepository.findOne({
-      where: { tableKey, isActive: 1 },
-    });
+    const tableQr = await this.tableQrService.findByTableKey(tableKey);
 
     if (!tableQr) {
       return null;

@@ -211,10 +211,58 @@
   color: #2c3e50;
 }
 
+.customer-info-box {
+  border: 1px dashed #d0d7de;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  background: #f8fafc;
+  font-size: 0.86rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
 .order-card .card-footer {
   background: white;
   border-top: 1px solid #e9ecef;
   padding: 0.75rem;
+}
+
+.kds-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.kds-action-btn {
+  flex: 1 1 130px;
+}
+
+.kds-icon-btn {
+  flex: 0 0 auto;
+  min-width: 42px;
+}
+
+.btn-whatsapp-send {
+  background: linear-gradient(135deg, #25d366, #128c7e) !important;
+  border: 1px solid #128c7e !important;
+  color: #ffffff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  box-shadow: 0 8px 18px rgba(18, 140, 126, 0.18);
+}
+
+.btn-whatsapp-send:hover,
+.btn-whatsapp-send:focus,
+.btn-whatsapp-send:active {
+  background: linear-gradient(135deg, #1ebe5b, #0f7a6f) !important;
+  border-color: #0f7a6f !important;
+  color: #ffffff !important;
+}
+
+.btn-whatsapp-send i {
+  font-size: 0.95rem;
 }
 
 .order-card .card-footer .btn {

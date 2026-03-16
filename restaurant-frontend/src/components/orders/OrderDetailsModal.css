@@ -278,6 +278,21 @@
   transform: translateY(-1px);
 }
 
+.modal-footer-custom .btn-whatsapp-send {
+  background: linear-gradient(135deg, #25d366, #128c7e) !important;
+  border-color: #128c7e !important;
+  color: #ffffff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-footer-custom .btn-whatsapp-send:hover {
+  background: linear-gradient(135deg, #1ebe5b, #0f7a6f) !important;
+  border-color: #0f7a6f !important;
+  color: #ffffff !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .modal-backdrop-custom {

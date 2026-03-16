@@ -4,6 +4,29 @@
   margin: 0 auto;
 }
 
+.customer-info-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customer-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.customer-phone {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.phone-input-container .form-control {
+  border: 1px solid #ced4da !important;
+  height: 38px !important;
+  font-size: 14px !important;
+}
+
 .page-header {
   margin-bottom: 25px;
   padding-bottom: 15px;

@@ -24,6 +24,14 @@ export class CreateOrderDto {
 
   @IsString()
   @IsOptional()
+  customerName?: string;
+
+  @IsString()
+  @IsOptional()
+  whatsappNumber?: string;
+
+  @IsString()
+  @IsOptional()
   notes?: string;
 
   @IsArray()

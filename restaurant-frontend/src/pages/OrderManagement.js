@@ -282,6 +282,7 @@ const OrderManagement = () => {
                 <thead>
                   <tr>
                     <th>Order No</th>
+                    <th>Customer</th>
                     <th>Table</th>
                     <th>Status</th>
                     <th>Items</th>
@@ -295,6 +296,17 @@ const OrderManagement = () => {
                     <tr key={order.orderId}>
                       <td>
                         <strong>{order.orderNo}</strong>
+                      </td>
+                      <td>
+                        <div className="customer-info-cell">
+                          <div className="customer-name">{order.customerName || 'N/A'}</div>
+                          {order.whatsappNumber && (
+                            <div className="customer-phone text-muted small">
+                              <i className="fab fa-whatsapp text-success me-1"></i>
+                              {order.whatsappNumber}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td>{order.tableNo}</td>
                       <td>

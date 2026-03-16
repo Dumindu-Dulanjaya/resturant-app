@@ -5,14 +5,13 @@ import { OrdersController } from './orders.controller';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { FoodItem } from '../food-items/entities/food-item.entity';
-import { TableQr } from '../table-qr/entities/table-qr.entity';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { TableQrModule } from '../table-qr/table-qr.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, FoodItem, TableQr]),
+    TypeOrmModule.forFeature([Order, OrderItem, FoodItem]),
     RestaurantsModule, // Import for ApiKeyGuard
     TableQrModule, // Import for TableKeyGuard
     WebsocketModule, // Import for real-time updates

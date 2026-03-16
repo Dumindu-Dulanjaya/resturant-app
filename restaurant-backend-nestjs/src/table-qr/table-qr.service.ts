@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TableQr } from './entities/table-qr.entity';
+import { Restaurant } from '../restaurants/entities/restaurant.entity';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -9,9 +10,48 @@ export class TableQrService {
   constructor(
     @InjectRepository(TableQr)
     private readonly tableQrRepository: Repository<TableQr>,
+    @InjectRepository(Restaurant)
+    private readonly restaurantRepository: Repository<Restaurant>,
   ) {}
 
   async findByTableKey(tableKey: string): Promise<TableQr | null> {
+    const existingQr = await this.tableQrRepository.findOne({
+      where: { tableKey, isActive: 1 },
+      relations: ['restaurant'],
+    });
+
+    if (existingQr) {
+      return existingQr;
+    }
+
+    // Backward compatibility: older QR links used restaurant api_key directly.
+    const restaurant = await this.restaurantRepository.findOne({
+      where: { apiKey: tableKey },
+    });
+
+    if (!restaurant) {
+      return null;
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+
+    // Use deterministic table number for legacy key mappings.
+    const legacyTableNo = `LEGACY-${restaurant.restaurantId}`;
+
+    const legacyMapping = this.tableQrRepository.create({
+      restaurantId: restaurant.restaurantId,
+      tableNo: legacyTableNo,
+      tableKey,
+      qrUrl: `${frontendUrl}/qr/${tableKey}`,
+      isActive: 1,
+    });
+
+    try {
+      await this.tableQrRepository.save(legacyMapping);
+    } catch {
+      // Ignore duplicate insert race; re-query below.
+    }
+
     return this.tableQrRepository.findOne({
       where: { tableKey, isActive: 1 },
       relations: ['restaurant'],
