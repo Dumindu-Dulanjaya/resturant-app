@@ -1,10 +1,14 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Footer.css';
 
 const Footer = () => (
   <footer className="landing-footer">
     {/* CTA Banner */}
     <div className="footer-cta-banner">
+      <img className="cta-shape-circle" src="/assets/images/shapes/white-circle.png" alt="shape" />
+      <img className="cta-shape-dots" src="/assets/images/shapes/white-dots.png" alt="shape" />
+      <img className="cta-shape-striped" src="/assets/images/shapes/white-dots-circle.png" alt="shape" />
       <span className="fcta-dot" aria-hidden="true"></span>
       <div className="landing-container">
         <div className="fcta-inner">
@@ -16,12 +20,12 @@ const Footer = () => (
             </p>
           </div>
           <div className="fcta-btns">
-            <a href="/register" className="fcta-btn-primary">
+            <Link to="/register" className="fcta-btn-primary">
               Register Now <i className="fas fa-arrow-right"></i>
-            </a>
-            <a href="/about" className="fcta-btn-outline">
+            </Link>
+            <Link to="/about" className="fcta-btn-outline">
               Learn More <i className="fas fa-arrow-right"></i>
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -33,30 +37,31 @@ const Footer = () => (
         <div className="footer-grid">
           {/* Col 1: Logo + Social */}
           <div className="footer-col logo-col">
-            <a href="/">
+            <Link to="/">
               <img
                 src="/assets/images/logos/logo-rmbg-2.png"
                 alt="Anawuma"
                 className="footer-logo"
               />
-            </a>
-            <p className="footer-logo-desc">
-              Anawuma is a smart hospitality platform helping restaurants and hotels streamline orders, menus, and guest experiences.
-            </p>
+            </Link>
+
             <div className="footer-social">
               <a href="#facebook" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
               <a href="#twitter" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
               <a href="#linkedin" aria-label="LinkedIn"><i className="fab fa-linkedin-in"></i></a>
               <a href="#instagram" aria-label="Instagram"><i className="fab fa-instagram"></i></a>
             </div>
+            
+            {/* White dots grid behind logo area */}
+            <img className="footer-shape shape-dots-white" src="/assets/images/shapes/white-dots.png" alt="" />
           </div>
 
           {/* Col 2: About */}
           <div className="footer-col">
             <h4 className="footer-col-title">About</h4>
             <ul className="footer-links">
-              <li><a href="/about">Company</a></li>
-              <li><a href="/contact">Contact</a></li>
+              <li><Link to="/about">Company</Link></li>
+              <li><Link to="/contact">Contact</Link></li>
             </ul>
           </div>
 
@@ -64,41 +69,35 @@ const Footer = () => (
           <div className="footer-col">
             <h4 className="footer-col-title">Quick Links</h4>
             <ul className="footer-links">
-              <li><a href="/pricing">Pricing</a></li>
-              <li><a href="/register">Register</a></li>
-              <li><a href="/login">Login</a></li>
+              <li><Link to="/pricing">Pricing</Link></li>
+              <li><Link to="/login">Login</Link></li>
             </ul>
           </div>
 
-          {/* Col 4: Contact info */}
+          {/* Col 4: Empty Title for alignment */}
+          <div className="footer-col" style={{ paddingTop: '42px' }}>
+            <ul className="footer-links">
+              <li><Link to="/register">Register</Link></li>
+            </ul>
+            {/* Purple X shape above register */}
+            <img className="footer-shape shape-purple-x" src="/assets/images/shapes/close.png" alt="" />
+          </div>
+
+          {/* Col 5: Contact info */}
           <div className="footer-col">
             <h4 className="footer-col-title">Get in Touch</h4>
             <ul className="footer-contact-list">
-              <li><i className="fas fa-globe"></i> Scandinavian Office</li>
-              <li><i className="fas fa-map-marker-alt"></i> 15, Dr Waalers Gata, Hamar 2321</li>
               <li>
-                <i className="fas fa-phone"></i>
-                <a href="tel:+46700236926">+46 700 236 926</a>
-              </li>
-            </ul>
-            <ul className="footer-contact-list" style={{ marginTop: '14px' }}>
-              <li><i className="fas fa-globe"></i> Australia Office</li>
-              <li><i className="fas fa-map-marker-alt"></i> 15, Manuka Street, Constitution Hill, NSW 2145</li>
-              <li>
-                <i className="fas fa-phone"></i>
-                <a href="tel:+61434502385">+61 434 502 385</a>
-              </li>
-            </ul>
-            <ul className="footer-contact-list" style={{ marginTop: '14px' }}>
-              <li><i className="fas fa-home"></i> Head Office — Sri Lanka</li>
-              <li><i className="fas fa-map-marker-alt"></i> No 16, Wewalwala Road, Bataganwila, Galle</li>
-              <li>
-                <i className="fas fa-phone"></i>
-                <a href="tel:+94777547239">+94 777 547 239</a>
+                <i className="fas fa-map-marker-alt" style={{ color: '#2D7C7E' }}></i>
+                No 16, Wewalwala Road, Bataganwila, Galle.
               </li>
               <li>
-                <i className="fas fa-envelope-open"></i>
+                <i className="fas fa-envelope" style={{ color: '#2D7C7E' }}></i>
                 <a href="mailto:info@anawuma.com">info@anawuma.com</a>
+              </li>
+              <li>
+                <i className="fas fa-phone-alt" style={{ color: '#2D7C7E' }}></i>
+                Call : <a href="tel:+94777547239">(+94)777 547 239</a>
               </li>
             </ul>
           </div>
@@ -115,6 +114,14 @@ const Footer = () => (
           </p>
         </div>
       </div>
+    </div>
+
+    {/* Background Decorative Shapes */}
+    <div className="footer-bg-decor">
+      <img className="footer-shape shape-striped-blue" src="/assets/images/shapes/dots-circle-half.png" alt="" />
+      <img className="footer-shape shape-purple-triangle" src="/assets/images/shapes/tringle.png" alt="" />
+      <img className="footer-shape shape-yellow-ring" src="/assets/images/shapes/circle.png" alt="" />
+      <div className="footer-green-glow"></div>
     </div>
   </footer>
 );

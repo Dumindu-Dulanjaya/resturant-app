@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import './HeroSection.css';
 
@@ -87,13 +88,13 @@ const HeroSection = () => {
 
             {/* CTA buttons */}
             <motion.div className="hs-ctas" variants={itemVariants}>
-              <a href="/register" className="hs-btn-primary">
+              <Link to="/register" className="hs-btn-primary">
                 Start Free Trial <span className="hs-btn-arrow">→</span>
                 <span className="hs-btn-ripple" />
-              </a>
-              <a href="#contact" className="hs-btn-secondary">
+              </Link>
+              <Link to="/contact" className="hs-btn-secondary">
                 <i className="fas fa-play-circle" /> Request a Demo
-              </a>
+              </Link>
             </motion.div>
 
             {/* stats row */}

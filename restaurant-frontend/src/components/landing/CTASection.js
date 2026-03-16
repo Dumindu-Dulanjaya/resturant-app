@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './CTASection.css';
 
 const CTASection = () => (
@@ -13,9 +14,9 @@ const CTASection = () => (
             tailored for you. Our team is ready to walk you through everything and get you set up
             fast.
           </p>
-          <a href="/contact" className="cta-link-btn">
+          <Link to="/contact" className="cta-link-btn">
             For Custom Developments <i className="fas fa-arrow-right"></i>
-          </a>
+          </Link>
         </div>
         {/* Right */}
         <div className="cta-img-wrap">

@@ -20,6 +20,7 @@ import { OffersModule } from './offers/offers.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SettingsRequestsModule } from './settings-requests/settings-requests.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { SettingsRequestsModule } from './settings-requests/settings-requests.mo
     WebsocketModule,
     DashboardModule,
     SettingsRequestsModule,
+    ContactModule,
   ],
   controllers: [AppController],
   providers: [

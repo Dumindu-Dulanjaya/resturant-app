@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import SuperAdminLogin from './pages/SuperAdminLogin';
+import KitchenLogin from './pages/KitchenLogin';
 import Dashboard from './pages/Dashboard';
 import Menus from './pages/Menus';
 import Categories from './pages/Categories';
@@ -35,6 +36,7 @@ import PendingSettingsRequests from './pages/PendingSettingsRequests';
 import PendingRegistrations from './pages/PendingRegistrations';
 import LandingPage from './pages/LandingPage';
 import RegisterPage from './pages/RegisterPage';
+import ContactPage from './pages/ContactPage';
 
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -64,8 +66,8 @@ function SettingsSyncProvider() {
           updateUser({ restaurantSettings: res.data.data });
         }
       })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch(() => { });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Real-time: update auth store whenever settings change for this restaurant
@@ -84,7 +86,7 @@ function SettingsSyncProvider() {
           .then((res) => {
             if (res?.data?.success) updateUser({ restaurantSettings: res.data.data });
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     });
 
@@ -110,371 +112,373 @@ function App() {
       <WebSocketProvider>
         <SettingsSyncProvider />
         <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/super-admin/login" element={<SuperAdminLogin />} />
-        <Route path="/qr/:tableKey" element={<CustomerQROrder />} />
-        <Route path="/room/:roomKey" element={<GuestRequestForm />} />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+            <Route path="/kitchen-login" element={<KitchenLogin />} />
+            <Route path="/qr/:tableKey" element={<CustomerQROrder />} />
+            <Route path="/room/:roomKey" element={<GuestRequestForm />} />
 
-        {/* Default Authenticated Dashboard */}
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <RoleRoute
-                allowedRoles={[
-                  'admin',
-                  'super_admin',
-                  'kitchen',
-                  'housekeeper'
-                ]}
-              >
-                <Dashboard />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Default Authenticated Dashboard */}
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <RoleRoute
+                    allowedRoles={[
+                      'admin',
+                      'super_admin',
+                      'kitchen',
+                      'housekeeper'
+                    ]}
+                  >
+                    <Dashboard />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/kitchen/dashboard"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['kitchen', 'admin', 'super_admin']}>
-                <FeatureRoute requiredFeature="KDS">
-                  <KitchenDashboard />
-                </FeatureRoute>
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/kitchen/dashboard"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['kitchen', 'admin', 'super_admin']}>
+                    <FeatureRoute requiredFeature="KDS">
+                      <KitchenDashboard />
+                    </FeatureRoute>
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Menu Management */}
-        <Route
-          path="/menus/all"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <Menus />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Menu Management */}
+            <Route
+              path="/menus/all"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <Menus />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/menus/categories"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <Categories />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/menus/categories"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <Categories />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/menus/subcategories"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <Subcategories />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/menus/subcategories"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <Subcategories />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/menus/food-items"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <FoodItems />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/menus/food-items"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <FoodItems />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Offers */}
-        <Route
-          path="/offers/add"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <AddOffer />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Offers */}
+            <Route
+              path="/offers/add"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <AddOffer />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/offers/edit/:id"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <EditOffer />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/offers/edit/:id"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <EditOffer />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/menus/offers"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <Offers />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/menus/offers"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <Offers />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Kitchen */}
-        <Route
-          path="/kitchen/kds"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
-                <FeatureRoute requiredFeature="KDS">
-                  <KitchenKDS />
-                </FeatureRoute>
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Kitchen */}
+            <Route
+              path="/kitchen/kds"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
+                    <FeatureRoute requiredFeature="KDS">
+                      <KitchenKDS />
+                    </FeatureRoute>
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* QR Codes */}
-        <Route
-          path="/qr-codes/generate"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <GenerateQRCodes />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* QR Codes */}
+            <Route
+              path="/qr-codes/generate"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <GenerateQRCodes />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Housekeeping */}
-        <Route
-          path="/housekeeping/messages"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'housekeeper']}>
-                <FeatureRoute requiredFeature="HOUSEKEEPING">
-                  <HousekeepingMessages />
-                </FeatureRoute>
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Housekeeping */}
+            <Route
+              path="/housekeeping/messages"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'housekeeper']}>
+                    <FeatureRoute requiredFeature="HOUSEKEEPING">
+                      <HousekeepingMessages />
+                    </FeatureRoute>
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/housekeeping/room-qr"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <FeatureRoute requiredFeature="HOUSEKEEPING">
-                  <RoomQRCodes />
-                </FeatureRoute>
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/housekeeping/room-qr"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <FeatureRoute requiredFeature="HOUSEKEEPING">
+                      <RoomQRCodes />
+                    </FeatureRoute>
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/housekeeping/room-qr/generate"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <FeatureRoute requiredFeature="HOUSEKEEPING">
-                  <GenerateRoomQRCodes />
-                </FeatureRoute>
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/housekeeping/room-qr/generate"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <FeatureRoute requiredFeature="HOUSEKEEPING">
+                      <GenerateRoomQRCodes />
+                    </FeatureRoute>
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Reports */}
-        <Route
-          path="/reports/daily"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <FeatureRoute requiredFeature="REPORTS">
-                  <DailyReport />
-                </FeatureRoute>
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Reports */}
+            <Route
+              path="/reports/daily"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <FeatureRoute requiredFeature="REPORTS">
+                      <DailyReport />
+                    </FeatureRoute>
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/reports/monthly"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <FeatureRoute requiredFeature="REPORTS">
-                  <MonthlyReport />
-                </FeatureRoute>
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/reports/monthly"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <FeatureRoute requiredFeature="REPORTS">
+                      <MonthlyReport />
+                    </FeatureRoute>
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/reports/sales"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <FeatureRoute requiredFeature="REPORTS">
-                  <SalesReports />
-                </FeatureRoute>
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/reports/sales"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <FeatureRoute requiredFeature="REPORTS">
+                      <SalesReports />
+                    </FeatureRoute>
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Orders */}
-        <Route
-          path="/orders/manage"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
-                <OrderManagement />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Orders */}
+            <Route
+              path="/orders/manage"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
+                    <OrderManagement />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/kitchen/orders"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
-                <ActiveOrders />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/kitchen/orders"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
+                    <ActiveOrders />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/kitchen/history"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
-                <OrderHistory />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/kitchen/history"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
+                    <OrderHistory />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Settings */}
-        <Route
-          path="/settings/restaurant"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <RestaurantSettings />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Settings */}
+            <Route
+              path="/settings/restaurant"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <RestaurantSettings />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/settings/profile"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <Profile />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/settings/profile"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <Profile />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/settings/password"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['admin', 'super_admin']}>
-                <ChangePassword />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/settings/password"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <ChangePassword />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Super Admin */}
-        <Route
-          path="/super-admin/manage-restaurants"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['super_admin']}>
-                <ManageRestaurants />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            {/* Super Admin */}
+            <Route
+              path="/super-admin/manage-restaurants"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['super_admin']}>
+                    <ManageRestaurants />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/super-admin/add-hotel"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['super_admin']}>
-                <AddRestaurant />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/super-admin/add-hotel"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['super_admin']}>
+                    <AddRestaurant />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/super-admin/add-admin"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['super_admin']}>
-                <AddAdmin />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/super-admin/add-admin"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['super_admin']}>
+                    <AddAdmin />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/super-admin/hotel-profile/:id"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['super_admin']}>
-                <RestaurantProfile />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/super-admin/hotel-profile/:id"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['super_admin']}>
+                    <RestaurantProfile />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/super-admin/pending-approvals"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['super_admin']}>
-                <PendingSettingsRequests />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/super-admin/pending-approvals"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['super_admin']}>
+                    <PendingSettingsRequests />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        <Route
-          path="/super-admin/pending-registrations"
-          element={
-            <PrivateRoute>
-              <RoleRoute allowedRoles={['super_admin']}>
-                <PendingRegistrations />
-              </RoleRoute>
-            </PrivateRoute>
-          }
-        />
+            <Route
+              path="/super-admin/pending-registrations"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['super_admin']}>
+                    <PendingRegistrations />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
 
-        {/* Redirect Routes */}
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/" element={<LandingPage />} />
-        <Route path="*" element={<RoleBasedRedirect />} />
-      </Routes>
-    </BrowserRouter>
+            {/* Redirect Routes */}
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="*" element={<RoleBasedRedirect />} />
+          </Routes>
+        </BrowserRouter>
       </WebSocketProvider>
     </NotificationProvider>
   );

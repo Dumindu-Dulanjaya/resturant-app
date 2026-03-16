@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -17,18 +18,18 @@ const Navbar = () => {
       <div className="landing-container">
         <nav className="landing-nav">
           {/* Logo */}
-          <a href="/" className="landing-logo">
+          <Link to="/" className="landing-logo">
             <img src="/assets/images/logos/logo-rmbg-2.png" alt="Anawuma" />
-          </a>
+          </Link>
 
           {/* Desktop Nav Links */}
           <ul className={`nav-links${menuOpen ? ' open' : ''}`}>
-            <li><a href="#home" onClick={() => setMenuOpen(false)}>Home</a></li>
-            <li><a href="#features" onClick={() => setMenuOpen(false)}>Features</a></li>
-            <li><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing</a></li>
-            <li><a href="#about" onClick={() => setMenuOpen(false)}>About</a></li>
-            <li><a href="#blog" onClick={() => setMenuOpen(false)}>Blogs</a></li>
-            <li><a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a></li>
+            <li><a href="/#home" onClick={() => setMenuOpen(false)}>Home</a></li>
+            <li><a href="/#features" onClick={() => setMenuOpen(false)}>Features</a></li>
+            <li><a href="/#pricing" onClick={() => setMenuOpen(false)}>Pricing</a></li>
+            <li><a href="/#about" onClick={() => setMenuOpen(false)}>About</a></li>
+            <li><a href="/#blog" onClick={() => setMenuOpen(false)}>Blogs</a></li>
+            <li><Link to="/contact" onClick={() => setMenuOpen(false)} style={{ borderBottom: scrolled ? 'none' : '2px solid #2D7C7E' }}>Contact</Link></li>
             <li
               className="dropdown-parent"
               onMouseEnter={() => setMoreOpen(true)}
@@ -39,10 +40,10 @@ const Navbar = () => {
               </a>
               {moreOpen && (
                 <ul className="dropdown-menu-custom">
-                  <li><a href="/dashboard">Restaurant Admin</a></li>
-                  <li><a href="/super-admin/login">Super Admin</a></li>
-                  <li><a href="/login">Login</a></li>
-                  <li><a href="/housekeeper">HouseKeeper Login</a></li>
+                  <li><Link to="/dashboard">Restaurant Admin</Link></li>
+                  <li><Link to="/super-admin/login">Super Admin</Link></li>
+                  <li><Link to="/kitchen-login">Kitchen Login</Link></li>
+                  <li><Link to="/housekeeper">HouseKeeper Login</Link></li>
                 </ul>
               )}
             </li>
@@ -50,12 +51,12 @@ const Navbar = () => {
 
           {/* CTA Buttons */}
           <div className={`nav-cta${menuOpen ? ' open' : ''}`}>
-            <a href="/register" className="btn-register">
+            <Link to="/register" className="nav-link-register">
               Register Restaurant <i className="fas fa-arrow-right"></i>
-            </a>
-            <a href="/login" className="btn-login">
-              Restaurant Login <span>&#128274;</span>
-            </a>
+            </Link>
+            <Link to="/login" className="nav-btn-login">
+              Restaurant Login <i className="fas fa-lock" style={{ marginLeft: '6px', fontSize: '12px' }}></i>
+            </Link>
           </div>
 
           {/* Hamburger */}
