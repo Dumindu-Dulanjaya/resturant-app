@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { authAPI } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 import { useAuthStore } from '../store/authStore';
 import Swal from 'sweetalert2';
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -10,7 +11,7 @@ function KitchenLogin() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const { login } = useAuthStore();
+    const { login, updateUser } = useAuthStore();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -37,10 +38,18 @@ function KitchenLogin() {
                 }
 
                 login(user, access_token);
-                localStorage.setItem('auth-storage', JSON.stringify({
-                    state: { user, token: access_token, isAuthenticated: true },
-                    version: 0
-                }));
+
+                // Fetch full profile to get restaurantSettings for feature flags
+                try {
+                    const profileRes = await apiClient.get('/auth/profile', {
+                        headers: { Authorization: `Bearer ${access_token}` }
+                    });
+                    if (profileRes?.data?.data) {
+                        updateUser(profileRes.data.data);
+                    }
+                } catch (_) {
+                    // Non-fatal: feature flags will fall back to defaults
+                }
 
                 Swal.fire({
                     icon: 'success',

@@ -387,7 +387,7 @@ function App() {
               path="/settings/profile"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper']}>
                     <Profile />
                   </RoleRoute>
                 </PrivateRoute>
@@ -398,7 +398,7 @@ function App() {
               path="/settings/password"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper']}>
                     <ChangePassword />
                   </RoleRoute>
                 </PrivateRoute>

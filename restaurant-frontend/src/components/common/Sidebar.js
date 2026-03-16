@@ -142,6 +142,12 @@ function Sidebar() {
             <i className={`fas fa-chevron-${menuStates.kitchen ? 'down' : 'right'} submenu-arrow`}></i>
           </a>
           <ul className="submenu" style={{ display: menuStates.kitchen ? 'block' : 'none' }}>
+            <li className={isActive('/kitchen/dashboard')}>
+              <Link to="/kitchen/dashboard">
+                <i className="fas fa-tachometer-alt"></i>
+                Kitchen Dashboard
+              </Link>
+            </li>
             <li className={isActive('/kitchen/kds')}>
               <Link to="/kitchen/kds">
                 <i className="fas fa-chart-line"></i>
