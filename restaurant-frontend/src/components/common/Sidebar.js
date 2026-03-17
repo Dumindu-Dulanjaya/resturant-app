@@ -57,12 +57,14 @@ function Sidebar() {
       </div>
       
       <ul className="sidebar-menu">
-        <li className={isActive(dashboardPath)}>
-          <Link to={dashboardPath}>
-            <i className="fas fa-home"></i>
-            <span>Dashboard</span>
-          </Link>
-        </li>
+        {!isCashier && (
+          <li className={isActive(dashboardPath)}>
+            <Link to={dashboardPath}>
+              <i className="fas fa-home"></i>
+              <span>Dashboard</span>
+            </Link>
+          </li>
+        )}
 
         {canAccessCashierDashboard && (
           <li className={isActive('/cashier/dashboard')}>
@@ -186,12 +188,14 @@ function Sidebar() {
                 Order Management
               </Link>
             </li>
-            <li className={isActive('/billing')}>
-              <Link to="/billing">
-                <i className="fas fa-file-invoice-dollar"></i>
-                Service &amp; Billing
-              </Link>
-            </li>
+            {!isAdmin && (
+              <li className={isActive('/billing')}>
+                <Link to="/billing">
+                  <i className="fas fa-file-invoice-dollar"></i>
+                  Service &amp; Billing
+                </Link>
+              </li>
+            )}
           </ul>
         </li>
         )}

@@ -10,7 +10,10 @@ import { BillAction, BillActionType } from './entities/bill-action.entity';
 import { Order, OrderStatus } from '../orders/entities/order.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { QueryInvoicesDto } from './dto/query-invoices.dto';
-import { RecordBillActionDto, BillActionHistoryDto } from './dto/record-bill-action.dto';
+import {
+  RecordBillActionDto,
+  BillActionHistoryDto,
+} from './dto/record-bill-action.dto';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 
 @Injectable()
@@ -25,7 +28,11 @@ export class BillingService {
     private websocketGateway: WebsocketGateway,
   ) {}
 
-  private buildInvoiceSnapshot(order: Order, adminId?: number, overrides: Partial<Invoice> = {}): Invoice {
+  private buildInvoiceSnapshot(
+    order: Order,
+    adminId?: number,
+    overrides: Partial<Invoice> = {},
+  ): Invoice {
     const subtotal = parseFloat(order.totalAmount.toString());
     const today = new Date();
     const datePart = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
@@ -62,6 +69,58 @@ export class BillingService {
     });
   }
 
+  private async hydrateOrderNo(invoice: Invoice): Promise<Invoice> {
+    if (!invoice?.orderId) {
+      return invoice;
+    }
+
+    const row = await this.ordersRepository
+      .createQueryBuilder('order')
+      .select('order.orderNo', 'orderNo')
+      .where('order.orderId = :orderId', { orderId: invoice.orderId })
+      .andWhere('order.restaurantId = :restaurantId', {
+        restaurantId: invoice.restaurantId,
+      })
+      .getRawOne<{ orderNo?: string }>();
+
+    invoice.orderNo = row?.orderNo || undefined;
+    return invoice;
+  }
+
+  private async hydrateOrderNos(invoices: Invoice[]): Promise<Invoice[]> {
+    if (!Array.isArray(invoices) || invoices.length === 0) {
+      return invoices;
+    }
+
+    const orderIds = [
+      ...new Set(invoices.map((invoice) => invoice.orderId).filter(Boolean)),
+    ];
+    if (orderIds.length === 0) {
+      return invoices;
+    }
+
+    const rows = await this.ordersRepository
+      .createQueryBuilder('order')
+      .select('order.orderId', 'orderId')
+      .addSelect('order.orderNo', 'orderNo')
+      .where('order.orderId IN (:...orderIds)', { orderIds })
+      .getRawMany<{ orderId: string | number; orderNo?: string }>();
+
+    const orderNoById = new Map<number, string>();
+    rows.forEach((row) => {
+      const id = Number(row.orderId);
+      if (Number.isFinite(id) && row.orderNo) {
+        orderNoById.set(id, row.orderNo);
+      }
+    });
+
+    invoices.forEach((invoice) => {
+      invoice.orderNo = orderNoById.get(invoice.orderId);
+    });
+
+    return invoices;
+  }
+
   /** Returns all READY orders for this restaurant (pending billing). */
   async getReadyOrders(restaurantId: number): Promise<Order[]> {
     return this.ordersRepository
@@ -82,7 +141,12 @@ export class BillingService {
     restaurantId: number,
     adminId?: number,
   ): Promise<Invoice> {
-    const { orderId, taxAmount = 0, serviceCharge = 0, discountAmount = 0 } = dto;
+    const {
+      orderId,
+      taxAmount = 0,
+      serviceCharge = 0,
+      discountAmount = 0,
+    } = dto;
 
     // Load the order
     const order = await this.ordersRepository
@@ -103,7 +167,9 @@ export class BillingService {
     }
 
     // Check if invoice already exists for this order
-    const existing = await this.invoicesRepository.findOne({ where: { orderId } });
+    const existing = await this.invoicesRepository.findOne({
+      where: { orderId },
+    });
     if (existing) {
       // Return existing invoice (idempotent re-print)
       return existing;
@@ -122,7 +188,8 @@ export class BillingService {
       totalAmount: total,
     });
 
-    const savedInvoice = await this.invoicesRepository.save(invoice) as Invoice;
+    const savedInvoice = await this.invoicesRepository.save(invoice);
+    savedInvoice.orderNo = order.orderNo || undefined;
 
     // Transition order to BILLED
     order.status = OrderStatus.BILLED;
@@ -152,7 +219,7 @@ export class BillingService {
     });
 
     if (existing) {
-      return existing;
+      return this.hydrateOrderNo(existing);
     }
 
     const order = await this.ordersRepository
@@ -167,15 +234,22 @@ export class BillingService {
     }
 
     if (order.status === OrderStatus.CANCELLED) {
-      throw new BadRequestException('Cancelled orders cannot be sent to cashier.');
+      throw new BadRequestException(
+        'Cancelled orders cannot be sent to cashier.',
+      );
     }
 
     const invoice = this.buildInvoiceSnapshot(order, adminId);
-    return this.invoicesRepository.save(invoice) as Promise<Invoice>;
+    const savedInvoice = await this.invoicesRepository.save(invoice);
+    savedInvoice.orderNo = order.orderNo || undefined;
+    return savedInvoice;
   }
 
   /** Marks an invoice as sent to cashier and returns the updated invoice. */
-  async sendInvoiceToCashier(invoiceId: number, restaurantId: number): Promise<Invoice> {
+  async sendInvoiceToCashier(
+    invoiceId: number,
+    restaurantId: number,
+  ): Promise<Invoice> {
     const invoice = await this.findOneInvoice(invoiceId, restaurantId);
     invoice.isSentToCashier = true;
     invoice.sentToCashierAt = new Date();
@@ -188,26 +262,36 @@ export class BillingService {
       restaurantId: savedInvoice.restaurantId,
     });
 
-    return savedInvoice;
+    return this.hydrateOrderNo(savedInvoice);
   }
 
   /** Returns invoices that were sent from KDS to cashier and still need cashier attention. */
   async getCashierQueue(restaurantId: number): Promise<Invoice[]> {
-    return this.invoicesRepository
+    const invoices = await this.invoicesRepository
       .createQueryBuilder('invoice')
       .where('invoice.restaurantId = :restaurantId', { restaurantId })
-      .andWhere('invoice.isSentToCashier = :isSentToCashier', { isSentToCashier: true })
-      .andWhere('invoice.invoiceStatus = :status', { status: InvoiceStatus.PENDING })
+      .andWhere('invoice.isSentToCashier = :isSentToCashier', {
+        isSentToCashier: true,
+      })
+      .andWhere('invoice.invoiceStatus = :status', {
+        status: InvoiceStatus.PENDING,
+      })
       .orderBy('invoice.sentToCashierAt', 'DESC')
       .addOrderBy('invoice.createdAt', 'DESC')
       .getMany();
+
+    return this.hydrateOrderNos(invoices);
   }
 
   /** Marks an invoice as printed by cashier. */
-  async markInvoicePrinted(invoiceId: number, restaurantId: number): Promise<Invoice> {
+  async markInvoicePrinted(
+    invoiceId: number,
+    restaurantId: number,
+  ): Promise<Invoice> {
     const invoice = await this.findOneInvoice(invoiceId, restaurantId);
     invoice.isPrinted = true;
-    return this.invoicesRepository.save(invoice);
+    const savedInvoice = await this.invoicesRepository.save(invoice);
+    return this.hydrateOrderNo(savedInvoice);
   }
 
   /** Marks a BILLED order as SERVED. */
@@ -258,13 +342,22 @@ export class BillingService {
     }
 
     if (from || to) {
-      const startDate = from ? new Date(`${from}T00:00:00.000Z`) : new Date('1970-01-01');
-      const endDate = to ? new Date(`${to}T23:59:59.999Z`) : new Date('2099-12-31');
-      query.andWhere('invoice.createdAt BETWEEN :startDate AND :endDate', { startDate, endDate });
+      const startDate = from
+        ? new Date(`${from}T00:00:00.000Z`)
+        : new Date('1970-01-01');
+      const endDate = to
+        ? new Date(`${to}T23:59:59.999Z`)
+        : new Date('2099-12-31');
+      query.andWhere('invoice.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
     }
 
     if (tableNo) {
-      query.andWhere('invoice.tableNo LIKE :tableNo', { tableNo: `%${tableNo}%` });
+      query.andWhere('invoice.tableNo LIKE :tableNo', {
+        tableNo: `%${tableNo}%`,
+      });
     }
 
     if (invoiceNumber) {
@@ -273,11 +366,15 @@ export class BillingService {
       });
     }
 
-    return query.getMany();
+    const invoices = await query.getMany();
+    return this.hydrateOrderNos(invoices);
   }
 
   /** Returns a single invoice (scoped to restaurantId for security). */
-  async findOneInvoice(invoiceId: number, restaurantId: number): Promise<Invoice> {
+  async findOneInvoice(
+    invoiceId: number,
+    restaurantId: number,
+  ): Promise<Invoice> {
     const invoice = await this.invoicesRepository.findOne({
       where: { invoiceId, restaurantId },
     });
@@ -286,21 +383,29 @@ export class BillingService {
       throw new NotFoundException(`Invoice #${invoiceId} not found`);
     }
 
-    return invoice;
+    return this.hydrateOrderNo(invoice);
   }
 
   /** Marks an invoice's isSentWhatsapp flag as true. */
-  async markWhatsappSent(invoiceId: number, restaurantId: number): Promise<Invoice> {
+  async markWhatsappSent(
+    invoiceId: number,
+    restaurantId: number,
+  ): Promise<Invoice> {
     const invoice = await this.findOneInvoice(invoiceId, restaurantId);
     invoice.isSentWhatsapp = true;
-    return this.invoicesRepository.save(invoice);
+    const savedInvoice = await this.invoicesRepository.save(invoice);
+    return this.hydrateOrderNo(savedInvoice);
   }
 
   /** Marks an invoice as PAID. */
-  async markInvoicePaid(invoiceId: number, restaurantId: number): Promise<Invoice> {
+  async markInvoicePaid(
+    invoiceId: number,
+    restaurantId: number,
+  ): Promise<Invoice> {
     const invoice = await this.findOneInvoice(invoiceId, restaurantId);
     invoice.invoiceStatus = InvoiceStatus.PAID;
-    return this.invoicesRepository.save(invoice);
+    const savedInvoice = await this.invoicesRepository.save(invoice);
+    return this.hydrateOrderNo(savedInvoice);
   }
 
   /** Records a bill action (PDF download, print, or WhatsApp send). */
@@ -384,9 +489,15 @@ export class BillingService {
 
     return {
       invoiceId,
-      pdfDownloads: billActions.filter((a) => a.actionType === BillActionType.PDF_DOWNLOADED),
-      prints: billActions.filter((a) => a.actionType === BillActionType.BILL_PRINTED),
-      whatsappSends: billActions.filter((a) => a.actionType === BillActionType.WHATSAPP_SENT),
+      pdfDownloads: billActions.filter(
+        (a) => a.actionType === BillActionType.PDF_DOWNLOADED,
+      ),
+      prints: billActions.filter(
+        (a) => a.actionType === BillActionType.BILL_PRINTED,
+      ),
+      whatsappSends: billActions.filter(
+        (a) => a.actionType === BillActionType.WHATSAPP_SENT,
+      ),
       totalActions: billActions.length,
       allActions: billActions,
     };

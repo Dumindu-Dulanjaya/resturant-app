@@ -492,7 +492,7 @@ function App() {
               path="/billing"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
+                  <RoleRoute allowedRoles={['super_admin', 'kitchen']}>
                     <ServiceBillingDashboard />
                   </RoleRoute>
                 </PrivateRoute>

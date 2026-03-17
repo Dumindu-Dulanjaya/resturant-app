@@ -51,6 +51,11 @@ function PrintableInvoice({ invoice, restaurantName }) {
         <div className="pi-title">TAX INVOICE</div>
         <div className="pi-meta">
           <span><strong>Invoice #:</strong> {invoice.invoiceNumber}</span>
+          <span>
+            <strong>Order #:</strong> {invoice.orderNo || (invoice.orderId ? `#${invoice.orderId}` : '–')}
+          </span>
+        </div>
+        <div className="pi-meta">
           <span><strong>Date:</strong> {formatDateTime(invoice.createdAt)}</span>
         </div>
         {invoice.tableNo && (
@@ -107,14 +112,22 @@ function PrintableInvoice({ invoice, restaurantName }) {
 // Invoice Detail Modal
 // ---------------------------------------------------------------------------
 
-function InvoiceModal({ invoice, restaurantName, onClose, onMarkServed, onMarkPaid, onWhatsApp }) {
+function InvoiceModal({ invoice, restaurantName, onClose, onMarkServed, onMarkPaid }) {
   const printRef = useRef();
 
   const handlePrint = async () => {
     if (invoice.onBeforePrint) {
       await invoice.onBeforePrint();
     }
+    const printModeClass = 'billing-invoice-print-mode';
+    const cleanupPrintMode = () => {
+      document.body.classList.remove(printModeClass);
+    };
+
+    document.body.classList.add(printModeClass);
+    window.addEventListener('afterprint', cleanupPrintMode, { once: true });
     window.print();
+    window.setTimeout(cleanupPrintMode, 1000);
   };
 
   return (
@@ -143,11 +156,6 @@ function InvoiceModal({ invoice, restaurantName, onClose, onMarkServed, onMarkPa
           {onMarkServed && (
             <button className="btn btn-primary btn-sm" onClick={onMarkServed}>
               <i className="fas fa-concierge-bell me-1"></i>Mark Served
-            </button>
-          )}
-          {invoice.whatsappNumber && (
-            <button className="btn btn-whatsapp btn-sm" onClick={onWhatsApp}>
-              <i className="fab fa-whatsapp me-1"></i>Send via WhatsApp
             </button>
           )}
           <button className="btn btn-dark btn-sm" onClick={handlePrint}>
@@ -445,21 +453,6 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
     }
   };
 
-  // WhatsApp bill
-  const handleWhatsApp = async (invoice) => {
-    const phone = normalizeWhatsAppNumber(invoice.whatsappNumber);
-    if (!phone) { showToast('No WhatsApp number on this invoice.', 'error'); return; }
-    const items = Array.isArray(invoice.orderItemsJson) ? invoice.orderItemsJson : [];
-    const lines = items.map((i) => `  • ${i.itemName} x${i.qty} = ${formatCurrency(i.lineTotal)}`).join('\n');
-    const msg = `🧾 *Invoice ${invoice.invoiceNumber}*\nTable: ${invoice.tableNo || '–'}\n\n${lines}\n\n*Total: ${formatCurrency(invoice.totalAmount)}*\n\nThank you! 🙏`;
-    window.open(`https://api.whatsapp.com/send?phone=${phone.replace('+', '')}&text=${encodeURIComponent(msg)}`, '_blank');
-    // Record the send
-    try {
-      await billingAPI.markWhatsappSent(invoice.invoiceId);
-      fetchInvoices();
-    } catch (_) { /* best-effort */ }
-  };
-
   const restaurantName = user?.restaurantName || 'Restaurant';
 
   return (
@@ -600,7 +593,6 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
                         <th>Customer</th>
                         <th>Total</th>
                         <th>Status</th>
-                        <th>WhatsApp</th>
                         <th>Date</th>
                         <th></th>
                       </tr>
@@ -616,13 +608,6 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
                             <span className={`badge ${inv.invoiceStatus === 'PAID' ? 'bg-success' : 'bg-secondary'}`}>
                               {inv.invoiceStatus}
                             </span>
-                          </td>
-                          <td>
-                            {inv.isSentWhatsapp ? (
-                              <span className="badge bg-success"><i className="fab fa-whatsapp me-1"></i>Sent</span>
-                            ) : (
-                              <span className="badge bg-light text-muted">–</span>
-                            )}
                           </td>
                           <td className="text-muted small">{formatDateTime(inv.createdAt)}</td>
                           <td>
@@ -669,7 +654,6 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
               : null
           }
           onMarkPaid={() => handleMarkPaid(viewInvoice.invoiceId)}
-          onWhatsApp={() => handleWhatsApp(viewInvoice)}
         />
       )}
 

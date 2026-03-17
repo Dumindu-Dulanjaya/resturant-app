@@ -89,15 +89,63 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, readOnly = false })
   };
 
   const handlePrint = () => {
-    // Small delay to ensure modal content is fully rendered
+    const printArea = document.querySelector('.print-area');
+
+    if (!printArea) {
+      Swal.fire('Error', 'Unable to prepare the ticket for printing.', 'error');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=420,height=700');
+
+    if (!printWindow) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Popup blocked',
+        text: 'Allow popups for this site to print the ticket.',
+      });
+      return;
+    }
+
+    const printableHtml = `
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Ticket ${order.orderNo || ''}</title>
+        <style>
+          @page { size: 80mm auto; margin: 0; }
+          html, body { margin: 0; padding: 0; }
+          body { font-family: Arial, sans-serif; width: 80mm; font-size: 12px; color: #000; }
+          .ticket-wrap { width: 80mm; box-sizing: border-box; padding: 10px; }
+          .text-center { text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="ticket-wrap">${printArea.innerHTML}</div>
+        <script>
+          window.onload = function () {
+            setTimeout(function () {
+              window.focus();
+              window.print();
+            }, 150);
+          };
+
+          window.onafterprint = function () {
+            window.close();
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(printableHtml);
+    printWindow.document.close();
+
     setTimeout(() => {
-      window.print();
-      
-      // Auto close modal after print dialog (better UX for kitchen staff)
-      setTimeout(() => {
-        onClose();
-      }, 500);
-    }, 200);
+      onClose();
+    }, 300);
   };
 
   const sendWhatsAppBill = () => {

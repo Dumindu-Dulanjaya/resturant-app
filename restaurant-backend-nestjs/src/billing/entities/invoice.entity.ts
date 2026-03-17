@@ -25,10 +25,20 @@ export class Invoice {
   @Column({ name: 'restaurant_id', type: 'int' })
   restaurantId: number;
 
-  @Column({ name: 'customer_name', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'customer_name',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   customerName: string;
 
-  @Column({ name: 'whatsapp_number', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'whatsapp_number',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   whatsappNumber: string;
 
   @Column({ name: 'table_no', type: 'varchar', length: 50, nullable: true })
@@ -37,19 +47,49 @@ export class Invoice {
   @Column({ name: 'order_items_json', type: 'json' })
   orderItemsJson: object;
 
-  @Column({ name: 'subtotal', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    name: 'subtotal',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   subtotal: number;
 
-  @Column({ name: 'tax_amount', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    name: 'tax_amount',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   taxAmount: number;
 
-  @Column({ name: 'service_charge', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    name: 'service_charge',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   serviceCharge: number;
 
-  @Column({ name: 'discount_amount', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    name: 'discount_amount',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   discountAmount: number;
 
-  @Column({ name: 'total_amount', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    name: 'total_amount',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   totalAmount: number;
 
   @Column({
@@ -80,4 +120,7 @@ export class Invoice {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  // Derived at runtime from kitchen_orders_tbl (not persisted in invoices table)
+  orderNo?: string;
 }

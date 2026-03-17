@@ -380,15 +380,34 @@
 
 /* ── Print-only styles ── */
 @media print {
-  body > *:not(#printable-invoice) { display: none !important; }
-  #printable-invoice { display: block !important; }
-  .printable-invoice {
-    position: fixed;
-    inset: 0;
+  @page {
+    margin: 10mm;
+  }
+
+  body.billing-invoice-print-mode {
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  /* Keep layout tree intact and only reveal the invoice node. */
+  body.billing-invoice-print-mode * {
+    visibility: hidden !important;
+  }
+
+  body.billing-invoice-print-mode #printable-invoice,
+  body.billing-invoice-print-mode #printable-invoice * {
+    visibility: visible !important;
+  }
+
+  body.billing-invoice-print-mode .printable-invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
     background: #fff;
-    z-index: 99999;
     max-width: 100%;
     padding: 1rem;
+    margin: 0;
   }
 }
 
