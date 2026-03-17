@@ -27,10 +27,13 @@ CREATE TABLE IF NOT EXISTS `bill_actions` (
 -- Add new columns to invoices table if they don't exist (for tracking)
 ALTER TABLE `invoices` ADD COLUMN IF NOT EXISTS `is_printed` TINYINT(1) DEFAULT 0 COMMENT 'Whether the bill was printed' AFTER `is_sent_whatsapp`;
 ALTER TABLE `invoices` ADD COLUMN IF NOT EXISTS `is_sent_whatsapp` TINYINT(1) DEFAULT 0 COMMENT 'Whether the bill was sent via WhatsApp' AFTER `is_printed`;
+ALTER TABLE `invoices` ADD COLUMN IF NOT EXISTS `is_sent_to_cashier` TINYINT(1) DEFAULT 0 COMMENT 'Whether the bill was handed off to cashier' AFTER `is_printed`;
+ALTER TABLE `invoices` ADD COLUMN IF NOT EXISTS `sent_to_cashier_at` DATETIME NULL COMMENT 'When the bill was handed off to cashier' AFTER `is_sent_to_cashier`;
 
 -- Create indexes on invoices for bill action tracking
 ALTER TABLE `invoices` ADD INDEX IF NOT EXISTS `idx_is_printed` (`is_printed`);
 ALTER TABLE `invoices` ADD INDEX IF NOT EXISTS `idx_is_sent_whatsapp` (`is_sent_whatsapp`);
+ALTER TABLE `invoices` ADD INDEX IF NOT EXISTS `idx_is_sent_to_cashier` (`is_sent_to_cashier`);
 
 -- Sample query: Get bill action summary for an order
 -- SELECT 

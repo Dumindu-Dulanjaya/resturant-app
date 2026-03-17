@@ -108,10 +108,12 @@ function PrintableInvoice({ invoice, restaurantName }) {
 // ---------------------------------------------------------------------------
 
 function InvoiceModal({ invoice, restaurantName, onClose, onMarkServed, onMarkPaid, onWhatsApp }) {
-  const items = Array.isArray(invoice.orderItemsJson) ? invoice.orderItemsJson : [];
   const printRef = useRef();
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    if (invoice.onBeforePrint) {
+      await invoice.onBeforePrint();
+    }
     window.print();
   };
 
@@ -252,11 +254,17 @@ function CreateInvoiceModal({ order, onConfirm, onClose, loading }) {
 const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = 'fas fa-file-invoice-dollar' }) => {
   const { user } = useAuthStore();
   const { subscribe, connected } = useWebSocket();
+  const isCashierDashboard = user?.role === 'cashier';
 
   // Ready orders state
   const [readyOrders, setReadyOrders] = useState([]);
   const [loadingReady, setLoadingReady] = useState(true);
   const [readyError, setReadyError] = useState('');
+
+  // Cashier queue state
+  const [cashierQueue, setCashierQueue] = useState([]);
+  const [loadingCashierQueue, setLoadingCashierQueue] = useState(true);
+  const [cashierQueueError, setCashierQueueError] = useState('');
 
   // Invoice history state
   const [invoices, setInvoices] = useState([]);
@@ -293,6 +301,18 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
     }
   }, []);
 
+  const fetchCashierQueue = useCallback(async () => {
+    try {
+      setCashierQueueError('');
+      const res = await billingAPI.getCashierQueue();
+      setCashierQueue(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      setCashierQueueError(err?.response?.data?.message || 'Failed to load cashier queue.');
+    } finally {
+      setLoadingCashierQueue(false);
+    }
+  }, []);
+
   // Fetch invoice history
   const fetchInvoices = useCallback(async () => {
     try {
@@ -310,22 +330,57 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
     }
   }, [filterFrom, filterTo, filterTable]);
 
-  useEffect(() => { fetchReadyOrders(); }, [fetchReadyOrders]);
+  useEffect(() => {
+    if (isCashierDashboard) {
+      fetchCashierQueue();
+      return;
+    }
+
+    fetchReadyOrders();
+  }, [fetchCashierQueue, fetchReadyOrders, isCashierDashboard]);
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   // Auto-refresh via WebSocket
   useEffect(() => {
     if (!connected) return;
-    const unsub1 = subscribe('order:status-update', fetchReadyOrders);
-    const unsub2 = subscribe('order:new', fetchReadyOrders);
-    return () => { unsub1(); unsub2(); };
-  }, [connected, subscribe, fetchReadyOrders]);
+    const unsubscribers = [
+      subscribe('dashboard:refresh', () => {
+        if (isCashierDashboard) {
+          fetchCashierQueue();
+        } else {
+          fetchReadyOrders();
+        }
+        fetchInvoices();
+      }),
+      subscribe('cashier:queue-update', fetchCashierQueue),
+      subscribe('order:status-update', () => {
+        if (!isCashierDashboard) {
+          fetchReadyOrders();
+        }
+      }),
+      subscribe('order:new', () => {
+        if (!isCashierDashboard) {
+          fetchReadyOrders();
+        }
+      }),
+    ];
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [connected, fetchCashierQueue, fetchInvoices, fetchReadyOrders, isCashierDashboard, subscribe]);
 
   // Polling fallback (30s)
   useEffect(() => {
-    const id = setInterval(fetchReadyOrders, 30000);
+    const id = setInterval(() => {
+      if (isCashierDashboard) {
+        fetchCashierQueue();
+      } else {
+        fetchReadyOrders();
+      }
+    }, 30000);
     return () => clearInterval(id);
-  }, [fetchReadyOrders]);
+  }, [fetchCashierQueue, fetchReadyOrders, isCashierDashboard]);
 
   // Create invoice flow
   const handleOpenCreateModal = (order) => setCreateModalOrder(order);
@@ -364,10 +419,29 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
     try {
       const res = await billingAPI.markInvoicePaid(invoiceId);
       setViewInvoice(res.data);
+      fetchCashierQueue();
       fetchInvoices();
       showToast('Invoice marked as paid!');
     } catch (err) {
       showToast(err?.response?.data?.message || 'Failed.', 'error');
+    }
+  };
+
+  const handleCashierPrint = async (invoice) => {
+    try {
+      if (!invoice.isPrinted) {
+        const res = await billingAPI.markInvoicePrinted(invoice.invoiceId);
+        const updatedInvoice = res.data;
+        setCashierQueue((prev) => prev.map((item) => (
+          item.invoiceId === updatedInvoice.invoiceId ? updatedInvoice : item
+        )));
+        setInvoices((prev) => prev.map((item) => (
+          item.invoiceId === updatedInvoice.invoiceId ? updatedInvoice : item
+        )));
+        setViewInvoice((prev) => (prev?.invoiceId === updatedInvoice.invoiceId ? updatedInvoice : prev));
+      }
+    } catch (err) {
+      showToast(err?.response?.data?.message || 'Failed to record invoice print.', 'error');
     }
   };
 
@@ -416,42 +490,51 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
         <div className="content">
           <div className="container-fluid">
 
-            {/* ── SECTION 1: Ready to Bill ── */}
+            {/* ── SECTION 1: Ready to Bill / Cashier Queue ── */}
             <section className="billing-section">
               <div className="section-heading">
-                <i className="fas fa-bell text-warning me-2"></i>
-                Ready to Bill
-                <span className="badge bg-warning text-dark ms-2">{readyOrders.length}</span>
+                <i className={`${isCashierDashboard ? 'fas fa-cash-register text-primary' : 'fas fa-bell text-warning'} me-2`}></i>
+                {isCashierDashboard ? 'Cashier Queue' : 'Ready to Bill'}
+                <span className={`badge ${isCashierDashboard ? 'bg-primary' : 'bg-warning text-dark'} ms-2`}>
+                  {isCashierDashboard ? cashierQueue.length : readyOrders.length}
+                </span>
               </div>
 
-              {loadingReady ? (
+              {(isCashierDashboard ? loadingCashierQueue : loadingReady) ? (
                 <div className="text-center py-4">
                   <div className="spinner-border text-primary"></div>
                 </div>
-              ) : readyError ? (
-                <div className="alert alert-danger">{readyError}</div>
-              ) : readyOrders.length === 0 ? (
+              ) : (isCashierDashboard ? cashierQueueError : readyError) ? (
+                <div className="alert alert-danger">{isCashierDashboard ? cashierQueueError : readyError}</div>
+              ) : (isCashierDashboard ? cashierQueue.length === 0 : readyOrders.length === 0) ? (
                 <div className="empty-state">
-                  <i className="fas fa-check-circle text-success fa-2x mb-2"></i>
-                  <p className="mb-0">No orders waiting to be billed.</p>
+                  <i className={`fas ${isCashierDashboard ? 'fa-inbox text-primary' : 'fa-check-circle text-success'} fa-2x mb-2`}></i>
+                  <p className="mb-0">{isCashierDashboard ? 'No payment details waiting for cashier.' : 'No orders waiting to be billed.'}</p>
                 </div>
               ) : (
                 <div className="ready-orders-grid">
-                  {readyOrders.map((order) => (
-                    <ReadyOrderCard
-                      key={order.orderId}
-                      order={order}
-                      onBill={() => handleOpenCreateModal(order)}
-                      onWhatsApp={() => {
-                        // Quick WhatsApp without invoice (as per existing feature)
-                        const phone = normalizeWhatsAppNumber(order.whatsappNumber);
-                        if (!phone) { showToast('No WhatsApp number.', 'error'); return; }
-                        const itemLines = (order.orderItems || []).map((i) => `  • ${i.itemName} x${i.qty}`).join('\n');
-                        const msg = `🍽️ *Order Ready!*\nOrder: ${order.orderNo}\nTable: ${order.tableNo || '–'}\n\n${itemLines}\n\n*Total: ${formatCurrency(order.totalAmount)}*`;
-                        window.open(`https://api.whatsapp.com/send?phone=${phone.replace('+', '')}&text=${encodeURIComponent(msg)}`, '_blank');
-                      }}
-                    />
-                  ))}
+                  {isCashierDashboard
+                    ? cashierQueue.map((invoice) => (
+                      <CashierQueueCard
+                        key={invoice.invoiceId}
+                        invoice={invoice}
+                        onOpen={() => setViewInvoice(invoice)}
+                      />
+                    ))
+                    : readyOrders.map((order) => (
+                      <ReadyOrderCard
+                        key={order.orderId}
+                        order={order}
+                        onBill={() => handleOpenCreateModal(order)}
+                        onWhatsApp={() => {
+                          const phone = normalizeWhatsAppNumber(order.whatsappNumber);
+                          if (!phone) { showToast('No WhatsApp number.', 'error'); return; }
+                          const itemLines = (order.orderItems || []).map((i) => `  • ${i.itemName} x${i.qty}`).join('\n');
+                          const msg = `🍽️ *Order Ready!*\nOrder: ${order.orderNo}\nTable: ${order.tableNo || '–'}\n\n${itemLines}\n\n*Total: ${formatCurrency(order.totalAmount)}*`;
+                          window.open(`https://api.whatsapp.com/send?phone=${phone.replace('+', '')}&text=${encodeURIComponent(msg)}`, '_blank');
+                        }}
+                      />
+                    ))}
                 </div>
               )}
             </section>
@@ -574,11 +657,14 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
 
       {viewInvoice && (
         <InvoiceModal
-          invoice={viewInvoice}
+          invoice={{
+            ...viewInvoice,
+            onBeforePrint: isCashierDashboard ? () => handleCashierPrint(viewInvoice) : undefined,
+          }}
           restaurantName={restaurantName}
           onClose={() => setViewInvoice(null)}
           onMarkServed={
-            viewInvoice.orderId
+            !isCashierDashboard && viewInvoice.orderId
               ? () => handleMarkServed(viewInvoice.orderId)
               : null
           }
@@ -636,6 +722,38 @@ function ReadyOrderCard({ order, onBill, onWhatsApp }) {
             <i className="fab fa-whatsapp"></i>
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+function CashierQueueCard({ invoice, onOpen }) {
+  return (
+    <div className="ready-order-card">
+      <div className="roc-header">
+        <span className="roc-order-no">{invoice.invoiceNumber}</span>
+        <span className="badge bg-primary ms-auto">CASHIER</span>
+      </div>
+      <div className="roc-meta">
+        {invoice.tableNo && <span><i className="fas fa-chair me-1"></i>Table {invoice.tableNo}</span>}
+        {invoice.customerName && <span><i className="fas fa-user me-1"></i>{invoice.customerName}</span>}
+      </div>
+      <ul className="roc-items">
+        {(Array.isArray(invoice.orderItemsJson) ? invoice.orderItemsJson : []).slice(0, 4).map((item, i) => (
+          <li key={i}>
+            <span>{item.itemName}</span>
+            <span className="text-muted">&times;{item.qty}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="roc-total">{formatCurrency(invoice.totalAmount)}</div>
+      <div className="roc-meta mb-2">
+        <span><i className="fas fa-clock me-1"></i>{formatDateTime(invoice.sentToCashierAt || invoice.createdAt)}</span>
+      </div>
+      <div className="roc-actions">
+        <button className="btn btn-primary btn-sm flex-grow-1" onClick={onOpen}>
+          <i className="fas fa-print me-1"></i>{invoice.isPrinted ? 'Reprint Bill' : 'Print Bill'}
+        </button>
       </div>
     </div>
   );

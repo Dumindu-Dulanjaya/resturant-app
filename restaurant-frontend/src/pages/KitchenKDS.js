@@ -3,7 +3,7 @@ import { Modal, Button } from 'react-bootstrap';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import Swal from 'sweetalert2';
-import apiClient from '../api/apiClient';
+import apiClient, { billingAPI } from '../api/apiClient';
 import './KitchenKDS.css';
 
 const KitchenKDS = () => {
@@ -241,8 +241,8 @@ const KitchenKDS = () => {
             icon: 'success',
             title: 'Order marked as served',
             text: hasWhatsApp
-              ? 'Step 1 of 2: Open the bill, use Download PDF or Print, then click Back to continue to WhatsApp.'
-              : 'Open the bill, then choose Download PDF or Print.',
+              ? 'Open the bill, then download, print, send to cashier, or continue to WhatsApp.'
+              : 'Open the bill, then download, print, or send it to cashier.',
             showCancelButton: false,
             confirmButtonColor: '#0d6efd',
             confirmButtonText: 'Open Bill',
@@ -251,9 +251,15 @@ const KitchenKDS = () => {
           });
 
           clearSwalBackdropArtifacts();
-          const printCompleted = await printOrderBill(servedOrder);
+          const billActionState = await printOrderBill(servedOrder);
 
-          if (!printCompleted || !hasWhatsApp) {
+          if (billActionState.sendToCashier) {
+            clearSwalBackdropArtifacts();
+            await sendPaymentDetailsToCashier(servedOrder);
+            return;
+          }
+
+          if (!billActionState.continueToWhatsApp || !hasWhatsApp) {
             return;
           }
 
@@ -350,6 +356,35 @@ const KitchenKDS = () => {
       .replace(/'/g, '&#39;');
   };
 
+  const sendPaymentDetailsToCashier = async (order) => {
+    try {
+      const invoiceResponse = await billingAPI.createInvoiceForOrder(order.orderId);
+      const invoice = invoiceResponse.data;
+
+      await billingAPI.sendInvoiceToCashier(invoice.invoiceId);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Sent to cashier',
+        text: 'Payment details are now available on the cashier dashboard.',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2600,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error sending payment details to cashier:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Cashier handoff failed',
+        text: error?.response?.data?.message || 'Failed to send payment details to cashier.',
+      });
+      return false;
+    }
+  };
+
   const printOrderBill = (order) => {
     return new Promise((resolve) => {
       const printWindow = window.open('', '_blank', 'width=900,height=700');
@@ -360,7 +395,7 @@ const KitchenKDS = () => {
           title: 'Popup blocked',
           text: 'Allow popups for this site and try again.',
         });
-        resolve(false);
+        resolve({ continueToWhatsApp: false, sendToCashier: false });
         return;
       }
 
@@ -372,10 +407,13 @@ const KitchenKDS = () => {
       const onBillActionComplete = (event) => {
         if (event.origin !== window.location.origin) return;
         if (event.data?.type !== messageType) return;
-        completePrintFlow(!!event.data?.continueToWhatsApp);
+        completePrintFlow({
+          continueToWhatsApp: !!event.data?.continueToWhatsApp,
+          sendToCashier: !!event.data?.sendToCashier,
+        });
       };
 
-      const completePrintFlow = (success) => {
+      const completePrintFlow = (result) => {
         if (completed) return;
         completed = true;
 
@@ -398,7 +436,7 @@ const KitchenKDS = () => {
         }
 
         window.focus();
-        resolve(success);
+        resolve(result);
       };
 
       window.addEventListener('message', onBillActionComplete);
@@ -406,7 +444,7 @@ const KitchenKDS = () => {
       // If the bill window is closed without clicking Print/Download, treat as incomplete.
       closedCheckTimer = window.setInterval(() => {
         if (printWindow.closed) {
-          completePrintFlow(false);
+          completePrintFlow({ continueToWhatsApp: false, sendToCashier: false });
         }
       }, 400);
 
@@ -446,6 +484,7 @@ const KitchenKDS = () => {
           .bill-btn:active { transform: scale(0.95); }
           .bill-btn-download { background: #0d6efd; color: #fff; }
           .bill-btn-print { background: #198754; color: #fff; }
+          .bill-btn-cashier { background: #fd7e14; color: #fff; }
           .bill-btn-back { background: #6c757d; color: #fff; }
           .bill-btn:disabled { opacity: 0.6; cursor: wait; }
           .bill-hint { color: #555; font-size: 12px; margin-bottom: 10px; text-align: right; }
@@ -469,9 +508,10 @@ const KitchenKDS = () => {
           <div class="bill-actions">
             <button id="downloadPdfBtn" class="bill-btn bill-btn-download" type="button" title="Download PDF"><i class="fas fa-download"></i></button>
             <button id="printBillBtn" class="bill-btn bill-btn-print" type="button" title="Print"><i class="fas fa-print"></i></button>
+            <button id="sendToCashierBtn" class="bill-btn bill-btn-cashier" type="button" title="Send to Cashier"><i class="fas fa-cash-register"></i></button>
             <button id="backToWhatsappBtn" class="bill-btn bill-btn-back" type="button" title="Back to WhatsApp"><i class="fab fa-whatsapp"></i></button>
           </div>
-          <div class="bill-hint">Download PDF or Print, then Back for WhatsApp</div>
+          <div class="bill-hint">Download PDF, print, send to cashier, or continue to WhatsApp</div>
           <div id="billContent">
           <h2 style="margin:0 0 8px 0;">Customer Bill</h2>
           <div style="margin-bottom:14px;font-size:14px;">
@@ -506,16 +546,18 @@ const KitchenKDS = () => {
             const runtimeMessageType = ${JSON.stringify(messageType)};
             const downloadBtn = document.getElementById('downloadPdfBtn');
             const printBtn = document.getElementById('printBillBtn');
+            const cashierBtn = document.getElementById('sendToCashierBtn');
             const backBtn = document.getElementById('backToWhatsappBtn');
             const billContent = document.getElementById('billContent');
             const fileName = ${JSON.stringify(`Bill-${String(order.orderNo || 'order')}.pdf`)};
 
-            const notifyAndClose = (continueToWhatsApp) => {
+            const notifyAndClose = ({ continueToWhatsApp = false, sendToCashier = false } = {}) => {
               try {
                 if (window.opener && !window.opener.closed) {
                   window.opener.postMessage({
                     type: runtimeMessageType,
                     continueToWhatsApp: !!continueToWhatsApp,
+                    sendToCashier: !!sendToCashier,
                   }, window.location.origin);
                 }
               } catch (_error) {
@@ -525,7 +567,11 @@ const KitchenKDS = () => {
             };
 
             backBtn.addEventListener('click', function () {
-              notifyAndClose(true);
+              notifyAndClose({ continueToWhatsApp: true });
+            });
+
+            cashierBtn.addEventListener('click', function () {
+              notifyAndClose({ sendToCashier: true });
             });
 
             downloadBtn.addEventListener('click', async function () {
@@ -550,7 +596,7 @@ const KitchenKDS = () => {
 
                   downloadCompleted = true;
                   window.setTimeout(function () {
-                    notifyAndClose(true);
+                    notifyAndClose({ continueToWhatsApp: true });
                   }, 250);
                   return;
                 }
@@ -582,12 +628,12 @@ const KitchenKDS = () => {
         printWindow.document.close();
       } catch (error) {
         console.error('Error preparing printable bill:', error);
-        completePrintFlow(false);
+        completePrintFlow({ continueToWhatsApp: false, sendToCashier: false });
         return;
       }
 
       fallbackTimer = window.setTimeout(() => {
-        completePrintFlow(false);
+        completePrintFlow({ continueToWhatsApp: false, sendToCashier: false });
       }, 120000);
     });
   };

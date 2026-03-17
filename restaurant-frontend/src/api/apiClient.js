@@ -96,6 +96,10 @@ export const billingAPI = {
   getReadyOrders: () =>
     apiClient.get('/billing/ready-orders'),
 
+  /** Create or return an invoice snapshot for a specific order. */
+  createInvoiceForOrder: (orderId) =>
+    apiClient.post(`/billing/orders/${orderId}/create-invoice`),
+
   /**
    * Create an invoice for a READY order.
    * Transitions the order status to BILLED.
@@ -108,6 +112,10 @@ export const billingAPI = {
   getInvoices: (params) =>
     apiClient.get('/billing/invoices', { params }),
 
+  /** Fetch invoices that were sent from KDS to cashier. */
+  getCashierQueue: () =>
+    apiClient.get('/billing/invoices/cashier-queue'),
+
   /** Fetch a single invoice by ID. */
   getInvoice: (id) =>
     apiClient.get(`/billing/invoices/${id}`),
@@ -119,6 +127,14 @@ export const billingAPI = {
   /** Record that the WhatsApp bill was sent for an invoice. */
   markWhatsappSent: (invoiceId) =>
     apiClient.patch(`/billing/invoices/${invoiceId}/mark-whatsapp-sent`),
+
+  /** Record that cashier printed the invoice. */
+  markInvoicePrinted: (invoiceId) =>
+    apiClient.patch(`/billing/invoices/${invoiceId}/mark-printed`),
+
+  /** Push an invoice into the cashier dashboard queue. */
+  sendInvoiceToCashier: (invoiceId) =>
+    apiClient.patch(`/billing/invoices/${invoiceId}/send-to-cashier`),
 
   /** Mark an invoice as PAID. */
   markInvoicePaid: (invoiceId) =>

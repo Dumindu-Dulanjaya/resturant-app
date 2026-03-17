@@ -25,6 +25,43 @@ export class BillingService {
     private websocketGateway: WebsocketGateway,
   ) {}
 
+  private buildInvoiceSnapshot(order: Order, adminId?: number, overrides: Partial<Invoice> = {}): Invoice {
+    const subtotal = parseFloat(order.totalAmount.toString());
+    const today = new Date();
+    const datePart = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+    const invoiceNumber = `INV-${datePart}-${order.orderId}`;
+
+    const orderItemsSnapshot = (order.orderItems || []).map((item) => ({
+      itemName: item.itemName,
+      qty: item.qty,
+      unitPrice: parseFloat(item.unitPrice.toString()),
+      lineTotal: parseFloat(item.lineTotal.toString()),
+      notes: item.notes || null,
+    }));
+
+    return this.invoicesRepository.create({
+      invoiceNumber,
+      orderId: order.orderId,
+      restaurantId: order.restaurantId,
+      customerName: order.customerName,
+      whatsappNumber: order.whatsappNumber,
+      tableNo: order.tableNo,
+      orderItemsJson: orderItemsSnapshot,
+      subtotal,
+      taxAmount: 0,
+      serviceCharge: 0,
+      discountAmount: 0,
+      totalAmount: subtotal,
+      invoiceStatus: InvoiceStatus.PENDING,
+      isPrinted: false,
+      isSentToCashier: false,
+      isSentWhatsapp: false,
+      sentToCashierAt: null,
+      createdByAdminId: adminId ?? null,
+      ...overrides,
+    });
+  }
+
   /** Returns all READY orders for this restaurant (pending billing). */
   async getReadyOrders(restaurantId: number): Promise<Order[]> {
     return this.ordersRepository
@@ -78,37 +115,11 @@ export class BillingService {
     const discount = parseFloat(discountAmount.toString());
     const total = subtotal + tax + charge - discount;
 
-    // Build invoice number: INV-YYYYMMDD-<orderId>
-    const today = new Date();
-    const datePart = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-    const invoiceNumber = `INV-${datePart}-${orderId}`;
-
-    // Snapshot the order items
-    const orderItemsSnapshot = order.orderItems.map((item) => ({
-      itemName: item.itemName,
-      qty: item.qty,
-      unitPrice: parseFloat(item.unitPrice.toString()),
-      lineTotal: parseFloat(item.lineTotal.toString()),
-      notes: item.notes || null,
-    }));
-
-    const invoice = this.invoicesRepository.create({
-      invoiceNumber,
-      orderId,
-      restaurantId,
-      customerName: order.customerName,
-      whatsappNumber: order.whatsappNumber,
-      tableNo: order.tableNo,
-      orderItemsJson: orderItemsSnapshot,
-      subtotal,
+    const invoice = this.buildInvoiceSnapshot(order, adminId, {
       taxAmount: tax,
       serviceCharge: charge,
       discountAmount: discount,
       totalAmount: total,
-      invoiceStatus: InvoiceStatus.PENDING,
-      isPrinted: true,
-      isSentWhatsapp: false,
-      createdByAdminId: adminId ?? null,
     });
 
     const savedInvoice = await this.invoicesRepository.save(invoice) as Invoice;
@@ -128,6 +139,75 @@ export class BillingService {
     this.websocketGateway.server.emit('dashboard:refresh');
 
     return savedInvoice;
+  }
+
+  /** Creates or returns an invoice snapshot for an order so it can be handed off to cashier. */
+  async createOrGetInvoiceForOrder(
+    orderId: number,
+    restaurantId: number,
+    adminId?: number,
+  ): Promise<Invoice> {
+    const existing = await this.invoicesRepository.findOne({
+      where: { orderId, restaurantId },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const order = await this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.orderItems', 'orderItems')
+      .where('order.orderId = :orderId', { orderId })
+      .andWhere('order.restaurantId = :restaurantId', { restaurantId })
+      .getOne();
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException('Cancelled orders cannot be sent to cashier.');
+    }
+
+    const invoice = this.buildInvoiceSnapshot(order, adminId);
+    return this.invoicesRepository.save(invoice) as Promise<Invoice>;
+  }
+
+  /** Marks an invoice as sent to cashier and returns the updated invoice. */
+  async sendInvoiceToCashier(invoiceId: number, restaurantId: number): Promise<Invoice> {
+    const invoice = await this.findOneInvoice(invoiceId, restaurantId);
+    invoice.isSentToCashier = true;
+    invoice.sentToCashierAt = new Date();
+    const savedInvoice = await this.invoicesRepository.save(invoice);
+
+    this.websocketGateway.server.emit('dashboard:refresh');
+    this.websocketGateway.emitToRole('cashier', 'cashier:queue-update', {
+      invoiceId: savedInvoice.invoiceId,
+      orderId: savedInvoice.orderId,
+      restaurantId: savedInvoice.restaurantId,
+    });
+
+    return savedInvoice;
+  }
+
+  /** Returns invoices that were sent from KDS to cashier and still need cashier attention. */
+  async getCashierQueue(restaurantId: number): Promise<Invoice[]> {
+    return this.invoicesRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('invoice.isSentToCashier = :isSentToCashier', { isSentToCashier: true })
+      .andWhere('invoice.invoiceStatus = :status', { status: InvoiceStatus.PENDING })
+      .orderBy('invoice.sentToCashierAt', 'DESC')
+      .addOrderBy('invoice.createdAt', 'DESC')
+      .getMany();
+  }
+
+  /** Marks an invoice as printed by cashier. */
+  async markInvoicePrinted(invoiceId: number, restaurantId: number): Promise<Invoice> {
+    const invoice = await this.findOneInvoice(invoiceId, restaurantId);
+    invoice.isPrinted = true;
+    return this.invoicesRepository.save(invoice);
   }
 
   /** Marks a BILLED order as SERVED. */

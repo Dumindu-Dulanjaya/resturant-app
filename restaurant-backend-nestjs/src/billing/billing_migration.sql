@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS invoices (
   total_amount      DECIMAL(10,2)    NOT NULL DEFAULT 0.00,
   invoice_status    ENUM('PENDING','PAID') NOT NULL DEFAULT 'PENDING',
   is_printed        TINYINT(1)       NOT NULL DEFAULT 0,
+  is_sent_to_cashier TINYINT(1)      NOT NULL DEFAULT 0,
   is_sent_whatsapp  TINYINT(1)       NOT NULL DEFAULT 0,
+  sent_to_cashier_at DATETIME        NULL,
   created_by_admin_id INT            NULL,
   created_at        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -33,5 +35,6 @@ CREATE TABLE IF NOT EXISTS invoices (
   UNIQUE KEY uq_invoice_number (invoice_number),
   INDEX idx_order_id (order_id),
   INDEX idx_restaurant_id (restaurant_id),
+  INDEX idx_sent_to_cashier (is_sent_to_cashier),
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

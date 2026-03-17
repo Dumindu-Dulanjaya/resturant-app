@@ -24,8 +24,16 @@ export const WebSocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
   const { user } = useAuthStore();
   const socketRef = useRef(null);
+  const connectTimeoutRef = useRef(null);
   const retryTimeoutRef = useRef(null);
   const hasLoggedUnavailableRef = useRef(false);
+
+  const clearConnectTimer = useCallback(() => {
+    if (connectTimeoutRef.current) {
+      window.clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
+  }, []);
 
   const clearRetryTimer = useCallback(() => {
     if (retryTimeoutRef.current) {
@@ -35,6 +43,7 @@ export const WebSocketProvider = ({ children }) => {
   }, []);
 
   const disconnectSocket = useCallback(() => {
+    clearConnectTimer();
     clearRetryTimer();
 
     if (socketRef.current) {
@@ -45,7 +54,7 @@ export const WebSocketProvider = ({ children }) => {
 
     setSocket(null);
     setConnected(false);
-  }, [clearRetryTimer]);
+  }, [clearConnectTimer, clearRetryTimer]);
 
   useEffect(() => {
     if (!user) {
@@ -83,7 +92,12 @@ export const WebSocketProvider = ({ children }) => {
     let disposed = false;
 
     const scheduleReconnect = () => {
-      if (disposed || retryTimeoutRef.current || socketRef.current) {
+      if (
+        disposed ||
+        retryTimeoutRef.current ||
+        connectTimeoutRef.current ||
+        socketRef.current
+      ) {
         return;
       }
 
@@ -134,7 +148,7 @@ export const WebSocketProvider = ({ children }) => {
         transports: ['polling', 'websocket'],
         reconnection: false,
         timeout: 10000,
-        autoConnect: true,
+        autoConnect: false,
       });
 
       socketRef.current = newSocket;
@@ -184,15 +198,24 @@ export const WebSocketProvider = ({ children }) => {
         newSocket.disconnect();
         scheduleReconnect();
       });
+
+      newSocket.connect();
     };
 
-    void connectSocket();
+    // In React StrictMode (development), effects mount, cleanup, and remount once.
+    // Deferring the initial connect lets the first cleanup cancel it, preventing
+    // a websocket upgrade from being torn down mid-handshake and logging a browser error.
+    connectTimeoutRef.current = window.setTimeout(() => {
+      connectTimeoutRef.current = null;
+      void connectSocket();
+    }, 0);
 
     return () => {
       disposed = true;
+      clearConnectTimer();
       disconnectSocket();
     };
-  }, [user, disconnectSocket]);
+  }, [user, clearConnectTimer, disconnectSocket]);
 
   const subscribe = useCallback((event, callback) => {
     if (socket) {

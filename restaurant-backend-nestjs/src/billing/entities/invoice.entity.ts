@@ -63,8 +63,14 @@ export class Invoice {
   @Column({ name: 'is_printed', type: 'tinyint', default: 0 })
   isPrinted: boolean;
 
+  @Column({ name: 'is_sent_to_cashier', type: 'tinyint', default: 0 })
+  isSentToCashier: boolean;
+
   @Column({ name: 'is_sent_whatsapp', type: 'tinyint', default: 0 })
   isSentWhatsapp: boolean;
+
+  @Column({ name: 'sent_to_cashier_at', type: 'datetime', nullable: true })
+  sentToCashierAt: Date | null;
 
   @Column({ name: 'created_by_admin_id', type: 'int', nullable: true })
   createdByAdminId: number | null;

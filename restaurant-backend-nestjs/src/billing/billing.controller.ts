@@ -20,6 +20,27 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../auth/enums/role.enum';
 
+interface RequestWithUser {
+  user: {
+    id: number;
+    adminId?: number;
+    role: UserRole;
+    restaurantId: number;
+  };
+  ip?: string;
+  connection?: {
+    remoteAddress?: string;
+  };
+  headers: Record<string, string | string[] | undefined>;
+}
+
+const BILLING_ROLES: UserRole[] = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.KITCHEN,
+  UserRole.CASHIER,
+];
+
 @SkipThrottle()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('billing')
@@ -31,8 +52,8 @@ export class BillingController {
    * Returns all READY orders waiting to be billed.
    */
   @Get('ready-orders')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
-  getReadyOrders(@Request() req) {
+  @Roles(...BILLING_ROLES)
+  getReadyOrders(@Request() req: RequestWithUser) {
     return this.billingService.getReadyOrders(req.user.restaurantId);
   }
 
@@ -41,10 +62,27 @@ export class BillingController {
    * Creates an invoice for a READY order and transitions it to BILLED.
    */
   @Post('invoices')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
-  createInvoice(@Body() dto: CreateInvoiceDto, @Request() req) {
+  @Roles(...BILLING_ROLES)
+  createInvoice(@Body() dto: CreateInvoiceDto, @Request() req: RequestWithUser) {
     return this.billingService.createInvoice(
       dto,
+      req.user.restaurantId,
+      req.user.adminId ?? req.user.id,
+    );
+  }
+
+  /**
+   * POST /billing/orders/:id/create-invoice
+   * Creates or returns an invoice snapshot for handoff to cashier.
+   */
+  @Post('orders/:id/create-invoice')
+  @Roles(...BILLING_ROLES)
+  createInvoiceForOrder(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.billingService.createOrGetInvoiceForOrder(
+      id,
       req.user.restaurantId,
       req.user.adminId ?? req.user.id,
     );
@@ -55,9 +93,19 @@ export class BillingController {
    * Returns invoice history with optional filters.
    */
   @Get('invoices')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
-  findAllInvoices(@Query() queryDto: QueryInvoicesDto, @Request() req) {
+  @Roles(...BILLING_ROLES)
+  findAllInvoices(@Query() queryDto: QueryInvoicesDto, @Request() req: RequestWithUser) {
     return this.billingService.findAllInvoices(req.user.restaurantId, queryDto);
+  }
+
+  /**
+   * GET /billing/invoices/cashier-queue
+   * Returns invoices that were sent from KDS to cashier.
+   */
+  @Get('invoices/cashier-queue')
+  @Roles(...BILLING_ROLES)
+  getCashierQueue(@Request() req: RequestWithUser) {
+    return this.billingService.getCashierQueue(req.user.restaurantId);
   }
 
   /**
@@ -65,11 +113,8 @@ export class BillingController {
    * Returns a single invoice by ID.
    */
   @Get('invoices/:id')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
-  findOneInvoice(
-    @Param('id', ParseIntPipe) id: number,
-    @Request() req,
-  ) {
+  @Roles(...BILLING_ROLES)
+  findOneInvoice(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
     return this.billingService.findOneInvoice(id, req.user.restaurantId);
   }
 
@@ -78,11 +123,8 @@ export class BillingController {
    * Transitions a BILLED order to SERVED.
    */
   @Patch('orders/:id/mark-served')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
-  markServed(
-    @Param('id', ParseIntPipe) id: number,
-    @Request() req,
-  ) {
+  @Roles(...BILLING_ROLES)
+  markServed(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
     return this.billingService.markOrderServed(id, req.user.restaurantId);
   }
 
@@ -91,12 +133,29 @@ export class BillingController {
    * Records that the WhatsApp bill was sent for this invoice.
    */
   @Patch('invoices/:id/mark-whatsapp-sent')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
-  markWhatsappSent(
-    @Param('id', ParseIntPipe) id: number,
-    @Request() req,
-  ) {
+  @Roles(...BILLING_ROLES)
+  markWhatsappSent(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
     return this.billingService.markWhatsappSent(id, req.user.restaurantId);
+  }
+
+  /**
+   * PATCH /billing/invoices/:id/mark-printed
+   * Records that cashier printed the invoice.
+   */
+  @Patch('invoices/:id/mark-printed')
+  @Roles(...BILLING_ROLES)
+  markInvoicePrinted(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
+    return this.billingService.markInvoicePrinted(id, req.user.restaurantId);
+  }
+
+  /**
+   * PATCH /billing/invoices/:id/send-to-cashier
+   * Pushes an invoice into the cashier dashboard queue.
+   */
+  @Patch('invoices/:id/send-to-cashier')
+  @Roles(...BILLING_ROLES)
+  sendToCashier(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
+    return this.billingService.sendInvoiceToCashier(id, req.user.restaurantId);
   }
 
   /**
@@ -104,11 +163,8 @@ export class BillingController {
    * Marks an invoice as PAID.
    */
   @Patch('invoices/:id/mark-paid')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
-  markInvoicePaid(
-    @Param('id', ParseIntPipe) id: number,
-    @Request() req,
-  ) {
+  @Roles(...BILLING_ROLES)
+  markInvoicePaid(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
     return this.billingService.markInvoicePaid(id, req.user.restaurantId);
   }
 
@@ -117,13 +173,9 @@ export class BillingController {
    * Records a bill action (PDF download, print, or WhatsApp send).
    */
   @Post('bill-actions')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
-  recordBillAction(
-    @Body() dto: RecordBillActionDto,
-    @Request() req,
-  ) {
+  @Roles(...BILLING_ROLES)
+  recordBillAction(@Body() dto: RecordBillActionDto, @Request() req: RequestWithUser) {
     const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
-    const deviceInfo = req.headers['user-agent'] || 'unknown';
     return this.billingService.recordBillAction(
       dto,
       req.user.restaurantId,
@@ -137,10 +189,10 @@ export class BillingController {
    * Retrieves bill action history for a specific order.
    */
   @Get('bill-actions/order/:orderId')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
+  @Roles(...BILLING_ROLES)
   getBillActionHistory(
     @Param('orderId', ParseIntPipe) orderId: number,
-    @Request() req,
+    @Request() req: RequestWithUser,
   ) {
     return this.billingService.getBillActionHistory(orderId, req.user.restaurantId);
   }
@@ -150,10 +202,10 @@ export class BillingController {
    * Retrieves a summary of all bill actions for an invoice.
    */
   @Get('bill-actions/invoice/:invoiceId/summary')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.KITCHEN, UserRole.CASHIER)
+  @Roles(...BILLING_ROLES)
   getBillActionSummary(
     @Param('invoiceId', ParseIntPipe) invoiceId: number,
-    @Request() req,
+    @Request() req: RequestWithUser,
   ) {
     return this.billingService.getBillActionSummary(invoiceId, req.user.restaurantId);
   }
