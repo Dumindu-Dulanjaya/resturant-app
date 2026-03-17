@@ -241,8 +241,8 @@ const KitchenKDS = () => {
             icon: 'success',
             title: 'Order marked as served',
             text: hasWhatsApp
-              ? 'Open the bill, then download, print, send to cashier, or continue to WhatsApp.'
-              : 'Open the bill, then download, print, or send it to cashier.',
+              ? 'Open the bill, then download, print, send it to cashier, and finally tap WhatsApp to return to KDS.'
+              : 'Open the bill, then download, print, and send it to cashier.',
             showCancelButton: false,
             confirmButtonColor: '#0d6efd',
             confirmButtonText: 'Open Bill',
@@ -252,12 +252,6 @@ const KitchenKDS = () => {
 
           clearSwalBackdropArtifacts();
           const billActionState = await printOrderBill(servedOrder);
-
-          if (billActionState.sendToCashier) {
-            clearSwalBackdropArtifacts();
-            await sendPaymentDetailsToCashier(servedOrder);
-            return;
-          }
 
           if (!billActionState.continueToWhatsApp || !hasWhatsApp) {
             return;
@@ -356,32 +350,43 @@ const KitchenKDS = () => {
       .replace(/'/g, '&#39;');
   };
 
-  const sendPaymentDetailsToCashier = async (order) => {
+  const sendPaymentDetailsToCashier = async (order, { showFeedback = true } = {}) => {
     try {
       const invoiceResponse = await billingAPI.createInvoiceForOrder(order.orderId);
       const invoice = invoiceResponse.data;
 
       await billingAPI.sendInvoiceToCashier(invoice.invoiceId);
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Sent to cashier',
-        text: 'Payment details are now available on the cashier dashboard.',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 2600,
-      });
+      const successMessage = 'Payment details are now available on the cashier dashboard.';
 
-      return true;
+      if (showFeedback) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Sent to cashier',
+          text: successMessage,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2600,
+        });
+      }
+
+      return { success: true, message: successMessage };
     } catch (error) {
       console.error('Error sending payment details to cashier:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Cashier handoff failed',
-        text: error?.response?.data?.message || 'Failed to send payment details to cashier.',
-      });
-      return false;
+
+      const errorMessage =
+        error?.response?.data?.message || 'Failed to send payment details to cashier.';
+
+      if (showFeedback) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Cashier handoff failed',
+          text: errorMessage,
+        });
+      }
+
+      return { success: false, message: errorMessage };
     }
   };
 
@@ -402,14 +407,56 @@ const KitchenKDS = () => {
       let completed = false;
       let fallbackTimer = null;
       let closedCheckTimer = null;
+      let cashierRequestInFlight = false;
       const messageType = `KDS_BILL_ACTION_DONE_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+      const notifyBillWindow = (targetWindow, payload) => {
+        if (!targetWindow || targetWindow.closed) return;
+
+        try {
+          targetWindow.postMessage(
+            {
+              type: messageType,
+              action: 'cashierResult',
+              success: !!payload?.success,
+              message: payload?.message || '',
+            },
+            window.location.origin,
+          );
+        } catch (_error) {
+          // Ignore postMessage errors while syncing cashier status back to bill window.
+        }
+      };
 
       const onBillActionComplete = (event) => {
         if (event.origin !== window.location.origin) return;
         if (event.data?.type !== messageType) return;
+
+        if (event.data?.action === 'sendToCashier') {
+          if (cashierRequestInFlight) return;
+
+          cashierRequestInFlight = true;
+
+          sendPaymentDetailsToCashier(order, { showFeedback: false })
+            .then((result) => {
+              notifyBillWindow(event.source, result);
+            })
+            .catch(() => {
+              notifyBillWindow(event.source, {
+                success: false,
+                message: 'Failed to send payment details to cashier.',
+              });
+            })
+            .finally(() => {
+              cashierRequestInFlight = false;
+            });
+
+          return;
+        }
+
         completePrintFlow({
           continueToWhatsApp: !!event.data?.continueToWhatsApp,
-          sendToCashier: !!event.data?.sendToCashier,
+          sendToCashier: false,
         });
       };
 
@@ -488,10 +535,22 @@ const KitchenKDS = () => {
           .bill-btn-back { background: #6c757d; color: #fff; }
           .bill-btn:disabled { opacity: 0.6; cursor: wait; }
           .bill-hint { color: #555; font-size: 12px; margin-bottom: 10px; text-align: right; }
+          .bill-status {
+            display: none;
+            margin-bottom: 10px;
+            text-align: right;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 6px;
+          }
+          .bill-status-info { background: #e7f1ff; color: #0a58ca; }
+          .bill-status-success { background: #e8f7ed; color: #146c43; }
+          .bill-status-error { background: #fce8ea; color: #b02a37; }
 
           @media print {
             .bill-actions,
-            .bill-hint {
+            .bill-hint,
+            .bill-status {
               display: none !important;
             }
 
@@ -511,7 +570,8 @@ const KitchenKDS = () => {
             <button id="sendToCashierBtn" class="bill-btn bill-btn-cashier" type="button" title="Send to Cashier"><i class="fas fa-cash-register"></i></button>
             <button id="backToWhatsappBtn" class="bill-btn bill-btn-back" type="button" title="Back to WhatsApp"><i class="fab fa-whatsapp"></i></button>
           </div>
-          <div class="bill-hint">Download PDF, print, send to cashier, or continue to WhatsApp</div>
+          <div class="bill-hint">Download PDF, print, send to cashier, then tap WhatsApp to return to KDS.</div>
+          <div id="billStatus" class="bill-status" role="status" aria-live="polite"></div>
           <div id="billContent">
           <h2 style="margin:0 0 8px 0;">Customer Bill</h2>
           <div style="margin-bottom:14px;font-size:14px;">
@@ -549,13 +609,26 @@ const KitchenKDS = () => {
             const cashierBtn = document.getElementById('sendToCashierBtn');
             const backBtn = document.getElementById('backToWhatsappBtn');
             const billContent = document.getElementById('billContent');
+            const billStatus = document.getElementById('billStatus');
             const fileName = ${JSON.stringify(`Bill-${String(order.orderNo || 'order')}.pdf`)};
+
+            const defaultDownloadIcon = downloadBtn.innerHTML;
+            const defaultCashierIcon = cashierBtn.innerHTML;
+
+            const setStatus = (message, tone) => {
+              if (!billStatus) return;
+
+              billStatus.textContent = message;
+              billStatus.className = 'bill-status bill-status-' + tone;
+              billStatus.style.display = 'block';
+            };
 
             const notifyAndClose = ({ continueToWhatsApp = false, sendToCashier = false } = {}) => {
               try {
                 if (window.opener && !window.opener.closed) {
                   window.opener.postMessage({
                     type: runtimeMessageType,
+                    action: continueToWhatsApp ? 'continueToWhatsApp' : undefined,
                     continueToWhatsApp: !!continueToWhatsApp,
                     sendToCashier: !!sendToCashier,
                   }, window.location.origin);
@@ -571,14 +644,53 @@ const KitchenKDS = () => {
             });
 
             cashierBtn.addEventListener('click', function () {
-              notifyAndClose({ sendToCashier: true });
+              if (cashierBtn.disabled) return;
+
+              cashierBtn.disabled = true;
+              cashierBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+              setStatus('Sending bill to cashier...', 'info');
+
+              try {
+                if (window.opener && !window.opener.closed) {
+                  window.opener.postMessage({
+                    type: runtimeMessageType,
+                    action: 'sendToCashier',
+                  }, window.location.origin);
+                  return;
+                }
+              } catch (_error) {
+                // Ignore and show generic failure below.
+              }
+
+              cashierBtn.disabled = false;
+              cashierBtn.innerHTML = defaultCashierIcon;
+              setStatus('Failed to contact KDS page. Keep this tab open and try again.', 'error');
+            });
+
+            window.addEventListener('message', function (event) {
+              if (event.origin !== window.location.origin) return;
+              if (event.data?.type !== runtimeMessageType) return;
+              if (event.data?.action !== 'cashierResult') return;
+
+              cashierBtn.disabled = false;
+              cashierBtn.innerHTML = defaultCashierIcon;
+
+              if (event.data?.success) {
+                const successMessage = event.data?.message || 'Payment details sent to cashier.';
+                setStatus(successMessage, 'success');
+                alert(successMessage);
+                return;
+              }
+
+              const errorMessage = event.data?.message || 'Failed to send payment details to cashier.';
+              setStatus(errorMessage, 'error');
+              alert(errorMessage);
             });
 
             downloadBtn.addEventListener('click', async function () {
-              const originalText = downloadBtn.textContent;
-              let downloadCompleted = false;
               downloadBtn.disabled = true;
-              downloadBtn.textContent = 'Downloading...';
+              downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+              setStatus('Downloading bill PDF...', 'info');
 
               try {
                 if (window.html2pdf) {
@@ -594,27 +706,27 @@ const KitchenKDS = () => {
                     .from(billContent)
                     .save();
 
-                  downloadCompleted = true;
-                  window.setTimeout(function () {
-                    notifyAndClose({ continueToWhatsApp: true });
-                  }, 250);
+                  setStatus('Bill downloaded successfully. You can now print or continue.', 'success');
                   return;
                 }
 
                 throw new Error('html2pdf library unavailable');
               } catch (_error) {
-                alert('PDF download is not available in this browser right now. Print dialog will open instead.');
+                setStatus('PDF download is unavailable. Opening print dialog instead.', 'error');
                 window.print();
               } finally {
-                if (!downloadCompleted) {
-                  downloadBtn.disabled = false;
-                  downloadBtn.textContent = originalText;
-                }
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = defaultDownloadIcon;
               }
             });
 
             printBtn.addEventListener('click', function () {
+              setStatus('Opening print dialog...', 'info');
               window.print();
+            });
+
+            window.addEventListener('afterprint', function () {
+              setStatus('Print completed. Send to cashier or tap WhatsApp when ready.', 'success');
             });
           })();
         </script>
