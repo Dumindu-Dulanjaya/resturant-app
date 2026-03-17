@@ -19,6 +19,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!payload.userId || !payload.email) {
       throw new UnauthorizedException();
     }
+
+    // Admin tokens must carry a restaurant context for restaurant-scoped APIs.
+    if (payload.type === 'admin' && !payload.restaurantId) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+
     return {
       userId: payload.userId,
       email: payload.email,

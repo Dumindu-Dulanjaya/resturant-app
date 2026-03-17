@@ -15,6 +15,14 @@ function RoleBasedRedirect() {
   if (role === 'super_admin' || role === 'superadmin') {
     return <Navigate to="/super-admin/manage-restaurants" replace />;
   }
+
+  if (role === 'kitchen') {
+    return <Navigate to="/kitchen/dashboard" replace />;
+  }
+
+  if (role === 'cashier') {
+    return <Navigate to="/cashier/dashboard" replace />;
+  }
   
   // All other roles → Restaurant Dashboard
   return <Navigate to="/dashboard" replace />;

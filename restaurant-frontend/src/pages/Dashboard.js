@@ -190,7 +190,7 @@ function Dashboard() {
                     <div>
                       <h2>
                         <i className="fas fa-hand-wave me-2"></i>
-                        Welcome back, {user?.name || user?.email.split('@')[0]}!
+                        Welcome back, {user?.name || user?.email?.split('@')[0] || 'User'}!
                       </h2>
                       <p className="text-muted mb-0">
                         Here's what's happening with your restaurant today

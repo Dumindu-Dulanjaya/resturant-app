@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import SuperAdminLogin from './pages/SuperAdminLogin';
 import KitchenLogin from './pages/KitchenLogin';
+import CashierLogin from './pages/CashierLogin';
 import Dashboard from './pages/Dashboard';
 import Menus from './pages/Menus';
 import Categories from './pages/Categories';
@@ -37,6 +38,8 @@ import PendingRegistrations from './pages/PendingRegistrations';
 import LandingPage from './pages/LandingPage';
 import RegisterPage from './pages/RegisterPage';
 import ContactPage from './pages/ContactPage';
+import ServiceBillingDashboard from './pages/ServiceBillingDashboard';
+import CashierDashboard from './pages/CashierDashboard';
 
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -117,6 +120,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/super-admin/login" element={<SuperAdminLogin />} />
             <Route path="/kitchen-login" element={<KitchenLogin />} />
+            <Route path="/cashier-login" element={<CashierLogin />} />
             <Route path="/qr/:tableKey" element={<CustomerQROrder />} />
             <Route path="/room/:roomKey" element={<GuestRequestForm />} />
 
@@ -143,7 +147,7 @@ function App() {
               path="/kitchen/dashboard"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['kitchen', 'admin', 'super_admin']}>
+                  <RoleRoute allowedRoles={['kitchen', 'super_admin']}>
                     <FeatureRoute requiredFeature="KDS">
                       <KitchenDashboard />
                     </FeatureRoute>
@@ -387,7 +391,7 @@ function App() {
               path="/settings/profile"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper', 'cashier']}>
                     <Profile />
                   </RoleRoute>
                 </PrivateRoute>
@@ -398,7 +402,7 @@ function App() {
               path="/settings/password"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper', 'cashier']}>
                     <ChangePassword />
                   </RoleRoute>
                 </PrivateRoute>
@@ -467,6 +471,29 @@ function App() {
                 <PrivateRoute>
                   <RoleRoute allowedRoles={['super_admin']}>
                     <PendingRegistrations />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
+
+            {/* Billing */}
+            <Route
+              path="/cashier/dashboard"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['cashier', 'super_admin']}>
+                    <CashierDashboard />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/billing"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen']}>
+                    <ServiceBillingDashboard />
                   </RoleRoute>
                 </PrivateRoute>
               }

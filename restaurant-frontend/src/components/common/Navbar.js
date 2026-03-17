@@ -14,6 +14,25 @@ function Navbar() {
   const [notifications, setNotifications] = useState([]);
   const { subscribe, connected } = useWebSocket();
 
+  const getRoleLabel = (role) => {
+    const normalizedRole = role?.toString().trim().toLowerCase();
+    switch (normalizedRole) {
+      case 'super_admin':
+      case 'superadmin':
+        return 'Super Admin';
+      case 'kitchen':
+        return 'Kitchen';
+      case 'housekeeper':
+        return 'Housekeeper';
+      case 'cashier':
+        return 'Cashier';
+      case 'admin':
+        return 'Admin';
+      default:
+        return 'User';
+    }
+  };
+
   // Listen for new orders and update notification count
   useEffect(() => {
     if (!connected) return;
@@ -224,8 +243,8 @@ function Navbar() {
                 <i className="fas fa-user-circle fa-lg"></i>
               </div>
               <div className="user-info text-start d-none d-md-block">
-                <div className="user-name">{user?.name || user?.email.split('@')[0]}</div>
-                <div className="user-role">{user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}</div>
+                <div className="user-name">{user?.name || user?.email?.split('@')[0] || 'User'}</div>
+                <div className="user-role">{getRoleLabel(user?.role)}</div>
               </div>
             </button>
             

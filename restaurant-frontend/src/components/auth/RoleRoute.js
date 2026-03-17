@@ -23,7 +23,18 @@ function RoleRoute({ children, allowedRoles }) {
 
   // Check if user's role is in the allowed roles list
   if (!userRole || !normalizedAllowedRoles.includes(userRole)) {
-    // Redirect to dashboard if user doesn't have permission
+    if (userRole === 'super_admin' || userRole === 'superadmin') {
+      return <Navigate to="/super-admin/manage-restaurants" replace />;
+    }
+
+    if (userRole === 'kitchen') {
+      return <Navigate to="/kitchen/dashboard" replace />;
+    }
+
+    if (userRole === 'cashier') {
+      return <Navigate to="/cashier/dashboard" replace />;
+    }
+
     return <Navigate to="/dashboard" replace />;
   }
 

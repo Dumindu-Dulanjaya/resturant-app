@@ -26,7 +26,7 @@ export class RestaurantsService {
   async getSettings(restaurantId: number): Promise<RestaurantSettingsResponseDto> {
     const restaurant = await this.findById(restaurantId);
     if (!restaurant) {
-      throw new Error('Restaurant not found');
+      throw new NotFoundException('Restaurant not found');
     }
 
     return {
@@ -42,7 +42,7 @@ export class RestaurantsService {
   ): Promise<RestaurantSettingsResponseDto> {
     const restaurant = await this.findById(restaurantId);
     if (!restaurant) {
-      throw new Error('Restaurant not found');
+      throw new NotFoundException('Restaurant not found');
     }
 
     // Update only provided fields

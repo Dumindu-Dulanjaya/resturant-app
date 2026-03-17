@@ -31,6 +31,7 @@ function Sidebar() {
   const isSuperAdmin = user?.role === 'super_admin';
   const isAdmin = user?.role === 'admin';
   const isKitchen = user?.role === 'kitchen';
+  const isCashier = user?.role === 'cashier';
   const isHousekeeper = user?.role === 'housekeeper';
 
   // Restaurant feature flags
@@ -42,9 +43,11 @@ function Sidebar() {
   // Permission helpers
   const canAccessAdminFeatures = isSuperAdmin || isAdmin;
   const canAccessKitchen = (isSuperAdmin || isAdmin || isKitchen) && isKdsEnabled;
+  const canAccessKitchenDashboard = (isKitchen || isSuperAdmin) && isKdsEnabled;
+  const canAccessCashierDashboard = isCashier;
   const canAccessHousekeeping = (isSuperAdmin || isAdmin || isHousekeeper) && isHousekeepingEnabled;
   const canAccessReports = canAccessAdminFeatures && isReportsEnabled;
-  const dashboardPath = isKitchen ? '/kitchen/dashboard' : '/dashboard';
+  const dashboardPath = isKitchen ? '/kitchen/dashboard' : isCashier ? '/cashier/dashboard' : '/dashboard';
 
   return (
     <div className="sidebar" id="sidebar">
@@ -60,6 +63,15 @@ function Sidebar() {
             <span>Dashboard</span>
           </Link>
         </li>
+
+        {canAccessCashierDashboard && (
+          <li className={isActive('/cashier/dashboard')}>
+            <Link to="/cashier/dashboard">
+              <i className="fas fa-cash-register"></i>
+              <span>Cashier Dashboard</span>
+            </Link>
+          </li>
+        )}
 
         {/* Menus Section - Admin Only */}
         {canAccessAdminFeatures && (
@@ -142,12 +154,14 @@ function Sidebar() {
             <i className={`fas fa-chevron-${menuStates.kitchen ? 'down' : 'right'} submenu-arrow`}></i>
           </a>
           <ul className="submenu" style={{ display: menuStates.kitchen ? 'block' : 'none' }}>
-            <li className={isActive('/kitchen/dashboard')}>
-              <Link to="/kitchen/dashboard">
-                <i className="fas fa-tachometer-alt"></i>
-                Kitchen Dashboard
-              </Link>
-            </li>
+            {canAccessKitchenDashboard && (
+              <li className={isActive('/kitchen/dashboard')}>
+                <Link to="/kitchen/dashboard">
+                  <i className="fas fa-tachometer-alt"></i>
+                  Kitchen Dashboard
+                </Link>
+              </li>
+            )}
             <li className={isActive('/kitchen/kds')}>
               <Link to="/kitchen/kds">
                 <i className="fas fa-chart-line"></i>
@@ -170,6 +184,12 @@ function Sidebar() {
               <Link to="/orders/manage">
                 <i className="fas fa-tasks"></i>
                 Order Management
+              </Link>
+            </li>
+            <li className={isActive('/billing')}>
+              <Link to="/billing">
+                <i className="fas fa-file-invoice-dollar"></i>
+                Service &amp; Billing
               </Link>
             </li>
           </ul>

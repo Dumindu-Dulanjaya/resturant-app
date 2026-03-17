@@ -58,7 +58,7 @@ export const WebSocketProvider = ({ children }) => {
       const envApiUrl = (
         process.env.REACT_APP_API_URL ||
         process.env.REACT_APP_API_BASE_URL ||
-        'http://localhost:3000/api'
+        ''
       ).trim();
 
       if (typeof window !== 'undefined') {
@@ -67,9 +67,17 @@ export const WebSocketProvider = ({ children }) => {
         if (isLocalFrontend) {
           return 'http://localhost:3000';
         }
+
+        if (envApiUrl) {
+          return envApiUrl.replace(/\/api\/?$/, '');
+        }
+
+        // Use the same host as the frontend when accessed from LAN/IP.
+        const protocol = window.location.protocol || 'http:';
+        return `${protocol}//${host}:3000`;
       }
 
-      return envApiUrl.replace(/\/api\/?$/, '');
+      return (envApiUrl || 'http://localhost:3000/api').replace(/\/api\/?$/, '');
     })();
 
     let disposed = false;
@@ -117,10 +125,13 @@ export const WebSocketProvider = ({ children }) => {
         return;
       }
 
+      // Component may have unmounted during the async health check — bail out.
+      if (disposed) return;
+
       hasLoggedUnavailableRef.current = false;
 
       const newSocket = io(`${API_URL}/events`, {
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         reconnection: false,
         timeout: 10000,
         autoConnect: true,

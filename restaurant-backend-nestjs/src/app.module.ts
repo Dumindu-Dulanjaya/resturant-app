@@ -21,6 +21,7 @@ import { WebsocketModule } from './websocket/websocket.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SettingsRequestsModule } from './settings-requests/settings-requests.module';
 import { ContactModule } from './contact/contact.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -41,7 +42,7 @@ import { ContactModule } from './contact/contact.module';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        autoLoadEntities: true,
         synchronize: false, // Set to false in production
         logging: true,
       }),
@@ -63,6 +64,7 @@ import { ContactModule } from './contact/contact.module';
     DashboardModule,
     SettingsRequestsModule,
     ContactModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [

@@ -4,13 +4,14 @@ import apiClient from '../api/apiClient';
 import Swal from 'sweetalert2';
 import SuperAdminDashboard from './SuperAdminDashboard';
 
-const ALLOWED_ROLES = ['admin', 'super_admin', 'housekeeper', 'kitchen'];
+const ALLOWED_ROLES = ['admin', 'super_admin', 'housekeeper', 'kitchen', 'cashier'];
 
 const ROLE_LABELS = {
   admin: 'Admin',
   super_admin: 'Super Admin',
   housekeeper: 'Housekeeper',
   kitchen: 'Kitchen',
+  cashier: 'Cashier',
 };
 
 function AddAdmin() {
@@ -185,6 +186,7 @@ function AddAdmin() {
                     >
                       <option value="admin">Admin</option>
                       <option value="kitchen">Kitchen</option>
+                      <option value="cashier">Cashier</option>
                       <option value="housekeeper">Housekeeper</option>
                       <option value="super_admin">Super Admin</option>
                     </select>

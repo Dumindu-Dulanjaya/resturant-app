@@ -19,6 +19,20 @@ const KitchenKDS = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const previousNewOrderIdsRef = useRef(new Set());
 
+  // Defensive cleanup: prevents rare cases where SweetAlert backdrop remains
+  // on screen after async flows (WhatsApp/print actions).
+  const clearSwalBackdropArtifacts = useCallback(() => {
+    if (typeof document === 'undefined') return;
+
+    document.body.classList.remove('swal2-shown', 'swal2-height-auto', 'swal2-no-backdrop');
+    document.documentElement.classList.remove('swal2-shown', 'swal2-height-auto', 'swal2-no-backdrop');
+
+    const activePopup = document.querySelector('.swal2-popup');
+    if (!activePopup) {
+      document.querySelectorAll('.swal2-container').forEach((el) => el.remove());
+    }
+  }, []);
+
   // Play notification sound for new orders
   const playNotificationSound = useCallback(() => {
     try {
@@ -54,8 +68,24 @@ const KitchenKDS = () => {
         apiClient.get('/orders', { params: { status: 'READY' } }),
       ]);
 
+      const extractOrders = (payload) => {
+        if (Array.isArray(payload)) return payload;
+        if (Array.isArray(payload?.data)) return payload.data;
+        if (Array.isArray(payload?.orders)) return payload.orders;
+        return [];
+      };
+
+      const newOrdersList = extractOrders(newOrders.data);
+      const acceptedOrdersList = extractOrders(acceptedOrders.data);
+      const cookingOrdersList = extractOrders(cookingOrders.data);
+      const readyOrdersList = extractOrders(readyOrders.data);
+
       // Detect newly arrived orders using ref instead of state
-      const currentNewOrderIds = new Set(newOrders.data.map(order => order.orderId));
+      const currentNewOrderIds = new Set(
+        newOrdersList
+          .map((order) => order.orderId)
+          .filter((orderId) => orderId != null),
+      );
       const newArrivals = [];
       
       currentNewOrderIds.forEach(orderId => {
@@ -91,10 +121,10 @@ const KitchenKDS = () => {
       previousNewOrderIdsRef.current = currentNewOrderIds;
 
       setOrders({
-        NEW: newOrders.data,
-        ACCEPTED: acceptedOrders.data,
-        COOKING: cookingOrders.data,
-        READY: readyOrders.data,
+        NEW: newOrdersList,
+        ACCEPTED: acceptedOrdersList,
+        COOKING: cookingOrdersList,
+        READY: readyOrdersList,
       });
       
       setLoading(false);
@@ -127,6 +157,10 @@ const KitchenKDS = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount, fetchAllOrders is stable
+
+  useEffect(() => {
+    clearSwalBackdropArtifacts();
+  }, [clearSwalBackdropArtifacts]);
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
@@ -187,8 +221,8 @@ const KitchenKDS = () => {
     Swal.fire({
       title: actionText,
       text:
-        currentStatus === 'READY' && order.whatsappNumber
-          ? `Are you sure you want to ${actionText.toLowerCase()}? After that, you can send the bill on WhatsApp.`
+        currentStatus === 'READY'
+          ? `Are you sure you want to ${actionText.toLowerCase()}? Then print the bill and give it to the customer and then send the bill via WhatsApp.`
           : `Are you sure you want to ${actionText.toLowerCase()}?`,
       icon: 'question',
       showCancelButton: true,
@@ -199,20 +233,44 @@ const KitchenKDS = () => {
       if (result.isConfirmed) {
         const updated = await updateOrderStatus(order.orderId, nextStatus);
 
-        if (updated && currentStatus === 'READY' && order.whatsappNumber) {
-          const sendBillResult = await Swal.fire({
+        if (updated && currentStatus === 'READY') {
+          const servedOrder = { ...order, status: 'SERVED' };
+          const hasWhatsApp = !!normalizeWhatsAppNumber(order.whatsappNumber);
+
+          await Swal.fire({
             icon: 'success',
             title: 'Order marked as served',
-            text: 'Do you want to open WhatsApp and send the bill now?',
-            showCancelButton: true,
-            confirmButtonColor: '#198754',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Send Bill',
-            cancelButtonText: 'Later',
+            text: hasWhatsApp
+              ? 'Step 1 of 2: Open the bill, use Download PDF or Print, then click Back to continue to WhatsApp.'
+              : 'Open the bill, then choose Download PDF or Print.',
+            showCancelButton: false,
+            confirmButtonColor: '#0d6efd',
+            confirmButtonText: 'Open Bill',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
           });
 
-          if (sendBillResult.isConfirmed) {
-            sendWhatsAppBill({ ...order, status: 'SERVED' });
+          clearSwalBackdropArtifacts();
+          const printCompleted = await printOrderBill(servedOrder);
+
+          if (!printCompleted || !hasWhatsApp) {
+            return;
+          }
+
+          const whatsAppStepResult = await Swal.fire({
+            icon: 'info',
+            title: 'Step 2 of 2',
+            text: 'Now send this bill to the customer on WhatsApp.',
+            showCancelButton: false,
+            confirmButtonColor: '#198754',
+            confirmButtonText: 'Send Bill on WhatsApp',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+          });
+
+          if (whatsAppStepResult.isConfirmed) {
+            clearSwalBackdropArtifacts();
+            sendWhatsAppBill(servedOrder);
           }
         }
       }
@@ -263,8 +321,6 @@ const KitchenKDS = () => {
     setShowDetailsModal(true);
   };
 
-  const canSendWhatsAppBill = (status) => status === 'READY' || status === 'SERVED';
-
   const normalizeWhatsAppNumber = (phone) => {
     if (!phone) return '';
 
@@ -281,6 +337,261 @@ const KitchenKDS = () => {
     return cleaned;
   };
 
+  const formatBillCurrency = (value) => {
+    return `Rs. ${parseFloat(value || 0).toFixed(2)}`;
+  };
+
+  const escapeHtml = (value) => {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  const printOrderBill = (order) => {
+    return new Promise((resolve) => {
+      const printWindow = window.open('', '_blank', 'width=900,height=700');
+
+      if (!printWindow) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Popup blocked',
+          text: 'Allow popups for this site and try again.',
+        });
+        resolve(false);
+        return;
+      }
+
+      let completed = false;
+      let fallbackTimer = null;
+      let closedCheckTimer = null;
+      const messageType = `KDS_BILL_ACTION_DONE_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+      const onBillActionComplete = (event) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type !== messageType) return;
+        completePrintFlow(!!event.data?.continueToWhatsApp);
+      };
+
+      const completePrintFlow = (success) => {
+        if (completed) return;
+        completed = true;
+
+        if (fallbackTimer) {
+          window.clearTimeout(fallbackTimer);
+          fallbackTimer = null;
+        }
+
+        if (closedCheckTimer) {
+          window.clearInterval(closedCheckTimer);
+          closedCheckTimer = null;
+        }
+
+        window.removeEventListener('message', onBillActionComplete);
+
+        try {
+          printWindow.close();
+        } catch (_error) {
+          // Ignore errors while closing a window controlled by browser print flow.
+        }
+
+        window.focus();
+        resolve(success);
+      };
+
+      window.addEventListener('message', onBillActionComplete);
+
+      // If the bill window is closed without clicking Print/Download, treat as incomplete.
+      closedCheckTimer = window.setInterval(() => {
+        if (printWindow.closed) {
+          completePrintFlow(false);
+        }
+      }, 400);
+
+      const items = Array.isArray(order.orderItems) ? order.orderItems : [];
+      const itemsMarkup = items
+        .map((item, index) => {
+          const qty = Number(item.qty || 1);
+          const unitPrice = Number(item.unitPrice || 0);
+          const lineTotal = Number(item.lineTotal || qty * unitPrice);
+          const itemName = escapeHtml(item.itemName || item.foodItem?.itemName || 'Item');
+          const notes = item.notes ? `<div style="font-size:12px;color:#666;">Note: ${escapeHtml(item.notes)}</div>` : '';
+
+          return `
+          <tr>
+            <td style="padding:8px;border-bottom:1px solid #eee;">${index + 1}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;">${itemName}${notes}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${qty}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">${formatBillCurrency(unitPrice)}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">${formatBillCurrency(lineTotal)}</td>
+          </tr>
+        `;
+        })
+        .join('');
+
+      const printableHtml = `
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Bill - ${escapeHtml(order.orderNo || '')}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 24px; color: #222; }
+          .bill-wrap { max-width: 760px; margin: 0 auto; }
+          .bill-actions { display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 14px; }
+          .bill-btn { border: 0; border-radius: 6px; padding: 14px 16px; cursor: pointer; font-size: 20px; transition: all 0.2s; }
+          .bill-btn:hover { transform: scale(1.1); }
+          .bill-btn:active { transform: scale(0.95); }
+          .bill-btn-download { background: #0d6efd; color: #fff; }
+          .bill-btn-print { background: #198754; color: #fff; }
+          .bill-btn-back { background: #6c757d; color: #fff; }
+          .bill-btn:disabled { opacity: 0.6; cursor: wait; }
+          .bill-hint { color: #555; font-size: 12px; margin-bottom: 10px; text-align: right; }
+
+          @media print {
+            .bill-actions,
+            .bill-hint {
+              display: none !important;
+            }
+
+            body {
+              padding: 8px;
+            }
+          }
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      </head>
+      <body>
+        <div class="bill-wrap">
+          <div class="bill-actions">
+            <button id="downloadPdfBtn" class="bill-btn bill-btn-download" type="button" title="Download PDF"><i class="fas fa-download"></i></button>
+            <button id="printBillBtn" class="bill-btn bill-btn-print" type="button" title="Print"><i class="fas fa-print"></i></button>
+            <button id="backToWhatsappBtn" class="bill-btn bill-btn-back" type="button" title="Back to WhatsApp"><i class="fab fa-whatsapp"></i></button>
+          </div>
+          <div class="bill-hint">Download PDF or Print, then Back for WhatsApp</div>
+          <div id="billContent">
+          <h2 style="margin:0 0 8px 0;">Customer Bill</h2>
+          <div style="margin-bottom:14px;font-size:14px;">
+            <div><strong>Order No:</strong> ${escapeHtml(order.orderNo || '-')}</div>
+            <div><strong>Table:</strong> ${escapeHtml(order.tableNo || '-')}</div>
+            <div><strong>Customer:</strong> ${escapeHtml(order.customerName || '-')}</div>
+            <div><strong>Date:</strong> ${new Date().toLocaleString()}</div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr>
+                <th style="padding:8px;border-bottom:2px solid #222;text-align:left;">#</th>
+                <th style="padding:8px;border-bottom:2px solid #222;text-align:left;">Item</th>
+                <th style="padding:8px;border-bottom:2px solid #222;text-align:center;">Qty</th>
+                <th style="padding:8px;border-bottom:2px solid #222;text-align:right;">Unit Price</th>
+                <th style="padding:8px;border-bottom:2px solid #222;text-align:right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsMarkup}
+            </tbody>
+          </table>
+          <div style="margin-top:16px;text-align:right;font-size:18px;font-weight:700;">
+            Grand Total: ${formatBillCurrency(order.totalAmount)}
+          </div>
+          <div style="margin-top:24px;font-size:13px;color:#555;text-align:center;">Thank you!</div>
+          </div>
+        </div>
+
+        <script>
+          (function () {
+            const runtimeMessageType = ${JSON.stringify(messageType)};
+            const downloadBtn = document.getElementById('downloadPdfBtn');
+            const printBtn = document.getElementById('printBillBtn');
+            const backBtn = document.getElementById('backToWhatsappBtn');
+            const billContent = document.getElementById('billContent');
+            const fileName = ${JSON.stringify(`Bill-${String(order.orderNo || 'order')}.pdf`)};
+
+            const notifyAndClose = (continueToWhatsApp) => {
+              try {
+                if (window.opener && !window.opener.closed) {
+                  window.opener.postMessage({
+                    type: runtimeMessageType,
+                    continueToWhatsApp: !!continueToWhatsApp,
+                  }, window.location.origin);
+                }
+              } catch (_error) {
+                // Ignore cross-window post errors.
+              }
+              window.close();
+            };
+
+            backBtn.addEventListener('click', function () {
+              notifyAndClose(true);
+            });
+
+            downloadBtn.addEventListener('click', async function () {
+              const originalText = downloadBtn.textContent;
+              let downloadCompleted = false;
+              downloadBtn.disabled = true;
+              downloadBtn.textContent = 'Downloading...';
+
+              try {
+                if (window.html2pdf) {
+                  await window
+                    .html2pdf()
+                    .set({
+                      margin: 8,
+                      filename: fileName,
+                      image: { type: 'jpeg', quality: 0.98 },
+                      html2canvas: { scale: 2, useCORS: true },
+                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    })
+                    .from(billContent)
+                    .save();
+
+                  downloadCompleted = true;
+                  window.setTimeout(function () {
+                    notifyAndClose(true);
+                  }, 250);
+                  return;
+                }
+
+                throw new Error('html2pdf library unavailable');
+              } catch (_error) {
+                alert('PDF download is not available in this browser right now. Print dialog will open instead.');
+                window.print();
+              } finally {
+                if (!downloadCompleted) {
+                  downloadBtn.disabled = false;
+                  downloadBtn.textContent = originalText;
+                }
+              }
+            });
+
+            printBtn.addEventListener('click', function () {
+              window.print();
+            });
+          })();
+        </script>
+      </body>
+      </html>
+    `;
+
+      try {
+        printWindow.document.open();
+        printWindow.document.write(printableHtml);
+        printWindow.document.close();
+      } catch (error) {
+        console.error('Error preparing printable bill:', error);
+        completePrintFlow(false);
+        return;
+      }
+
+      fallbackTimer = window.setTimeout(() => {
+        completePrintFlow(false);
+      }, 120000);
+    });
+  };
+
   const sendWhatsAppBill = (order) => {
     const normalizedWhatsapp = normalizeWhatsAppNumber(order.whatsappNumber);
 
@@ -289,7 +600,7 @@ const KitchenKDS = () => {
       return;
     }
 
-    const itemsList = (order.orderItems || [])
+    const itemsList = (Array.isArray(order.orderItems) ? order.orderItems : [])
       .map((item) => {
         const name = item.itemName || item.foodItem?.itemName || 'Item';
         const qty = item.qty || 1;
@@ -309,9 +620,14 @@ const KitchenKDS = () => {
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${normalizedWhatsapp}&text=${encodedMessage}`;
-    const popup = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    const popup = window.open(whatsappUrl, '_blank');
+
+    if (popup) {
+      popup.opener = null;
+    }
 
     if (!popup) {
+      clearSwalBackdropArtifacts();
       Swal.fire({
         icon: 'warning',
         title: 'Popup blocked',
@@ -319,6 +635,9 @@ const KitchenKDS = () => {
       });
       return;
     }
+
+    // Ensure no stale modal backdrop remains over the KDS after opening WhatsApp.
+    setTimeout(clearSwalBackdropArtifacts, 0);
 
     Swal.fire({
       icon: 'success',
@@ -333,6 +652,7 @@ const KitchenKDS = () => {
 
   const OrderCard = ({ order, status }) => {
     const isNewlyArrived = status === 'NEW' && newlyArrivedOrders.has(order.orderId);
+    const orderItems = Array.isArray(order.orderItems) ? order.orderItems : [];
     
     const getStatusButton = () => {
       switch (status) {
@@ -419,17 +739,23 @@ const KitchenKDS = () => {
               Items:
             </h6>
             <ul className="list-unstyled mb-2">
-              {order.orderItems.map((item) => (
-                <li key={item.orderItemId} className="mb-1">
-                  <strong>{item.qty}x</strong> {item.itemName}
-                  {item.notes && (
-                    <div className="item-notes">
-                      <i className="fas fa-sticky-note me-1"></i>
-                      <small className="text-muted">{item.notes}</small>
-                    </div>
-                  )}
+              {orderItems.length > 0 ? (
+                orderItems.map((item, index) => (
+                  <li key={item.orderItemId || `${order.orderId}-${index}`} className="mb-1">
+                    <strong>{item.qty || 1}x</strong> {item.itemName || item.foodItem?.itemName || 'Item'}
+                    {item.notes && (
+                      <div className="item-notes">
+                        <i className="fas fa-sticky-note me-1"></i>
+                        <small className="text-muted">{item.notes}</small>
+                      </div>
+                    )}
+                  </li>
+                ))
+              ) : (
+                <li className="text-muted">
+                  <small>No items available</small>
                 </li>
-              ))}
+              )}
             </ul>
           </div>
 
@@ -448,20 +774,6 @@ const KitchenKDS = () => {
             >
               <i className={`fas ${statusButton.icon} me-1`}></i>
               {statusButton.text}
-            </button>
-          )}
-
-          {canSendWhatsAppBill(status) && order.whatsappNumber && (
-            <button
-              className="btn btn-sm kds-action-btn btn-whatsapp-send"
-              onClick={(e) => {
-                e.stopPropagation();
-                sendWhatsAppBill(order);
-              }}
-              title="Send bill via WhatsApp"
-            >
-              <i className="fa-brands fa-whatsapp me-2"></i>
-              Send Bill
             </button>
           )}
 
@@ -490,32 +802,37 @@ const KitchenKDS = () => {
     }
   };
 
-  const StatusColumn = ({ title, status, orders, bgClass }) => (
-    <div className="col-md-3">
-      <div className={`status-column ${bgClass}`}>
-        <h5 className="status-header">
-          <i className={`fas ${getStatusIcon(status)} me-2`}></i>
-          {title}
-          <span className="badge bg-dark ms-2">{orders.length}</span>
-        </h5>
-        <div className="orders-container">
-          {orders.length === 0 ? (
-            <div className="text-center text-muted py-4">
-              <i className="fas fa-inbox fa-3x mb-2"></i>
-              <p>No orders</p>
-            </div>
-          ) : (
-            orders.map((order) => (
-              <OrderCard key={order.orderId} order={order} status={status} />
-            ))
-          )}
+  const StatusColumn = ({ title, status, orders, bgClass }) => {
+    const safeOrders = Array.isArray(orders) ? orders : [];
+
+    return (
+      <div className="col-md-3">
+        <div className={`status-column ${bgClass}`}>
+          <h5 className="status-header">
+            <i className={`fas ${getStatusIcon(status)} me-2`}></i>
+            {title}
+            <span className="badge bg-dark ms-2">{safeOrders.length}</span>
+          </h5>
+          <div className="orders-container">
+            {safeOrders.length === 0 ? (
+              <div className="text-center text-muted py-4">
+                <i className="fas fa-inbox fa-3x mb-2"></i>
+                <p>No orders</p>
+              </div>
+            ) : (
+              safeOrders.map((order) => (
+                <OrderCard key={order.orderId} order={order} status={status} />
+              ))
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const OrderDetailsModal = () => {
     if (!selectedOrder) return null;
+    const selectedItems = Array.isArray(selectedOrder.orderItems) ? selectedOrder.orderItems : [];
 
     const getNextStatusButton = () => {
       switch (selectedOrder.currentStatus) {
@@ -650,30 +967,38 @@ const KitchenKDS = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedOrder.orderItems.map((item) => (
-                    <tr key={item.orderItemId}>
-                      <td>
-                        <strong>{item.itemName}</strong>
-                      </td>
-                      <td className="text-center">
-                        <span className="badge bg-secondary">{item.qty}</span>
-                      </td>
-                      <td className="text-end">${parseFloat(item.unitPrice).toFixed(2)}</td>
-                      <td className="text-end">
-                        <strong>${parseFloat(item.lineTotal).toFixed(2)}</strong>
-                      </td>
-                      <td>
-                        {item.notes ? (
-                          <small className="text-muted">
-                            <i className="fas fa-sticky-note me-1"></i>
-                            {item.notes}
-                          </small>
-                        ) : (
-                          <span className="text-muted">-</span>
-                        )}
+                  {selectedItems.length > 0 ? (
+                    selectedItems.map((item, index) => (
+                      <tr key={item.orderItemId || `${selectedOrder.orderId}-${index}`}>
+                        <td>
+                          <strong>{item.itemName || item.foodItem?.itemName || 'Item'}</strong>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-secondary">{item.qty || 1}</span>
+                        </td>
+                        <td className="text-end">${parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+                        <td className="text-end">
+                          <strong>${parseFloat(item.lineTotal || (item.qty || 1) * Number(item.unitPrice || 0)).toFixed(2)}</strong>
+                        </td>
+                        <td>
+                          {item.notes ? (
+                            <small className="text-muted">
+                              <i className="fas fa-sticky-note me-1"></i>
+                              {item.notes}
+                            </small>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="text-center text-muted py-3">
+                        No items found for this order.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
                 <tfoot className="table-light">
                   <tr>
@@ -701,16 +1026,6 @@ const KitchenKDS = () => {
             Cancel Order
           </Button>
           <div>
-            {canSendWhatsAppBill(selectedOrder.currentStatus) && selectedOrder.whatsappNumber && (
-              <Button
-                variant="success"
-                onClick={() => sendWhatsAppBill(selectedOrder)}
-                className="me-2 btn-whatsapp-send"
-              >
-                <i className="fa-brands fa-whatsapp me-2"></i>
-                Send Bill
-              </Button>
-            )}
             <Button 
               variant="secondary" 
               onClick={() => setShowDetailsModal(false)}

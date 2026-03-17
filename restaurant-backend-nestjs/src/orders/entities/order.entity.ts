@@ -13,6 +13,7 @@ export enum OrderStatus {
   ACCEPTED = 'ACCEPTED',
   COOKING = 'COOKING',
   READY = 'READY',
+  BILLED = 'BILLED',
   SERVED = 'SERVED',
   CANCELLED = 'CANCELLED',
 }

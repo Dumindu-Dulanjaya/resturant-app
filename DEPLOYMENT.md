@@ -100,7 +100,7 @@ Go to your GitHub repo → **Settings → Secrets and variables → Actions → 
 ## Step 4: Push to GitHub
 
 ```bash
-cd c:\xampp\htdocs\restaurant-app
+cd C:\wamp64\www\restaurant-app
 
 # Initialize git if not already done
 git init

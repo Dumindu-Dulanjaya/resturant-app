@@ -25,10 +25,12 @@ function Login() {
       case 'kitchen':
         return '/kitchen/dashboard';
 
+      case 'cashier':
+        return '/cashier/dashboard';
+
       case 'admin':
       case 'housekeeper':
       case 'manager':
-      case 'cashier':
       case 'staff':
         return '/dashboard';
 

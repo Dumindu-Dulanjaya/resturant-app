@@ -17,6 +17,14 @@ const resolveApiBaseUrl = () => {
     if (isLocalFrontend) {
       return LOCAL_API_BASE_URL;
     }
+
+    if (envApiUrl) {
+      return envApiUrl;
+    }
+
+    // When the frontend is opened via LAN IP, default API calls to the same host.
+    const protocol = window.location.protocol || 'http:';
+    return `${protocol}//${host}:3000/api`;
   }
 
   return envApiUrl || LOCAL_API_BASE_URL;
@@ -81,6 +89,40 @@ export const authAPI = {
 export const dashboardAPI = {
   getStats: () =>
     apiClient.get('/dashboard/stats'),
+};
+
+export const billingAPI = {
+  /** Fetch all orders with READY status (waiting to be billed). */
+  getReadyOrders: () =>
+    apiClient.get('/billing/ready-orders'),
+
+  /**
+   * Create an invoice for a READY order.
+   * Transitions the order status to BILLED.
+   * @param {Object} data - { orderId, taxAmount?, serviceCharge?, discountAmount? }
+   */
+  createInvoice: (data) =>
+    apiClient.post('/billing/invoices', data),
+
+  /** Fetch invoice history with optional query parameters. */
+  getInvoices: (params) =>
+    apiClient.get('/billing/invoices', { params }),
+
+  /** Fetch a single invoice by ID. */
+  getInvoice: (id) =>
+    apiClient.get(`/billing/invoices/${id}`),
+
+  /** Mark a BILLED order as SERVED. */
+  markServed: (orderId) =>
+    apiClient.patch(`/billing/orders/${orderId}/mark-served`),
+
+  /** Record that the WhatsApp bill was sent for an invoice. */
+  markWhatsappSent: (invoiceId) =>
+    apiClient.patch(`/billing/invoices/${invoiceId}/mark-whatsapp-sent`),
+
+  /** Mark an invoice as PAID. */
+  markInvoicePaid: (invoiceId) =>
+    apiClient.patch(`/billing/invoices/${invoiceId}/mark-paid`),
 };
 
 export default apiClient;
