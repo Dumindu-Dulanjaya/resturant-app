@@ -188,14 +188,6 @@ function Sidebar() {
                 Order Management
               </Link>
             </li>
-            {!isAdmin && (
-              <li className={isActive('/billing')}>
-                <Link to="/billing">
-                  <i className="fas fa-file-invoice-dollar"></i>
-                  Service &amp; Billing
-                </Link>
-              </li>
-            )}
           </ul>
         </li>
         )}

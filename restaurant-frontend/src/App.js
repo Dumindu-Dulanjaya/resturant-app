@@ -38,7 +38,6 @@ import PendingRegistrations from './pages/PendingRegistrations';
 import LandingPage from './pages/LandingPage';
 import RegisterPage from './pages/RegisterPage';
 import ContactPage from './pages/ContactPage';
-import ServiceBillingDashboard from './pages/ServiceBillingDashboard';
 import CashierDashboard from './pages/CashierDashboard';
 
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -483,17 +482,6 @@ function App() {
                 <PrivateRoute>
                   <RoleRoute allowedRoles={['cashier', 'super_admin']}>
                     <CashierDashboard />
-                  </RoleRoute>
-                </PrivateRoute>
-              }
-            />
-
-            <Route
-              path="/billing"
-              element={
-                <PrivateRoute>
-                  <RoleRoute allowedRoles={['super_admin', 'kitchen']}>
-                    <ServiceBillingDashboard />
                   </RoleRoute>
                 </PrivateRoute>
               }
