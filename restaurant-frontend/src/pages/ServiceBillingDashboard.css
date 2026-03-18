@@ -153,6 +153,20 @@
   min-width: 130px;
 }
 
+/* ── Cashier to Accountant transfer toolbar ── */
+.transfer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transfer-date {
+  width: auto;
+  min-width: 170px;
+}
+
 /* ── Modals ── */
 .modal-backdrop {
   position: fixed;
@@ -420,7 +434,14 @@
     flex-direction: column;
     align-items: stretch;
   }
+  .transfer-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
   .filter-field {
+    width: 100%;
+  }
+  .transfer-date {
     width: 100%;
   }
   .invoice-modal, .create-invoice-modal {

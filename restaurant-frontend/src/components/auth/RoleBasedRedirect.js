@@ -21,7 +21,11 @@ function RoleBasedRedirect() {
   }
 
   if (role === 'cashier') {
-    return <Navigate to="/cashier/dashboard" replace />;
+    return <Navigate to="/cashier/dashboard/queue" replace />;
+  }
+
+  if (role === 'accountant') {
+    return <Navigate to="/accountant/dashboard" replace />;
   }
   
   // All other roles → Restaurant Dashboard

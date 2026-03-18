@@ -8,9 +8,18 @@ import { UserRole } from '../auth/enums/role.enum';
 
 @Controller('reports')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.ACCOUNTANT)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
+
+  @Get('summary')
+  getSummary(@Request() req, @Query('date') date: string) {
+    if (!date) {
+      throw new Error('Date parameter is required (YYYY-MM-DD)');
+    }
+    const restaurantId = req.user.restaurantId;
+    return this.reportsService.getSummary(restaurantId, date);
+  }
 
   @Get('daily')
   async getDailyReport(@Request() req, @Query('date') date: string) {

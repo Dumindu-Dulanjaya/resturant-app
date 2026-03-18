@@ -16,6 +16,73 @@ export class ReportsService {
     private orderItemsRepository: Repository<OrderItem>,
   ) {}
 
+  async getSummary(restaurantId: number, date: string) {
+    const dateObj = new Date(date);
+    if (Number.isNaN(dateObj.getTime())) {
+      throw new Error('Invalid date format. Date parameter must be YYYY-MM-DD');
+    }
+
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth() + 1;
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0);
+
+    const monthStartDate = monthStart.toISOString().split('T')[0];
+    const monthEndDate = monthEnd.toISOString().split('T')[0];
+
+    const [dailyTotals, monthlyTotals] = await Promise.all([
+      this.getTotalsForDateRange(restaurantId, date, date),
+      this.getTotalsForDateRange(restaurantId, monthStartDate, monthEndDate),
+    ]);
+
+    const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+
+    return {
+      selectedDate: date,
+      daily: {
+        periodLabel: `${formattedDate} (${dayOfWeek})`,
+        totalOrders: dailyTotals.totalOrders,
+        totalRevenue: dailyTotals.totalRevenue,
+      },
+      monthly: {
+        periodLabel: `${monthNames[month - 1]} ${year}`,
+        totalOrders: monthlyTotals.totalOrders,
+        totalRevenue: monthlyTotals.totalRevenue,
+      },
+    };
+  }
+
+  private async getTotalsForDateRange(
+    restaurantId: number,
+    fromDate: string,
+    toDate: string,
+  ) {
+    const result = await this.orderItemsRepository
+      .createQueryBuilder('item')
+      .innerJoin('item.order', 'order')
+      .where('order.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('order.status = :status', { status: 'SERVED' })
+      .andWhere('DATE(order.createdAt) BETWEEN :fromDate AND :toDate', {
+        fromDate,
+        toDate,
+      })
+      .select('COUNT(DISTINCT order.orderId)', 'totalOrders')
+      .addSelect('COALESCE(SUM(item.lineTotal), 0)', 'totalRevenue')
+      .getRawOne<{ totalOrders: string; totalRevenue: string }>();
+
+    return {
+      totalOrders: parseInt(result?.totalOrders || '0', 10),
+      totalRevenue: parseFloat(result?.totalRevenue || '0'),
+    };
+  }
+
   async getDailyReport(restaurantId: number, date: string) {
     const dateObj = new Date(date);
     const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });

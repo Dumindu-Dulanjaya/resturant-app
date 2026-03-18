@@ -15,6 +15,11 @@ import { BillingService } from './billing.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { QueryInvoicesDto } from './dto/query-invoices.dto';
 import { RecordBillActionDto } from './dto/record-bill-action.dto';
+import {
+  AccountantDateQueryDto,
+  ReviewTransactionsDto,
+  SendTransactionsToAccountantDto,
+} from './dto/accountant-transfer.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -41,6 +46,16 @@ const BILLING_ROLES: UserRole[] = [
   UserRole.CASHIER,
 ];
 
+const CASHIER_TRANSFER_ROLES: UserRole[] = [
+  UserRole.CASHIER,
+  UserRole.SUPER_ADMIN,
+];
+
+const ACCOUNTANT_REVIEW_ROLES: UserRole[] = [
+  'accountant' as UserRole,
+  UserRole.SUPER_ADMIN,
+];
+
 @SkipThrottle()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('billing')
@@ -63,7 +78,10 @@ export class BillingController {
    */
   @Post('invoices')
   @Roles(...BILLING_ROLES)
-  createInvoice(@Body() dto: CreateInvoiceDto, @Request() req: RequestWithUser) {
+  createInvoice(
+    @Body() dto: CreateInvoiceDto,
+    @Request() req: RequestWithUser,
+  ) {
     return this.billingService.createInvoice(
       dto,
       req.user.restaurantId,
@@ -94,7 +112,10 @@ export class BillingController {
    */
   @Get('invoices')
   @Roles(...BILLING_ROLES)
-  findAllInvoices(@Query() queryDto: QueryInvoicesDto, @Request() req: RequestWithUser) {
+  findAllInvoices(
+    @Query() queryDto: QueryInvoicesDto,
+    @Request() req: RequestWithUser,
+  ) {
     return this.billingService.findAllInvoices(req.user.restaurantId, queryDto);
   }
 
@@ -109,12 +130,113 @@ export class BillingController {
   }
 
   /**
+   * GET /billing/cashier/day-transactions?date=YYYY-MM-DD
+   * Returns PAID day transactions that are still with cashier (not accountant-accepted).
+   */
+  @Get('cashier/day-transactions')
+  @Roles(...CASHIER_TRANSFER_ROLES)
+  getCashierDayTransactions(
+    @Query() query: AccountantDateQueryDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.billingService.getCashierTransactionsForDate(
+      req.user.restaurantId,
+      query.date,
+    );
+  }
+
+  /**
+   * POST /billing/accountant/send
+   * Cashier sends selected/day transactions to accountant (manual or auto).
+   */
+  @Post('accountant/send')
+  @Roles(...CASHIER_TRANSFER_ROLES)
+  sendTransactionsToAccountant(
+    @Body() dto: SendTransactionsToAccountantDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.billingService.sendTransactionsToAccountant(
+      req.user.restaurantId,
+      req.user.id,
+      dto,
+    );
+  }
+
+  /**
+   * GET /billing/accountant/pending?date=YYYY-MM-DD
+   * Accountant receives pending transaction requests from cashier.
+   */
+  @Get('accountant/pending')
+  @Roles(...ACCOUNTANT_REVIEW_ROLES)
+  getAccountantPendingTransactions(
+    @Query() query: AccountantDateQueryDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.billingService.getAccountantPendingTransactions(
+      req.user.restaurantId,
+      query.date,
+    );
+  }
+
+  /**
+   * GET /billing/accountant/accepted?date=YYYY-MM-DD
+   * Accountant accepted transaction history.
+   */
+  @Get('accountant/accepted')
+  @Roles(...ACCOUNTANT_REVIEW_ROLES)
+  getAccountantAcceptedTransactions(
+    @Query() query: AccountantDateQueryDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.billingService.getAccountantAcceptedTransactions(
+      req.user.restaurantId,
+      query.date,
+    );
+  }
+
+  /**
+   * POST /billing/accountant/accept
+   * Accountant accepts pending transactions. Accepted records leave cashier list.
+   */
+  @Post('accountant/accept')
+  @Roles(...ACCOUNTANT_REVIEW_ROLES)
+  acceptTransactionsByAccountant(
+    @Body() dto: ReviewTransactionsDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.billingService.acceptTransactionsByAccountant(
+      req.user.restaurantId,
+      req.user.id,
+      dto,
+    );
+  }
+
+  /**
+   * POST /billing/accountant/reject
+   * Accountant rejects pending transactions. They remain with cashier.
+   */
+  @Post('accountant/reject')
+  @Roles(...ACCOUNTANT_REVIEW_ROLES)
+  rejectTransactionsByAccountant(
+    @Body() dto: ReviewTransactionsDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.billingService.rejectTransactionsByAccountant(
+      req.user.restaurantId,
+      dto,
+    );
+  }
+
+  /**
    * GET /billing/invoices/:id
    * Returns a single invoice by ID.
    */
   @Get('invoices/:id')
   @Roles(...BILLING_ROLES)
-  findOneInvoice(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
+  findOneInvoice(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: RequestWithUser,
+  ) {
     return this.billingService.findOneInvoice(id, req.user.restaurantId);
   }
 
@@ -124,7 +246,10 @@ export class BillingController {
    */
   @Patch('orders/:id/mark-served')
   @Roles(...BILLING_ROLES)
-  markServed(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
+  markServed(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: RequestWithUser,
+  ) {
     return this.billingService.markOrderServed(id, req.user.restaurantId);
   }
 
@@ -134,7 +259,10 @@ export class BillingController {
    */
   @Patch('invoices/:id/mark-whatsapp-sent')
   @Roles(...BILLING_ROLES)
-  markWhatsappSent(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
+  markWhatsappSent(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: RequestWithUser,
+  ) {
     return this.billingService.markWhatsappSent(id, req.user.restaurantId);
   }
 
@@ -144,7 +272,10 @@ export class BillingController {
    */
   @Patch('invoices/:id/mark-printed')
   @Roles(...BILLING_ROLES)
-  markInvoicePrinted(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
+  markInvoicePrinted(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: RequestWithUser,
+  ) {
     return this.billingService.markInvoicePrinted(id, req.user.restaurantId);
   }
 
@@ -154,7 +285,10 @@ export class BillingController {
    */
   @Patch('invoices/:id/send-to-cashier')
   @Roles(...BILLING_ROLES)
-  sendToCashier(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
+  sendToCashier(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: RequestWithUser,
+  ) {
     return this.billingService.sendInvoiceToCashier(id, req.user.restaurantId);
   }
 
@@ -164,7 +298,10 @@ export class BillingController {
    */
   @Patch('invoices/:id/mark-paid')
   @Roles(...BILLING_ROLES)
-  markInvoicePaid(@Param('id', ParseIntPipe) id: number, @Request() req: RequestWithUser) {
+  markInvoicePaid(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: RequestWithUser,
+  ) {
     return this.billingService.markInvoicePaid(id, req.user.restaurantId);
   }
 
@@ -174,7 +311,10 @@ export class BillingController {
    */
   @Post('bill-actions')
   @Roles(...BILLING_ROLES)
-  recordBillAction(@Body() dto: RecordBillActionDto, @Request() req: RequestWithUser) {
+  recordBillAction(
+    @Body() dto: RecordBillActionDto,
+    @Request() req: RequestWithUser,
+  ) {
     const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
     return this.billingService.recordBillAction(
       dto,
@@ -194,7 +334,10 @@ export class BillingController {
     @Param('orderId', ParseIntPipe) orderId: number,
     @Request() req: RequestWithUser,
   ) {
-    return this.billingService.getBillActionHistory(orderId, req.user.restaurantId);
+    return this.billingService.getBillActionHistory(
+      orderId,
+      req.user.restaurantId,
+    );
   }
 
   /**
@@ -207,6 +350,9 @@ export class BillingController {
     @Param('invoiceId', ParseIntPipe) invoiceId: number,
     @Request() req: RequestWithUser,
   ) {
-    return this.billingService.getBillActionSummary(invoiceId, req.user.restaurantId);
+    return this.billingService.getBillActionSummary(
+      invoiceId,
+      req.user.restaurantId,
+    );
   }
 }

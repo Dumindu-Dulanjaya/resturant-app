@@ -32,7 +32,11 @@ function RoleRoute({ children, allowedRoles }) {
     }
 
     if (userRole === 'cashier') {
-      return <Navigate to="/cashier/dashboard" replace />;
+      return <Navigate to="/cashier/dashboard/queue" replace />;
+    }
+
+    if (userRole === 'accountant') {
+      return <Navigate to="/accountant/dashboard" replace />;
     }
 
     return <Navigate to="/dashboard" replace />;

@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Invoice, InvoiceStatus } from './entities/invoice.entity';
+import {
+  Invoice,
+  InvoiceStatus,
+  AccountantTransferStatus,
+} from './entities/invoice.entity';
 import { BillAction, BillActionType } from './entities/bill-action.entity';
 import { Order, OrderStatus } from '../orders/entities/order.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -64,6 +68,11 @@ export class BillingService {
       isSentToCashier: false,
       isSentWhatsapp: false,
       sentToCashierAt: null,
+      accountantTransferStatus: AccountantTransferStatus.NONE,
+      sentToAccountantAt: null,
+      sentToAccountantByAdminId: null,
+      acceptedByAccountantAt: null,
+      acceptedByAccountantId: null,
       createdByAdminId: adminId ?? null,
       ...overrides,
     });
@@ -119,6 +128,22 @@ export class BillingService {
     });
 
     return invoices;
+  }
+
+  private resolveDateBounds(date?: string): {
+    dateLabel: string;
+    startDate: Date;
+    endDate: Date;
+  } {
+    const dateLabel = date || new Date().toISOString().slice(0, 10);
+    const startDate = new Date(`${dateLabel}T00:00:00.000`);
+    const endDate = new Date(`${dateLabel}T23:59:59.999`);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM-DD.');
+    }
+
+    return { dateLabel, startDate, endDate };
   }
 
   /** Returns all READY orders for this restaurant (pending billing). */
@@ -281,6 +306,307 @@ export class BillingService {
       .getMany();
 
     return this.hydrateOrderNos(invoices);
+  }
+
+  /** Returns PAID cashier transactions for a day that are not accepted by accountant yet. */
+  async getCashierTransactionsForDate(
+    restaurantId: number,
+    date?: string,
+  ): Promise<Invoice[]> {
+    const { startDate, endDate } = this.resolveDateBounds(date);
+
+    const invoices = await this.invoicesRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('invoice.invoiceStatus = :status', {
+        status: InvoiceStatus.PAID,
+      })
+      .andWhere('invoice.updatedAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .andWhere(
+        'COALESCE(invoice.accountantTransferStatus, :noneStatus) != :acceptedStatus',
+        {
+          noneStatus: AccountantTransferStatus.NONE,
+          acceptedStatus: AccountantTransferStatus.ACCEPTED,
+        },
+      )
+      .orderBy('invoice.updatedAt', 'DESC')
+      .getMany();
+
+    return this.hydrateOrderNos(invoices);
+  }
+
+  /** Sends PAID day transactions to accountant for review (manual or auto mode). */
+  async sendTransactionsToAccountant(
+    restaurantId: number,
+    cashierUserId: number,
+    payload: {
+      date?: string;
+      mode?: 'MANUAL' | 'AUTO';
+      invoiceIds?: number[];
+    },
+  ) {
+    const { dateLabel, startDate, endDate } = this.resolveDateBounds(
+      payload.date,
+    );
+    const mode = payload.mode || 'MANUAL';
+
+    const query = this.invoicesRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('invoice.invoiceStatus = :status', {
+        status: InvoiceStatus.PAID,
+      })
+      .andWhere('invoice.updatedAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .andWhere(
+        'COALESCE(invoice.accountantTransferStatus, :noneStatus) != :acceptedStatus',
+        {
+          noneStatus: AccountantTransferStatus.NONE,
+          acceptedStatus: AccountantTransferStatus.ACCEPTED,
+        },
+      );
+
+    if (Array.isArray(payload.invoiceIds) && payload.invoiceIds.length > 0) {
+      query.andWhere('invoice.invoiceId IN (:...invoiceIds)', {
+        invoiceIds: payload.invoiceIds,
+      });
+    }
+
+    const invoices = await query.getMany();
+
+    if (invoices.length === 0) {
+      throw new BadRequestException(
+        'No eligible transactions found for transfer.',
+      );
+    }
+
+    const now = new Date();
+    invoices.forEach((invoice) => {
+      invoice.accountantTransferStatus = AccountantTransferStatus.PENDING;
+      invoice.sentToAccountantAt = now;
+      invoice.sentToAccountantByAdminId = cashierUserId;
+      invoice.acceptedByAccountantAt = null;
+      invoice.acceptedByAccountantId = null;
+    });
+
+    await this.invoicesRepository.save(invoices);
+
+    this.websocketGateway.emitToRole(
+      'accountant',
+      'accountant:transfer-request',
+      {
+        restaurantId,
+        date: dateLabel,
+        mode,
+        count: invoices.length,
+        invoiceIds: invoices.map((invoice) => invoice.invoiceId),
+        sentAt: now.toISOString(),
+      },
+    );
+
+    this.websocketGateway.emitToRole('cashier', 'accountant:transfer-updated', {
+      restaurantId,
+      date: dateLabel,
+      status: AccountantTransferStatus.PENDING,
+      count: invoices.length,
+    });
+
+    return {
+      success: true,
+      message: `${invoices.length} transaction(s) sent to accountant.`,
+      date: dateLabel,
+      mode,
+      count: invoices.length,
+      invoices: await this.hydrateOrderNos(invoices),
+    };
+  }
+
+  /** Returns transactions waiting for accountant review. */
+  async getAccountantPendingTransactions(
+    restaurantId: number,
+    date?: string,
+  ): Promise<Invoice[]> {
+    const query = this.invoicesRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('invoice.accountantTransferStatus = :status', {
+        status: AccountantTransferStatus.PENDING,
+      })
+      .orderBy('invoice.sentToAccountantAt', 'DESC')
+      .addOrderBy('invoice.updatedAt', 'DESC');
+
+    if (date) {
+      const { startDate, endDate } = this.resolveDateBounds(date);
+      query.andWhere(
+        'invoice.sentToAccountantAt BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
+    }
+
+    const invoices = await query.getMany();
+    return this.hydrateOrderNos(invoices);
+  }
+
+  /** Returns accountant-accepted transactions. */
+  async getAccountantAcceptedTransactions(
+    restaurantId: number,
+    date?: string,
+  ): Promise<Invoice[]> {
+    const query = this.invoicesRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('invoice.accountantTransferStatus = :status', {
+        status: AccountantTransferStatus.ACCEPTED,
+      })
+      .orderBy('invoice.acceptedByAccountantAt', 'DESC')
+      .addOrderBy('invoice.updatedAt', 'DESC');
+
+    if (date) {
+      const { startDate, endDate } = this.resolveDateBounds(date);
+      query.andWhere(
+        'invoice.acceptedByAccountantAt BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
+    }
+
+    const invoices = await query.getMany();
+    return this.hydrateOrderNos(invoices);
+  }
+
+  /** Accountant accepts pending transfers; accepted transactions are removed from cashier day list. */
+  async acceptTransactionsByAccountant(
+    restaurantId: number,
+    accountantUserId: number,
+    payload: { date?: string; invoiceIds?: number[] },
+  ) {
+    const query = this.invoicesRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('invoice.accountantTransferStatus = :status', {
+        status: AccountantTransferStatus.PENDING,
+      });
+
+    if (Array.isArray(payload.invoiceIds) && payload.invoiceIds.length > 0) {
+      query.andWhere('invoice.invoiceId IN (:...invoiceIds)', {
+        invoiceIds: payload.invoiceIds,
+      });
+    } else if (payload.date) {
+      const { startDate, endDate } = this.resolveDateBounds(payload.date);
+      query.andWhere(
+        'invoice.sentToAccountantAt BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
+    }
+
+    const invoices = await query.getMany();
+    if (invoices.length === 0) {
+      throw new BadRequestException('No pending transactions found to accept.');
+    }
+
+    const now = new Date();
+    invoices.forEach((invoice) => {
+      invoice.accountantTransferStatus = AccountantTransferStatus.ACCEPTED;
+      invoice.acceptedByAccountantAt = now;
+      invoice.acceptedByAccountantId = accountantUserId;
+    });
+
+    await this.invoicesRepository.save(invoices);
+
+    this.websocketGateway.emitToRole(
+      'cashier',
+      'accountant:transfer-reviewed',
+      {
+        restaurantId,
+        action: 'ACCEPTED',
+        count: invoices.length,
+        invoiceIds: invoices.map((invoice) => invoice.invoiceId),
+        reviewedAt: now.toISOString(),
+      },
+    );
+
+    return {
+      success: true,
+      message: `${invoices.length} transaction(s) accepted by accountant.`,
+      count: invoices.length,
+      invoices: await this.hydrateOrderNos(invoices),
+    };
+  }
+
+  /** Accountant rejects pending transfers; transactions stay with cashier. */
+  async rejectTransactionsByAccountant(
+    restaurantId: number,
+    payload: { date?: string; invoiceIds?: number[] },
+  ) {
+    const query = this.invoicesRepository
+      .createQueryBuilder('invoice')
+      .where('invoice.restaurantId = :restaurantId', { restaurantId })
+      .andWhere('invoice.accountantTransferStatus = :status', {
+        status: AccountantTransferStatus.PENDING,
+      });
+
+    if (Array.isArray(payload.invoiceIds) && payload.invoiceIds.length > 0) {
+      query.andWhere('invoice.invoiceId IN (:...invoiceIds)', {
+        invoiceIds: payload.invoiceIds,
+      });
+    } else if (payload.date) {
+      const { startDate, endDate } = this.resolveDateBounds(payload.date);
+      query.andWhere(
+        'invoice.sentToAccountantAt BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
+    }
+
+    const invoices = await query.getMany();
+    if (invoices.length === 0) {
+      throw new BadRequestException('No pending transactions found to reject.');
+    }
+
+    const now = new Date();
+    invoices.forEach((invoice) => {
+      invoice.accountantTransferStatus = AccountantTransferStatus.NONE;
+      invoice.sentToAccountantAt = null;
+      invoice.sentToAccountantByAdminId = null;
+      invoice.acceptedByAccountantAt = null;
+      invoice.acceptedByAccountantId = null;
+    });
+
+    await this.invoicesRepository.save(invoices);
+
+    this.websocketGateway.emitToRole(
+      'cashier',
+      'accountant:transfer-reviewed',
+      {
+        restaurantId,
+        action: 'REJECTED',
+        count: invoices.length,
+        invoiceIds: invoices.map((invoice) => invoice.invoiceId),
+        reviewedAt: now.toISOString(),
+      },
+    );
+
+    return {
+      success: true,
+      message: `${invoices.length} transaction(s) were kept with cashier.`,
+      count: invoices.length,
+      invoices: await this.hydrateOrderNos(invoices),
+    };
   }
 
   /** Marks an invoice as printed by cashier. */

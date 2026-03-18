@@ -30,6 +30,13 @@ function formatDateTime(dateStr) {
   });
 }
 
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function getOrderAge(createdAt) {
   const mins = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
   if (mins < 60) return `${mins}m ago`;
@@ -259,10 +266,24 @@ function CreateInvoiceModal({ order, onConfirm, onClose, loading }) {
 // Main Dashboard Component
 // ---------------------------------------------------------------------------
 
-const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = 'fas fa-file-invoice-dollar' }) => {
+const ServiceBillingDashboard = ({
+  pageTitle = 'Service & Billing',
+  pageIcon = 'fas fa-file-invoice-dollar',
+  cashierTab = 'queue',
+}) => {
   const { user } = useAuthStore();
   const { subscribe, connected } = useWebSocket();
   const isCashierDashboard = user?.role === 'cashier';
+  const resolvedCashierTab = isCashierDashboard ? cashierTab : 'queue';
+  const showCashierTransfersSection =
+    isCashierDashboard && resolvedCashierTab === 'transfers';
+  const showCashierQueueSection =
+    !isCashierDashboard || resolvedCashierTab === 'queue';
+  const showInvoiceHistorySection =
+    !isCashierDashboard || resolvedCashierTab === 'history';
+  const autoTransferStorageKey = `cashier-auto-transfer:${user?.restaurantId || 'global'}`;
+  const autoSendInFlightRef = useRef(false);
+  const toastTimerRef = useRef(null);
 
   // Ready orders state
   const [readyOrders, setReadyOrders] = useState([]);
@@ -273,6 +294,18 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
   const [cashierQueue, setCashierQueue] = useState([]);
   const [loadingCashierQueue, setLoadingCashierQueue] = useState(true);
   const [cashierQueueError, setCashierQueueError] = useState('');
+
+  // Cashier -> Accountant transfer state
+  const [transferDate, setTransferDate] = useState(getLocalDateString());
+  const [cashierTransactions, setCashierTransactions] = useState([]);
+  const [selectedTransferIds, setSelectedTransferIds] = useState(new Set());
+  const [loadingTransferTransactions, setLoadingTransferTransactions] = useState(true);
+  const [transferError, setTransferError] = useState('');
+  const [sendingToAccountant, setSendingToAccountant] = useState(false);
+  const [autoSendEnabled, setAutoSendEnabled] = useState(() => {
+    const raw = localStorage.getItem('cashier-auto-send-enabled');
+    return raw == null ? true : raw === '1';
+  });
 
   // Invoice history state
   const [invoices, setInvoices] = useState([]);
@@ -291,10 +324,27 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
 
   // Notification helper
   const [toast, setToast] = useState(null);
-  const showToast = (msg, type = 'success') => {
+  const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const getTransferEligibleIds = useCallback((transactions) => {
+    return (Array.isArray(transactions) ? transactions : [])
+      .filter((invoice) => (invoice.accountantTransferStatus || 'NONE') !== 'PENDING')
+      .map((invoice) => invoice.invoiceId);
+  }, []);
 
   // Fetch READY orders
   const fetchReadyOrders = useCallback(async () => {
@@ -320,6 +370,32 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
       setLoadingCashierQueue(false);
     }
   }, []);
+
+  const fetchCashierTransactions = useCallback(async (dateValue) => {
+    if (!isCashierDashboard) return;
+
+    try {
+      setTransferError('');
+      const res = await billingAPI.getCashierDayTransactions({ date: dateValue });
+      const transactions = Array.isArray(res.data) ? res.data : [];
+      setCashierTransactions(transactions);
+
+      const validIds = new Set(transactions.map((invoice) => invoice.invoiceId));
+      setSelectedTransferIds((prev) => {
+        const next = new Set();
+        prev.forEach((id) => {
+          if (validIds.has(id)) next.add(id);
+        });
+        return next;
+      });
+    } catch (err) {
+      setTransferError(err?.response?.data?.message || 'Failed to load cashier transactions.');
+      setCashierTransactions([]);
+      setSelectedTransferIds(new Set());
+    } finally {
+      setLoadingTransferTransactions(false);
+    }
+  }, [isCashierDashboard]);
 
   // Fetch invoice history
   const fetchInvoices = useCallback(async () => {
@@ -347,6 +423,11 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
     fetchReadyOrders();
   }, [fetchCashierQueue, fetchReadyOrders, isCashierDashboard]);
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+  useEffect(() => {
+    if (!isCashierDashboard) return;
+    setLoadingTransferTransactions(true);
+    fetchCashierTransactions(transferDate);
+  }, [fetchCashierTransactions, isCashierDashboard, transferDate]);
 
   // Auto-refresh via WebSocket
   useEffect(() => {
@@ -355,12 +436,27 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
       subscribe('dashboard:refresh', () => {
         if (isCashierDashboard) {
           fetchCashierQueue();
+          fetchCashierTransactions(transferDate);
         } else {
           fetchReadyOrders();
         }
         fetchInvoices();
       }),
       subscribe('cashier:queue-update', fetchCashierQueue),
+      subscribe('accountant:transfer-updated', (payload) => {
+        if (!isCashierDashboard || payload?.restaurantId !== user?.restaurantId) return;
+        fetchCashierTransactions(transferDate);
+      }),
+      subscribe('accountant:transfer-reviewed', (payload) => {
+        if (!isCashierDashboard || payload?.restaurantId !== user?.restaurantId) return;
+        fetchCashierTransactions(transferDate);
+        showToast(
+          payload?.action === 'ACCEPTED'
+            ? `${payload.count || 0} transaction(s) accepted by accountant.`
+            : `${payload.count || 0} transaction(s) were kept with cashier.`,
+          payload?.action === 'ACCEPTED' ? 'success' : 'error',
+        );
+      }),
       subscribe('order:status-update', () => {
         if (!isCashierDashboard) {
           fetchReadyOrders();
@@ -376,19 +472,190 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [connected, fetchCashierQueue, fetchInvoices, fetchReadyOrders, isCashierDashboard, subscribe]);
+  }, [
+    connected,
+    fetchCashierQueue,
+    fetchCashierTransactions,
+    fetchInvoices,
+    fetchReadyOrders,
+    isCashierDashboard,
+    showToast,
+    subscribe,
+    transferDate,
+    user?.restaurantId,
+  ]);
 
   // Polling fallback (30s)
   useEffect(() => {
     const id = setInterval(() => {
       if (isCashierDashboard) {
         fetchCashierQueue();
+        fetchCashierTransactions(transferDate);
       } else {
         fetchReadyOrders();
       }
     }, 30000);
     return () => clearInterval(id);
-  }, [fetchCashierQueue, fetchReadyOrders, isCashierDashboard]);
+  }, [fetchCashierQueue, fetchCashierTransactions, fetchReadyOrders, isCashierDashboard, transferDate]);
+
+  useEffect(() => {
+    localStorage.setItem('cashier-auto-send-enabled', autoSendEnabled ? '1' : '0');
+  }, [autoSendEnabled]);
+
+  const sendTransactionsToAccountant = useCallback(async ({
+    dateValue,
+    mode = 'MANUAL',
+    invoiceIds,
+    silentNoData = false,
+  }) => {
+    const payload = {
+      date: dateValue,
+      mode,
+    };
+
+    if (Array.isArray(invoiceIds) && invoiceIds.length > 0) {
+      payload.invoiceIds = invoiceIds;
+    }
+
+    try {
+      setSendingToAccountant(true);
+      const res = await billingAPI.sendTransactionsToAccountant(payload);
+      const sentCount = res?.data?.count || invoiceIds?.length || 0;
+      showToast(
+        mode === 'AUTO'
+          ? `Auto-sent ${sentCount} transaction(s) to accountant.`
+          : res?.data?.message || 'Transactions sent to accountant.',
+      );
+
+      if (mode === 'AUTO') {
+        localStorage.setItem(autoTransferStorageKey, dateValue);
+      }
+
+      setSelectedTransferIds(new Set());
+      fetchCashierTransactions(transferDate === dateValue ? dateValue : transferDate);
+      fetchCashierQueue();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Failed to send transactions to accountant.';
+      if (!silentNoData || !msg.toLowerCase().includes('no eligible transactions')) {
+        showToast(msg, 'error');
+      }
+      throw err;
+    } finally {
+      setSendingToAccountant(false);
+    }
+  }, [
+    autoTransferStorageKey,
+    fetchCashierQueue,
+    fetchCashierTransactions,
+    showToast,
+    transferDate,
+  ]);
+
+  const handleManualSendToAccountant = async () => {
+    const eligibleIds = getTransferEligibleIds(cashierTransactions);
+    if (eligibleIds.length === 0) {
+      showToast('All transactions are already waiting for accountant review.', 'error');
+      return;
+    }
+
+    const requestedIds = Array.from(selectedTransferIds);
+    const selectedEligibleIds = requestedIds.filter((id) => eligibleIds.includes(id));
+    const invoiceIds = selectedEligibleIds.length > 0 ? selectedEligibleIds : eligibleIds;
+
+    await sendTransactionsToAccountant({
+      dateValue: transferDate,
+      mode: 'MANUAL',
+      invoiceIds,
+    });
+  };
+
+  const runAutoSendIfDue = useCallback(async () => {
+    if (!isCashierDashboard || !autoSendEnabled || autoSendInFlightRef.current) {
+      return;
+    }
+
+    const now = new Date();
+    const currentDate = getLocalDateString(now);
+    const lastAutoSentDate = localStorage.getItem(autoTransferStorageKey);
+
+    if (lastAutoSentDate === currentDate) {
+      return;
+    }
+
+    const isEndOfDayWindow = now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 55);
+    if (!isEndOfDayWindow) {
+      return;
+    }
+
+    autoSendInFlightRef.current = true;
+    try {
+      const hasSameDateLoaded = transferDate === currentDate;
+      const transactions = hasSameDateLoaded
+        ? cashierTransactions
+        : (await billingAPI.getCashierDayTransactions({ date: currentDate }))?.data || [];
+
+      const eligibleIds = getTransferEligibleIds(transactions);
+      if (eligibleIds.length === 0) {
+        localStorage.setItem(autoTransferStorageKey, currentDate);
+        return;
+      }
+
+      await sendTransactionsToAccountant({
+        dateValue: currentDate,
+        mode: 'AUTO',
+        invoiceIds: eligibleIds,
+        silentNoData: true,
+      });
+    } catch {
+      // A visible toast is already shown by sendTransactionsToAccountant.
+    } finally {
+      autoSendInFlightRef.current = false;
+    }
+  }, [
+    autoSendEnabled,
+    autoTransferStorageKey,
+    cashierTransactions,
+    getTransferEligibleIds,
+    isCashierDashboard,
+    sendTransactionsToAccountant,
+    transferDate,
+  ]);
+
+  useEffect(() => {
+    if (!isCashierDashboard || !autoSendEnabled) return;
+
+    runAutoSendIfDue();
+    const timerId = setInterval(runAutoSendIfDue, 60 * 1000);
+    return () => clearInterval(timerId);
+  }, [autoSendEnabled, isCashierDashboard, runAutoSendIfDue]);
+
+  const transferEligibleIds = getTransferEligibleIds(cashierTransactions);
+  const selectedTransferCount = Array.from(selectedTransferIds).filter((id) => transferEligibleIds.includes(id)).length;
+  const selectableTransferCount = transferEligibleIds.length;
+  const allTransferRowsSelected =
+    selectableTransferCount > 0 &&
+    transferEligibleIds.every((id) => selectedTransferIds.has(id));
+
+  const toggleTransferSelection = (invoiceId) => {
+    setSelectedTransferIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(invoiceId)) {
+        next.delete(invoiceId);
+      } else {
+        next.add(invoiceId);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllTransferSelection = () => {
+    if (allTransferRowsSelected) {
+      setSelectedTransferIds(new Set());
+      return;
+    }
+
+    setSelectedTransferIds(new Set(transferEligibleIds));
+  };
 
   // Create invoice flow
   const handleOpenCreateModal = (order) => setCreateModalOrder(order);
@@ -472,7 +739,18 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
                   <i className={`fas fa-circle me-1 ${connected ? 'text-success' : 'text-danger'}`}></i>
                   {connected ? 'Live' : 'Offline'}
                 </span>
-                <button className="btn btn-sm btn-outline-primary" onClick={() => { fetchReadyOrders(); fetchInvoices(); }}>
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => {
+                    if (isCashierDashboard) {
+                      fetchCashierQueue();
+                      fetchCashierTransactions(transferDate);
+                    } else {
+                      fetchReadyOrders();
+                    }
+                    fetchInvoices();
+                  }}
+                >
                   <i className="fas fa-sync-alt me-1"></i>Refresh
                 </button>
               </div>
@@ -483,8 +761,131 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
         <div className="content">
           <div className="container-fluid">
 
+            {showCashierTransfersSection && (
+              <section className="billing-section mb-4">
+                <div className="section-heading d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                  <span>
+                    <i className="fas fa-share-square text-success me-2"></i>
+                    Cashier to Accountant Transfers
+                  </span>
+                  <span className="badge bg-success-subtle text-success-emphasis border">
+                    {cashierTransactions.length} transactions
+                  </span>
+                </div>
+
+                <div className="transfer-toolbar mb-3">
+                  <div className="form-check form-switch mb-0">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="auto-send-switch"
+                      checked={autoSendEnabled}
+                      onChange={(e) => setAutoSendEnabled(e.target.checked)}
+                    />
+                    <label className="form-check-label" htmlFor="auto-send-switch">
+                      Auto send at end of day (11:55 PM)
+                    </label>
+                  </div>
+
+                  <input
+                    type="date"
+                    className="form-control form-control-sm transfer-date"
+                    value={transferDate}
+                    onChange={(e) => setTransferDate(e.target.value)}
+                  />
+
+                  <button
+                    className="btn btn-sm btn-success"
+                    onClick={handleManualSendToAccountant}
+                    disabled={sendingToAccountant || selectableTransferCount === 0}
+                  >
+                    {sendingToAccountant ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-paper-plane me-1"></i>
+                        Send to Accountant
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {selectedTransferCount > 0 && (
+                  <div className="alert alert-info py-2 px-3 mb-3 small">
+                    {selectedTransferCount} selected transaction(s) will be sent.
+                  </div>
+                )}
+
+                {loadingTransferTransactions ? (
+                  <div className="text-center py-3">
+                    <div className="spinner-border text-success"></div>
+                  </div>
+                ) : transferError ? (
+                  <div className="alert alert-danger">{transferError}</div>
+                ) : cashierTransactions.length === 0 ? (
+                  <div className="empty-state">
+                    <i className="fas fa-file-invoice-dollar text-muted fa-2x mb-2"></i>
+                    <p className="mb-0">No PAID transactions found for selected date.</p>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-sm table-hover invoice-table mb-0">
+                      <thead>
+                        <tr>
+                          <th style={{ width: '40px' }}>
+                            <input
+                              type="checkbox"
+                              checked={allTransferRowsSelected}
+                              onChange={toggleAllTransferSelection}
+                            />
+                          </th>
+                          <th>Invoice #</th>
+                          <th>Order #</th>
+                          <th>Table</th>
+                          <th>Total</th>
+                          <th>Paid At</th>
+                          <th>Transfer Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cashierTransactions.map((inv) => {
+                          const isPendingReview = (inv.accountantTransferStatus || 'NONE') === 'PENDING';
+                          return (
+                            <tr key={inv.invoiceId}>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  disabled={isPendingReview}
+                                  checked={selectedTransferIds.has(inv.invoiceId)}
+                                  onChange={() => toggleTransferSelection(inv.invoiceId)}
+                                />
+                              </td>
+                              <td><code>{inv.invoiceNumber}</code></td>
+                              <td>{inv.orderNo || inv.orderId}</td>
+                              <td>{inv.tableNo || '–'}</td>
+                              <td>{formatCurrency(inv.totalAmount)}</td>
+                              <td>{formatDateTime(inv.updatedAt)}</td>
+                              <td>
+                                <span className={`badge ${isPendingReview ? 'bg-warning text-dark' : 'bg-primary'}`}>
+                                  {isPendingReview ? 'Pending Accountant' : 'With Cashier'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* ── SECTION 1: Ready to Bill / Cashier Queue ── */}
-            <section className="billing-section">
+            {showCashierQueueSection && (
+              <section className="billing-section">
               <div className="section-heading">
                 <i className={`${isCashierDashboard ? 'fas fa-cash-register text-primary' : 'fas fa-bell text-warning'} me-2`}></i>
                 {isCashierDashboard ? 'Cashier Queue' : 'Ready to Bill'}
@@ -530,10 +931,12 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
                     ))}
                 </div>
               )}
-            </section>
+              </section>
+            )}
 
             {/* ── SECTION 2: Invoice History ── */}
-            <section className="billing-section mt-4">
+            {showInvoiceHistorySection && (
+              <section className={`billing-section ${showCashierQueueSection ? 'mt-4' : ''}`.trim()}>
               <div className="section-heading">
                 <i className="fas fa-history text-primary me-2"></i>
                 Invoice History
@@ -624,7 +1027,8 @@ const ServiceBillingDashboard = ({ pageTitle = 'Service & Billing', pageIcon = '
                   </table>
                 </div>
               )}
-            </section>
+              </section>
+            )}
 
           </div>
         </div>

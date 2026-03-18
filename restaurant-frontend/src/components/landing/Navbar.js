@@ -44,6 +44,7 @@ const Navbar = () => {
                   <li><Link to="/super-admin/login">Super Admin</Link></li>
                   <li><Link to="/kitchen-login">Kitchen Login</Link></li>
                   <li><Link to="/cashier-login">Cashier Login</Link></li>
+                  <li><Link to="/accountant-login">Accountant Login</Link></li>
                   <li><Link to="/housekeeper">HouseKeeper Login</Link></li>
                 </ul>
               )}

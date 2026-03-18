@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './SuperAdminLogin.css';
 
-function CashierLogin() {
+function AccountantLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,14 +34,13 @@ function CashierLogin() {
         }
 
         const role = user.role?.toString().trim().toLowerCase();
-        if (role !== 'cashier') {
-          Swal.fire({ icon: 'error', title: 'Access Denied', text: 'This login is for Cashier users only.' });
+        if (role !== 'accountant') {
+          Swal.fire({ icon: 'error', title: 'Access Denied', text: 'This login is for Accountant users only.' });
           return;
         }
 
         login(user, access_token);
 
-        // Fetch profile to include restaurant settings/context in the auth store.
         try {
           const profileRes = await apiClient.get('/auth/profile', {
             headers: { Authorization: `Bearer ${access_token}` },
@@ -62,7 +61,7 @@ function CashierLogin() {
           timer: 1500,
           timerProgressBar: true,
           didClose: () => {
-            window.location.href = '/cashier/dashboard/queue';
+            window.location.href = '/accountant/dashboard';
           },
         });
       } else {
@@ -96,7 +95,7 @@ function CashierLogin() {
       <div className="sa-deco sa-deco-6"></div>
 
       <div className="sa-card">
-        <h2 className="sa-card-title">Cashier Login</h2>
+        <h2 className="sa-card-title">Accountant Login</h2>
 
         <form onSubmit={handleSubmit}>
           <input
@@ -149,4 +148,4 @@ function CashierLogin() {
   );
 }
 
-export default CashierLogin;
+export default AccountantLogin;

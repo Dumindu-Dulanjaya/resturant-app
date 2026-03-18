@@ -26,6 +26,8 @@ function Navbar() {
         return 'Housekeeper';
       case 'cashier':
         return 'Cashier';
+      case 'accountant':
+        return 'Accountant';
       case 'admin':
         return 'Admin';
       default:

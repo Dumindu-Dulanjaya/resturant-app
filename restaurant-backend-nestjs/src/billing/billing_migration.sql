@@ -28,6 +28,11 @@ CREATE TABLE IF NOT EXISTS invoices (
   is_sent_to_cashier TINYINT(1)      NOT NULL DEFAULT 0,
   is_sent_whatsapp  TINYINT(1)       NOT NULL DEFAULT 0,
   sent_to_cashier_at DATETIME        NULL,
+  accountant_transfer_status VARCHAR(20) NOT NULL DEFAULT 'NONE',
+  sent_to_accountant_at DATETIME    NULL,
+  sent_to_accountant_by_admin_id INT NULL,
+  accepted_by_accountant_at DATETIME NULL,
+  accepted_by_accountant_id INT     NULL,
   created_by_admin_id INT            NULL,
   created_at        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -36,5 +41,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   INDEX idx_order_id (order_id),
   INDEX idx_restaurant_id (restaurant_id),
   INDEX idx_sent_to_cashier (is_sent_to_cashier),
+  INDEX idx_accountant_transfer_status (accountant_transfer_status),
+  INDEX idx_sent_to_accountant_at (sent_to_accountant_at),
+  INDEX idx_accepted_by_accountant_at (accepted_by_accountant_at),
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

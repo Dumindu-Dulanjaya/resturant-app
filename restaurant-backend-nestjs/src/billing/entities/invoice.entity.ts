@@ -11,6 +11,12 @@ export enum InvoiceStatus {
   PAID = 'PAID',
 }
 
+export enum AccountantTransferStatus {
+  NONE = 'NONE',
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+}
+
 @Entity('invoices')
 export class Invoice {
   @PrimaryGeneratedColumn({ name: 'invoice_id' })
@@ -111,6 +117,34 @@ export class Invoice {
 
   @Column({ name: 'sent_to_cashier_at', type: 'datetime', nullable: true })
   sentToCashierAt: Date | null;
+
+  @Column({
+    name: 'accountant_transfer_status',
+    type: 'varchar',
+    length: 20,
+    default: AccountantTransferStatus.NONE,
+  })
+  accountantTransferStatus: AccountantTransferStatus;
+
+  @Column({ name: 'sent_to_accountant_at', type: 'datetime', nullable: true })
+  sentToAccountantAt: Date | null;
+
+  @Column({
+    name: 'sent_to_accountant_by_admin_id',
+    type: 'int',
+    nullable: true,
+  })
+  sentToAccountantByAdminId: number | null;
+
+  @Column({
+    name: 'accepted_by_accountant_at',
+    type: 'datetime',
+    nullable: true,
+  })
+  acceptedByAccountantAt: Date | null;
+
+  @Column({ name: 'accepted_by_accountant_id', type: 'int', nullable: true })
+  acceptedByAccountantId: number | null;
 
   @Column({ name: 'created_by_admin_id', type: 'int', nullable: true })
   createdByAdminId: number | null;

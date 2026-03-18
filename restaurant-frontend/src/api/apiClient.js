@@ -91,6 +91,41 @@ export const dashboardAPI = {
     apiClient.get('/dashboard/stats'),
 };
 
+export const reportsAPI = {
+  getSummary: (date) =>
+    apiClient.get('/reports/summary', { params: { date } }),
+
+  getDailyReport: (date) =>
+    apiClient.get('/reports/daily', { params: { date } }),
+
+  getRangeReport: (from, to) =>
+    apiClient.get('/reports/range', { params: { from, to } }),
+
+  getMonthlyReport: (year, month) =>
+    apiClient.get('/reports/monthly', { params: { year, month } }),
+
+  getHistory: (limit = 20) =>
+    apiClient.get('/reports/history', { params: { limit } }),
+
+  downloadDailyCsv: (date) =>
+    apiClient.get('/reports/daily/csv', {
+      params: { date },
+      responseType: 'blob',
+    }),
+
+  downloadRangeCsv: (from, to) =>
+    apiClient.get('/reports/range/csv', {
+      params: { from, to },
+      responseType: 'blob',
+    }),
+
+  downloadMonthlyCsv: (year, month) =>
+    apiClient.get('/reports/monthly/csv', {
+      params: { year, month },
+      responseType: 'blob',
+    }),
+};
+
 export const billingAPI = {
   /** Fetch all orders with READY status (waiting to be billed). */
   getReadyOrders: () =>
@@ -139,6 +174,30 @@ export const billingAPI = {
   /** Mark an invoice as PAID. */
   markInvoicePaid: (invoiceId) =>
     apiClient.patch(`/billing/invoices/${invoiceId}/mark-paid`),
+
+  /** Cashier day transactions for transfer review. */
+  getCashierDayTransactions: (params) =>
+    apiClient.get('/billing/cashier/day-transactions', { params }),
+
+  /** Cashier sends day/selected transactions to accountant (manual/auto). */
+  sendTransactionsToAccountant: (data) =>
+    apiClient.post('/billing/accountant/send', data),
+
+  /** Accountant receives pending transfer requests from cashier. */
+  getAccountantPendingTransactions: (params) =>
+    apiClient.get('/billing/accountant/pending', { params }),
+
+  /** Accountant accepted transfer history. */
+  getAccountantAcceptedTransactions: (params) =>
+    apiClient.get('/billing/accountant/accepted', { params }),
+
+  /** Accountant accepts pending transfers. */
+  acceptTransactionsByAccountant: (data) =>
+    apiClient.post('/billing/accountant/accept', data),
+
+  /** Accountant rejects pending transfers (keeps data with cashier). */
+  rejectTransactionsByAccountant: (data) =>
+    apiClient.post('/billing/accountant/reject', data),
 };
 
 export default apiClient;

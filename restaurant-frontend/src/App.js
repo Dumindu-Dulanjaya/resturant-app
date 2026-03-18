@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import SuperAdminLogin from './pages/SuperAdminLogin';
 import KitchenLogin from './pages/KitchenLogin';
 import CashierLogin from './pages/CashierLogin';
+import AccountantLogin from './pages/AccountantLogin';
 import Dashboard from './pages/Dashboard';
 import Menus from './pages/Menus';
 import Categories from './pages/Categories';
@@ -39,6 +40,7 @@ import LandingPage from './pages/LandingPage';
 import RegisterPage from './pages/RegisterPage';
 import ContactPage from './pages/ContactPage';
 import CashierDashboard from './pages/CashierDashboard';
+import AccountantDashboard from './pages/AccountantDashboard';
 
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -120,6 +122,7 @@ function App() {
             <Route path="/super-admin/login" element={<SuperAdminLogin />} />
             <Route path="/kitchen-login" element={<KitchenLogin />} />
             <Route path="/cashier-login" element={<CashierLogin />} />
+            <Route path="/accountant-login" element={<AccountantLogin />} />
             <Route path="/qr/:tableKey" element={<CustomerQROrder />} />
             <Route path="/room/:roomKey" element={<GuestRequestForm />} />
 
@@ -305,7 +308,7 @@ function App() {
               path="/reports/daily"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'accountant']}>
                     <FeatureRoute requiredFeature="REPORTS">
                       <DailyReport />
                     </FeatureRoute>
@@ -318,7 +321,7 @@ function App() {
               path="/reports/monthly"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'accountant']}>
                     <FeatureRoute requiredFeature="REPORTS">
                       <MonthlyReport />
                     </FeatureRoute>
@@ -331,7 +334,7 @@ function App() {
               path="/reports/sales"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'accountant']}>
                     <FeatureRoute requiredFeature="REPORTS">
                       <SalesReports />
                     </FeatureRoute>
@@ -390,7 +393,7 @@ function App() {
               path="/settings/profile"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper', 'cashier']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper', 'cashier', 'accountant']}>
                     <Profile />
                   </RoleRoute>
                 </PrivateRoute>
@@ -401,7 +404,7 @@ function App() {
               path="/settings/password"
               element={
                 <PrivateRoute>
-                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper', 'cashier']}>
+                  <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper', 'cashier', 'accountant']}>
                     <ChangePassword />
                   </RoleRoute>
                 </PrivateRoute>
@@ -481,7 +484,29 @@ function App() {
               element={
                 <PrivateRoute>
                   <RoleRoute allowedRoles={['cashier', 'super_admin']}>
+                    <Navigate to="/cashier/dashboard/queue" replace />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/cashier/dashboard/:tab"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['cashier', 'super_admin']}>
                     <CashierDashboard />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/accountant/dashboard"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['accountant', 'super_admin']}>
+                    <AccountantDashboard />
                   </RoleRoute>
                 </PrivateRoute>
               }

@@ -27,11 +27,16 @@ function Sidebar() {
     return location.pathname === path ? 'active' : '';
   };
 
+  const isCashierTabActive = (tab) => {
+    return location.pathname === `/cashier/dashboard/${tab}` ? 'active' : '';
+  };
+
   // Role-based permissions
   const isSuperAdmin = user?.role === 'super_admin';
   const isAdmin = user?.role === 'admin';
   const isKitchen = user?.role === 'kitchen';
   const isCashier = user?.role === 'cashier';
+  const isAccountant = user?.role === 'accountant';
   const isHousekeeper = user?.role === 'housekeeper';
 
   // Restaurant feature flags
@@ -45,9 +50,16 @@ function Sidebar() {
   const canAccessKitchen = (isSuperAdmin || isAdmin || isKitchen) && isKdsEnabled;
   const canAccessKitchenDashboard = (isKitchen || isSuperAdmin) && isKdsEnabled;
   const canAccessCashierDashboard = isCashier;
+  const canAccessAccountantDashboard = isAccountant;
   const canAccessHousekeeping = (isSuperAdmin || isAdmin || isHousekeeper) && isHousekeepingEnabled;
-  const canAccessReports = canAccessAdminFeatures && isReportsEnabled;
-  const dashboardPath = isKitchen ? '/kitchen/dashboard' : isCashier ? '/cashier/dashboard' : '/dashboard';
+  const canAccessReports = (canAccessAdminFeatures || isAccountant) && isReportsEnabled;
+  const dashboardPath = isKitchen
+    ? '/kitchen/dashboard'
+    : isCashier
+      ? '/cashier/dashboard/queue'
+      : isAccountant
+        ? '/accountant/dashboard'
+        : '/dashboard';
 
   return (
     <div className="sidebar" id="sidebar">
@@ -57,7 +69,7 @@ function Sidebar() {
       </div>
       
       <ul className="sidebar-menu">
-        {!isCashier && (
+        {!isCashier && !isAccountant && (
           <li className={isActive(dashboardPath)}>
             <Link to={dashboardPath}>
               <i className="fas fa-home"></i>
@@ -67,10 +79,33 @@ function Sidebar() {
         )}
 
         {canAccessCashierDashboard && (
-          <li className={isActive('/cashier/dashboard')}>
-            <Link to="/cashier/dashboard">
-              <i className="fas fa-cash-register"></i>
-              <span>Cashier Dashboard</span>
+          <>
+            <li className={isCashierTabActive('queue')}>
+              <Link to="/cashier/dashboard/queue">
+                <i className="fas fa-cash-register"></i>
+                <span>Cashier Queue</span>
+              </Link>
+            </li>
+            <li className={isCashierTabActive('transfers')}>
+              <Link to="/cashier/dashboard/transfers">
+                <i className="fas fa-share-square"></i>
+                <span>Accountant Transfers</span>
+              </Link>
+            </li>
+            <li className={isCashierTabActive('history')}>
+              <Link to="/cashier/dashboard/history">
+                <i className="fas fa-history"></i>
+                <span>Invoice History</span>
+              </Link>
+            </li>
+          </>
+        )}
+
+        {canAccessAccountantDashboard && (
+          <li className={isActive('/accountant/dashboard')}>
+            <Link to="/accountant/dashboard">
+              <i className="fas fa-calculator"></i>
+              <span>Accountant Dashboard</span>
             </Link>
           </li>
         )}
@@ -228,7 +263,7 @@ function Sidebar() {
         </li>
         )}
 
-        {/* Reports Section - Admin Only */}
+        {/* Reports Section - Admin + Accountant */}
         {canAccessReports && (
           <li className={`has-submenu ${menuStates.reports ? 'open' : ''}`}>
           <a href="#" onClick={(e) => { e.preventDefault(); toggleMenu('reports'); }}>
