@@ -126,6 +126,13 @@ export const reportsAPI = {
     }),
 };
 
+export const pricingAPI = {
+  getPlans: (discount) =>
+    apiClient.get('/pricing/plans', {
+      params: Number.isFinite(discount) ? { discount } : {},
+    }),
+};
+
 export const billingAPI = {
   /** Fetch all orders with READY status (waiting to be billed). */
   getReadyOrders: () =>

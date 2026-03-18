@@ -39,6 +39,7 @@ import PendingRegistrations from './pages/PendingRegistrations';
 import LandingPage from './pages/LandingPage';
 import RegisterPage from './pages/RegisterPage';
 import ContactPage from './pages/ContactPage';
+import PricingPage from './pages/PricingPage';
 import CashierDashboard from './pages/CashierDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
 
@@ -515,6 +516,7 @@ function App() {
             {/* Redirect Routes */}
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
             <Route path="/" element={<LandingPage />} />
             <Route path="*" element={<RoleBasedRedirect />} />
           </Routes>

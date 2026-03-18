@@ -22,6 +22,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { SettingsRequestsModule } from './settings-requests/settings-requests.module';
 import { ContactModule } from './contact/contact.module';
 import { BillingModule } from './billing/billing.module';
+import { PricingModule } from './pricing/pricing.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { BillingModule } from './billing/billing.module';
     SettingsRequestsModule,
     ContactModule,
     BillingModule,
+    PricingModule,
   ],
   controllers: [AppController],
   providers: [
