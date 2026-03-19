@@ -276,6 +276,12 @@ export class BillingService {
     restaurantId: number,
   ): Promise<Invoice> {
     const invoice = await this.findOneInvoice(invoiceId, restaurantId);
+
+    // Idempotency guard: avoid duplicate cashier handoff events for same invoice.
+    if (invoice.isSentToCashier) {
+      return this.hydrateOrderNo(invoice);
+    }
+
     invoice.isSentToCashier = true;
     invoice.sentToCashierAt = new Date();
     const savedInvoice = await this.invoicesRepository.save(invoice);

@@ -14,6 +14,16 @@ export class TableQrService {
     private readonly restaurantRepository: Repository<Restaurant>,
   ) {}
 
+  private normalizeFrontendUrl(frontendUrl?: string): string {
+    const fallbackUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    return (frontendUrl || fallbackUrl).replace(/\/$/, '');
+  }
+
+  private buildTableQrUrl(frontendUrl: string, tableKey: string): string {
+    const normalizedFrontendUrl = this.normalizeFrontendUrl(frontendUrl);
+    return `${normalizedFrontendUrl}/qr/${tableKey}`;
+  }
+
   async findByTableKey(tableKey: string): Promise<TableQr | null> {
     const existingQr = await this.tableQrRepository.findOne({
       where: { tableKey, isActive: 1 },
@@ -33,7 +43,7 @@ export class TableQrService {
       return null;
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const frontendUrl = this.normalizeFrontendUrl();
 
     // Use deterministic table number for legacy key mappings.
     const legacyTableNo = `LEGACY-${restaurant.restaurantId}`;
@@ -42,7 +52,7 @@ export class TableQrService {
       restaurantId: restaurant.restaurantId,
       tableNo: legacyTableNo,
       tableKey,
-      qrUrl: `${frontendUrl}/qr/${tableKey}`,
+      qrUrl: this.buildTableQrUrl(frontendUrl, tableKey),
       isActive: 1,
     });
 
@@ -77,11 +87,34 @@ export class TableQrService {
   }
 
   // Admin: Get all QR codes for a restaurant
-  async findAllByRestaurant(restaurantId: number): Promise<TableQr[]> {
-    return this.tableQrRepository.find({
+  async findAllByRestaurant(
+    restaurantId: number,
+    frontendUrl?: string,
+  ): Promise<TableQr[]> {
+    const qrCodes = await this.tableQrRepository.find({
       where: { restaurantId, isActive: 1 },
       order: { tableNo: 'ASC' },
     });
+
+    if (!frontendUrl) {
+      return qrCodes;
+    }
+
+    const normalizedFrontendUrl = this.normalizeFrontendUrl(frontendUrl);
+    const staleQrCodes = qrCodes.filter(
+      (qrCode) => qrCode.qrUrl !== this.buildTableQrUrl(normalizedFrontendUrl, qrCode.tableKey),
+    );
+
+    if (staleQrCodes.length === 0) {
+      return qrCodes;
+    }
+
+    staleQrCodes.forEach((qrCode) => {
+      qrCode.qrUrl = this.buildTableQrUrl(normalizedFrontendUrl, qrCode.tableKey);
+    });
+
+    await this.tableQrRepository.save(staleQrCodes);
+    return qrCodes;
   }
 
   // Admin: Generate new QR code for a table
@@ -103,7 +136,7 @@ export class TableQrService {
     const tableKey = crypto.randomBytes(32).toString('hex'); // 64 characters
 
     // Create QR URL
-    const qrUrl = `${frontendUrl}/qr/${tableKey}`;
+    const qrUrl = this.buildTableQrUrl(frontendUrl, tableKey);
 
     const tableQr = this.tableQrRepository.create({
       restaurantId,
@@ -144,7 +177,7 @@ export class TableQrService {
       restaurantId,
       tableNo,
       tableKey,
-      qrUrl: `http://localhost:3001/qr/${tableKey}`,
+      qrUrl: this.buildTableQrUrl(this.normalizeFrontendUrl(), tableKey),
       isActive: 1,
     });
 

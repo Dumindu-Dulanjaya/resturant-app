@@ -251,7 +251,29 @@ const KitchenKDS = () => {
           });
 
           clearSwalBackdropArtifacts();
-          const billActionState = await printOrderBill(servedOrder);
+          let billActionState = await printOrderBill(servedOrder);
+
+          while (!billActionState.requiredActionsCompleted) {
+            const retryResult = await Swal.fire({
+              icon: 'warning',
+              title: 'Bill actions incomplete',
+              text: 'You must complete Print and Send to Cashier before returning to KDS. Reopen bill actions now?',
+              showCancelButton: true,
+              confirmButtonColor: '#0d6efd',
+              cancelButtonColor: '#6c757d',
+              confirmButtonText: 'Reopen Bill Actions',
+              cancelButtonText: 'Cancel',
+              allowOutsideClick: false,
+              allowEscapeKey: false,
+            });
+
+            if (!retryResult.isConfirmed) {
+              return;
+            }
+
+            clearSwalBackdropArtifacts();
+            billActionState = await printOrderBill(servedOrder);
+          }
 
           if (!billActionState.continueToWhatsApp || !hasWhatsApp) {
             return;
@@ -400,12 +422,17 @@ const KitchenKDS = () => {
           title: 'Popup blocked',
           text: 'Allow popups for this site and try again.',
         });
-        resolve({ continueToWhatsApp: false, sendToCashier: false });
+        resolve({
+          continueToWhatsApp: false,
+          sendToCashier: false,
+          requiredActionsCompleted: false,
+          hasPrinted: false,
+          hasSentToCashier: false,
+        });
         return;
       }
 
       let completed = false;
-      let fallbackTimer = null;
       let closedCheckTimer = null;
       let cashierRequestInFlight = false;
       const messageType = `KDS_BILL_ACTION_DONE_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -456,18 +483,16 @@ const KitchenKDS = () => {
 
         completePrintFlow({
           continueToWhatsApp: !!event.data?.continueToWhatsApp,
-          sendToCashier: false,
+          sendToCashier: !!event.data?.sendToCashier,
+          requiredActionsCompleted: !!event.data?.requiredActionsCompleted,
+          hasPrinted: !!event.data?.hasPrinted,
+          hasSentToCashier: !!event.data?.hasSentToCashier,
         });
       };
 
       const completePrintFlow = (result) => {
         if (completed) return;
         completed = true;
-
-        if (fallbackTimer) {
-          window.clearTimeout(fallbackTimer);
-          fallbackTimer = null;
-        }
 
         if (closedCheckTimer) {
           window.clearInterval(closedCheckTimer);
@@ -491,7 +516,13 @@ const KitchenKDS = () => {
       // If the bill window is closed without clicking Print/Download, treat as incomplete.
       closedCheckTimer = window.setInterval(() => {
         if (printWindow.closed) {
-          completePrintFlow({ continueToWhatsApp: false, sendToCashier: false });
+          completePrintFlow({
+            continueToWhatsApp: false,
+            sendToCashier: false,
+            requiredActionsCompleted: false,
+            hasPrinted: false,
+            hasSentToCashier: false,
+          });
         }
       }, 400);
 
@@ -568,9 +599,9 @@ const KitchenKDS = () => {
             <button id="downloadPdfBtn" class="bill-btn bill-btn-download" type="button" title="Download PDF"><i class="fas fa-download"></i></button>
             <button id="printBillBtn" class="bill-btn bill-btn-print" type="button" title="Print"><i class="fas fa-print"></i></button>
             <button id="sendToCashierBtn" class="bill-btn bill-btn-cashier" type="button" title="Send to Cashier"><i class="fas fa-cash-register"></i></button>
-            <button id="backToWhatsappBtn" class="bill-btn bill-btn-back" type="button" title="Back to WhatsApp"><i class="fab fa-whatsapp"></i></button>
+            <button id="backToWhatsappBtn" class="bill-btn bill-btn-back" type="button" title="Return to KDS"><i class="fas fa-arrow-left"></i></button>
           </div>
-          <div class="bill-hint">Download PDF, print, send to cashier, then tap WhatsApp to return to KDS.</div>
+          <div class="bill-hint">Download is optional. You must complete Print and Send to Cashier, then tap Return to KDS.</div>
           <div id="billStatus" class="bill-status" role="status" aria-live="polite"></div>
           <div id="billContent">
           <h2 style="margin:0 0 8px 0;">Customer Bill</h2>
@@ -614,6 +645,13 @@ const KitchenKDS = () => {
 
             const defaultDownloadIcon = downloadBtn.innerHTML;
             const defaultCashierIcon = cashierBtn.innerHTML;
+            let hasPrinted = false;
+            let hasSentToCashier = false;
+
+            const refreshBackButtonState = () => {
+              const canReturn = hasPrinted && hasSentToCashier;
+              backBtn.disabled = !canReturn;
+            };
 
             const setStatus = (message, tone) => {
               if (!billStatus) return;
@@ -624,6 +662,8 @@ const KitchenKDS = () => {
             };
 
             const notifyAndClose = ({ continueToWhatsApp = false, sendToCashier = false } = {}) => {
+              const requiredActionsCompleted = hasPrinted && hasSentToCashier;
+
               try {
                 if (window.opener && !window.opener.closed) {
                   window.opener.postMessage({
@@ -631,6 +671,9 @@ const KitchenKDS = () => {
                     action: continueToWhatsApp ? 'continueToWhatsApp' : undefined,
                     continueToWhatsApp: !!continueToWhatsApp,
                     sendToCashier: !!sendToCashier,
+                    requiredActionsCompleted,
+                    hasPrinted,
+                    hasSentToCashier,
                   }, window.location.origin);
                 }
               } catch (_error) {
@@ -639,7 +682,14 @@ const KitchenKDS = () => {
               window.close();
             };
 
+            refreshBackButtonState();
+
             backBtn.addEventListener('click', function () {
+              if (!hasPrinted || !hasSentToCashier) {
+                setStatus('Complete Print and Send to Cashier before returning to KDS.', 'error');
+                return;
+              }
+
               notifyAndClose({ continueToWhatsApp: true });
             });
 
@@ -672,16 +722,21 @@ const KitchenKDS = () => {
               if (event.data?.type !== runtimeMessageType) return;
               if (event.data?.action !== 'cashierResult') return;
 
-              cashierBtn.disabled = false;
-              cashierBtn.innerHTML = defaultCashierIcon;
-
               if (event.data?.success) {
                 const successMessage = event.data?.message || 'Payment details sent to cashier.';
                 setStatus(successMessage, 'success');
+                // Keep button disabled permanently on success to prevent duplicate sends
+                cashierBtn.disabled = true;
+                cashierBtn.innerHTML = '<i class="fas fa-check"></i>';
+                hasSentToCashier = true;
+                refreshBackButtonState();
                 alert(successMessage);
                 return;
               }
 
+              // Re-enable button only on error so user can retry
+              cashierBtn.disabled = false;
+              cashierBtn.innerHTML = defaultCashierIcon;
               const errorMessage = event.data?.message || 'Failed to send payment details to cashier.';
               setStatus(errorMessage, 'error');
               alert(errorMessage);
@@ -722,11 +777,17 @@ const KitchenKDS = () => {
 
             printBtn.addEventListener('click', function () {
               setStatus('Opening print dialog...', 'info');
+              // Disable print button during print
+              printBtn.disabled = true;
               window.print();
             });
 
             window.addEventListener('afterprint', function () {
-              setStatus('Print completed. Send to cashier or tap WhatsApp when ready.', 'success');
+              setStatus('Print completed. Continue with cashier or tap Return to KDS when ready.', 'success');
+              // Re-enable print button for potential retry
+              printBtn.disabled = false;
+              hasPrinted = true;
+              refreshBackButtonState();
             });
           })();
         </script>
@@ -740,13 +801,16 @@ const KitchenKDS = () => {
         printWindow.document.close();
       } catch (error) {
         console.error('Error preparing printable bill:', error);
-        completePrintFlow({ continueToWhatsApp: false, sendToCashier: false });
+        completePrintFlow({
+          continueToWhatsApp: false,
+          sendToCashier: false,
+          requiredActionsCompleted: false,
+          hasPrinted: false,
+          hasSentToCashier: false,
+        });
         return;
       }
 
-      fallbackTimer = window.setTimeout(() => {
-        completePrintFlow({ continueToWhatsApp: false, sendToCashier: false });
-      }, 120000);
     });
   };
 

@@ -11,6 +11,29 @@ import { useAuthStore } from '../store/authStore';
 
 const WebSocketContext = createContext(null);
 
+const isIpv4Host = (host) => /^(\d{1,3}\.){3}\d{1,3}$/.test(host);
+
+const shouldUseEnvApiUrl = (envApiUrl, frontendHost) => {
+  if (!envApiUrl) {
+    return false;
+  }
+
+  try {
+    const resolved = new URL(envApiUrl, window.location.origin);
+    const envHost = resolved.hostname;
+
+    // If frontend is opened via LAN IP, ignore stale env host values.
+    if (isIpv4Host(frontendHost) && envHost !== frontendHost) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    // If env URL is malformed, fall back to current host logic.
+    return false;
+  }
+};
+
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
   if (!context) {
@@ -77,7 +100,7 @@ export const WebSocketProvider = ({ children }) => {
           return 'http://localhost:3000';
         }
 
-        if (envApiUrl) {
+        if (shouldUseEnvApiUrl(envApiUrl, host)) {
           return envApiUrl.replace(/\/api\/?$/, '');
         }
 

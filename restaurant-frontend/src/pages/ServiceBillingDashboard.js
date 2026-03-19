@@ -415,13 +415,9 @@ const ServiceBillingDashboard = ({
   }, [filterFrom, filterTo, filterTable]);
 
   useEffect(() => {
-    if (isCashierDashboard) {
-      fetchCashierQueue();
-      return;
-    }
-
+    fetchCashierQueue();
     fetchReadyOrders();
-  }, [fetchCashierQueue, fetchReadyOrders, isCashierDashboard]);
+  }, [fetchCashierQueue, fetchReadyOrders]);
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
   useEffect(() => {
     if (!isCashierDashboard) return;
@@ -434,11 +430,10 @@ const ServiceBillingDashboard = ({
     if (!connected) return;
     const unsubscribers = [
       subscribe('dashboard:refresh', () => {
+        fetchCashierQueue();
+        fetchReadyOrders();
         if (isCashierDashboard) {
-          fetchCashierQueue();
           fetchCashierTransactions(transferDate);
-        } else {
-          fetchReadyOrders();
         }
         fetchInvoices();
       }),
@@ -458,14 +453,10 @@ const ServiceBillingDashboard = ({
         );
       }),
       subscribe('order:status-update', () => {
-        if (!isCashierDashboard) {
-          fetchReadyOrders();
-        }
+        fetchReadyOrders();
       }),
       subscribe('order:new', () => {
-        if (!isCashierDashboard) {
-          fetchReadyOrders();
-        }
+        fetchReadyOrders();
       }),
     ];
 
@@ -488,11 +479,10 @@ const ServiceBillingDashboard = ({
   // Polling fallback (30s)
   useEffect(() => {
     const id = setInterval(() => {
+      fetchCashierQueue();
+      fetchReadyOrders();
       if (isCashierDashboard) {
-        fetchCashierQueue();
         fetchCashierTransactions(transferDate);
-      } else {
-        fetchReadyOrders();
       }
     }, 30000);
     return () => clearInterval(id);
@@ -883,39 +873,29 @@ const ServiceBillingDashboard = ({
               </section>
             )}
 
-            {/* ── SECTION 1: Ready to Bill / Cashier Queue ── */}
-            {showCashierQueueSection && (
-              <section className="billing-section">
-              <div className="section-heading">
-                <i className={`${isCashierDashboard ? 'fas fa-cash-register text-primary' : 'fas fa-bell text-warning'} me-2`}></i>
-                {isCashierDashboard ? 'Cashier Queue' : 'Ready to Bill'}
-                <span className={`badge ${isCashierDashboard ? 'bg-primary' : 'bg-warning text-dark'} ms-2`}>
-                  {isCashierDashboard ? cashierQueue.length : readyOrders.length}
-                </span>
-              </div>
+            {/* ── SECTION 1: Ready to Bill ── */}
+            {showCashierQueueSection && !isCashierDashboard && (
+              <section className="billing-section mb-4">
+                <div className="section-heading">
+                  <i className="fas fa-bell text-warning me-2"></i>
+                  Ready to Bill
+                  <span className="badge bg-warning text-dark ms-2">{readyOrders.length}</span>
+                </div>
 
-              {(isCashierDashboard ? loadingCashierQueue : loadingReady) ? (
-                <div className="text-center py-4">
-                  <div className="spinner-border text-primary"></div>
-                </div>
-              ) : (isCashierDashboard ? cashierQueueError : readyError) ? (
-                <div className="alert alert-danger">{isCashierDashboard ? cashierQueueError : readyError}</div>
-              ) : (isCashierDashboard ? cashierQueue.length === 0 : readyOrders.length === 0) ? (
-                <div className="empty-state">
-                  <i className={`fas ${isCashierDashboard ? 'fa-inbox text-primary' : 'fa-check-circle text-success'} fa-2x mb-2`}></i>
-                  <p className="mb-0">{isCashierDashboard ? 'No payment details waiting for cashier.' : 'No orders waiting to be billed.'}</p>
-                </div>
-              ) : (
-                <div className="ready-orders-grid">
-                  {isCashierDashboard
-                    ? cashierQueue.map((invoice) => (
-                      <CashierQueueCard
-                        key={invoice.invoiceId}
-                        invoice={invoice}
-                        onOpen={() => setViewInvoice(invoice)}
-                      />
-                    ))
-                    : readyOrders.map((order) => (
+                {loadingReady ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border text-primary"></div>
+                  </div>
+                ) : readyError ? (
+                  <div className="alert alert-danger">{readyError}</div>
+                ) : readyOrders.length === 0 ? (
+                  <div className="empty-state">
+                    <i className="fas fa-check-circle text-success fa-2x mb-2"></i>
+                    <p className="mb-0">No orders waiting to be billed.</p>
+                  </div>
+                ) : (
+                  <div className="ready-orders-grid">
+                    {readyOrders.map((order) => (
                       <ReadyOrderCard
                         key={order.orderId}
                         order={order}
@@ -929,8 +909,42 @@ const ServiceBillingDashboard = ({
                         }}
                       />
                     ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* ── SECTION 1.5: Cashier Queue ── */}
+            {showCashierQueueSection && (
+              <section className="billing-section">
+                <div className="section-heading">
+                  <i className="fas fa-cash-register text-primary me-2"></i>
+                  Cashier Queue
+                  <span className="badge bg-primary ms-2">{cashierQueue.length}</span>
                 </div>
-              )}
+
+                {loadingCashierQueue ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border text-primary"></div>
+                  </div>
+                ) : cashierQueueError ? (
+                  <div className="alert alert-danger">{cashierQueueError}</div>
+                ) : cashierQueue.length === 0 ? (
+                  <div className="empty-state">
+                    <i className="fas fa-inbox text-primary fa-2x mb-2"></i>
+                    <p className="mb-0">No payment details waiting for cashier.</p>
+                  </div>
+                ) : (
+                  <div className="ready-orders-grid">
+                    {cashierQueue.map((invoice) => (
+                      <CashierQueueCard
+                        key={invoice.invoiceId}
+                        invoice={invoice}
+                        onOpen={() => setViewInvoice(invoice)}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             )}
 

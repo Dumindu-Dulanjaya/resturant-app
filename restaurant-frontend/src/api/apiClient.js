@@ -2,6 +2,29 @@ import axios from 'axios';
 
 const LOCAL_API_BASE_URL = 'http://localhost:3000/api';
 
+const isIpv4Host = (host) => /^(\d{1,3}\.){3}\d{1,3}$/.test(host);
+
+const shouldUseEnvApiUrl = (envApiUrl, frontendHost) => {
+  if (!envApiUrl) {
+    return false;
+  }
+
+  try {
+    const resolved = new URL(envApiUrl, window.location.origin);
+    const envHost = resolved.hostname;
+
+    // If frontend is opened via LAN IP, ignore stale env host values.
+    if (isIpv4Host(frontendHost) && envHost !== frontendHost) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    // If env URL is malformed, fall back to current host logic.
+    return false;
+  }
+};
+
 const resolveApiBaseUrl = () => {
   const envApiUrl = (
     process.env.REACT_APP_API_URL ||
@@ -18,7 +41,7 @@ const resolveApiBaseUrl = () => {
       return LOCAL_API_BASE_URL;
     }
 
-    if (envApiUrl) {
+    if (shouldUseEnvApiUrl(envApiUrl, host)) {
       return envApiUrl;
     }
 

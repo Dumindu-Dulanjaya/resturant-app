@@ -181,6 +181,12 @@ function AccountantDashboard() {
     });
   };
 
+  const dailyAcceptedRevenue = useMemo(() => {
+    return acceptedTransactions.reduce((sum, inv) => sum + parseFloat(inv.totalAmount || 0), 0);
+  }, [acceptedTransactions]);
+
+  const dailyAcceptedCount = acceptedTransactions.length;
+
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedIds(new Set());
@@ -337,24 +343,20 @@ function AccountantDashboard() {
                   <div className="row g-3">
                     <div className="col-md-3 col-sm-6">
                       <div className="border rounded p-3 h-100">
-                        <div className="text-muted small">Daily Revenue</div>
+                        <div className="text-muted small">Accepted Daily Revenue</div>
                         <div className="h5 text-success mb-1">
-                          {Number.isFinite(dailySummary?.totalRevenue)
-                            ? formatCurrency(dailySummary.totalRevenue)
-                            : '-'}
+                          {formatCurrency(dailyAcceptedRevenue)}
                         </div>
-                        <div className="small text-muted">{dailySummary?.periodLabel || '-'}</div>
+                        <div className="small text-muted">{dailySummary?.periodLabel || formatDateTime(selectedDate).split(',')[0]}</div>
                       </div>
                     </div>
                     <div className="col-md-3 col-sm-6">
                       <div className="border rounded p-3 h-100">
-                        <div className="text-muted small">Daily Orders</div>
+                        <div className="text-muted small">Accepted Daily Transfers</div>
                         <div className="h5 text-primary mb-1">
-                          {Number.isFinite(dailySummary?.totalOrders)
-                            ? dailySummary.totalOrders
-                            : '-'}
+                          {dailyAcceptedCount}
                         </div>
-                        <div className="small text-muted">{dailySummary?.periodLabel || '-'}</div>
+                        <div className="small text-muted">{dailySummary?.periodLabel || formatDateTime(selectedDate).split(',')[0]}</div>
                       </div>
                     </div>
                     <div className="col-md-3 col-sm-6">

@@ -4,12 +4,57 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { AppModule } from './app.module';
 
+const isPrivateIpv4 = (hostname: string): boolean => {
+  return (
+    /^10\./.test(hostname)
+    || /^192\.168\./.test(hostname)
+    || /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+  );
+};
+
+const shouldAllowOrigin = (origin: string | undefined, allowedOrigins: string[]): boolean => {
+  if (!origin) {
+    return true;
+  }
+
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  try {
+    const parsedOrigin = new URL(origin);
+    const hostname = parsedOrigin.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    // Allow frontend dev servers from local/private-network hosts on port 3001.
+    if ((isLocalhost || isPrivateIpv4(hostname)) && parsedOrigin.port === '3001') {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+};
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  const allowedOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   
   // Enable CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || '*',
+    origin: (origin, callback) => {
+      if (shouldAllowOrigin(origin, allowedOrigins)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Not allowed by CORS: ${origin}`), false);
+    },
     credentials: true,
   });
   

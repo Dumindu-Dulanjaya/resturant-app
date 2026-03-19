@@ -11,6 +11,16 @@ export class RoomQrService {
     private readonly roomQrRepository: Repository<RoomQr>,
   ) {}
 
+  private normalizeFrontendUrl(frontendUrl?: string): string {
+    const fallbackUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    return (frontendUrl || fallbackUrl).replace(/\/$/, '');
+  }
+
+  private buildRoomQrUrl(frontendUrl: string, roomKey: string): string {
+    const normalizedFrontendUrl = this.normalizeFrontendUrl(frontendUrl);
+    return `${normalizedFrontendUrl}/room/${roomKey}`;
+  }
+
   /**
    * Find room QR by room key
    */
@@ -45,11 +55,34 @@ export class RoomQrService {
   /**
    * Admin: Get all room QR codes for a restaurant
    */
-  async findAllByRestaurant(restaurantId: number): Promise<RoomQr[]> {
-    return this.roomQrRepository.find({
+  async findAllByRestaurant(
+    restaurantId: number,
+    frontendUrl?: string,
+  ): Promise<RoomQr[]> {
+    const qrCodes = await this.roomQrRepository.find({
       where: { restaurantId, isActive: 1 },
       order: { roomNo: 'ASC' },
     });
+
+    if (!frontendUrl) {
+      return qrCodes;
+    }
+
+    const normalizedFrontendUrl = this.normalizeFrontendUrl(frontendUrl);
+    const staleQrCodes = qrCodes.filter(
+      (qrCode) => qrCode.qrUrl !== this.buildRoomQrUrl(normalizedFrontendUrl, qrCode.roomKey),
+    );
+
+    if (staleQrCodes.length === 0) {
+      return qrCodes;
+    }
+
+    staleQrCodes.forEach((qrCode) => {
+      qrCode.qrUrl = this.buildRoomQrUrl(normalizedFrontendUrl, qrCode.roomKey);
+    });
+
+    await this.roomQrRepository.save(staleQrCodes);
+    return qrCodes;
   }
 
   /**
@@ -73,7 +106,7 @@ export class RoomQrService {
     const roomKey = crypto.randomBytes(32).toString('hex'); // 64 characters
 
     // Create QR URL
-    const qrUrl = `${frontendUrl}/room/${roomKey}`;
+    const qrUrl = this.buildRoomQrUrl(frontendUrl, roomKey);
 
     const roomQr = this.roomQrRepository.create({
       restaurantId,

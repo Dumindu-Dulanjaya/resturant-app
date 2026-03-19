@@ -23,6 +23,31 @@ import { UserRole } from '../auth/enums/role.enum';
 export class TableQrController {
   constructor(private readonly tableQrService: TableQrService) {}
 
+  private resolveFrontendUrl(req: any): string {
+    const extractOrigin = (input?: string): string | null => {
+      if (!input) {
+        return null;
+      }
+
+      try {
+        const parsed = new URL(input);
+        return `${parsed.protocol}//${parsed.host}`;
+      } catch {
+        return null;
+      }
+    };
+
+    const originHeader = req?.headers?.origin;
+    const refererHeader = req?.headers?.referer;
+
+    return (
+      extractOrigin(originHeader)
+      || extractOrigin(refererHeader)
+      || process.env.FRONTEND_URL
+      || 'http://localhost:3001'
+    );
+  }
+
   // ==================== ADMIN ENDPOINTS (JWT Protected) ====================
 
   @Get()
@@ -31,7 +56,8 @@ export class TableQrController {
   @SkipThrottle()
   async getAllQrCodes(@Request() req) {
     const restaurantId = req.user.restaurantId;
-    return this.tableQrService.findAllByRestaurant(restaurantId);
+    const frontendUrl = this.resolveFrontendUrl(req);
+    return this.tableQrService.findAllByRestaurant(restaurantId, frontendUrl);
   }
 
   @Post()
@@ -40,7 +66,7 @@ export class TableQrController {
   @SkipThrottle()
   async generateQrCode(@Request() req, @Body() createTableQrDto: CreateTableQrDto) {
     const restaurantId = req.user.restaurantId;
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const frontendUrl = this.resolveFrontendUrl(req);
 
     try {
       const qrCode = await this.tableQrService.generateQrCode(

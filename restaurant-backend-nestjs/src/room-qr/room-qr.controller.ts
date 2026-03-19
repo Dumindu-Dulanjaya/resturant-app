@@ -30,6 +30,31 @@ import { RestaurantFeature } from '../common/enums/restaurant-feature.enum';
 export class RoomQrController {
   constructor(private readonly roomQrService: RoomQrService) {}
 
+  private resolveFrontendUrl(req: any): string {
+    const extractOrigin = (input?: string): string | null => {
+      if (!input) {
+        return null;
+      }
+
+      try {
+        const parsed = new URL(input);
+        return `${parsed.protocol}//${parsed.host}`;
+      } catch {
+        return null;
+      }
+    };
+
+    const originHeader = req?.headers?.origin;
+    const refererHeader = req?.headers?.referer;
+
+    return (
+      extractOrigin(originHeader)
+      || extractOrigin(refererHeader)
+      || process.env.FRONTEND_URL
+      || 'http://localhost:3001'
+    );
+  }
+
   // ==================== ADMIN ENDPOINTS (JWT Protected + Feature Flag) ====================
 
   /**
@@ -40,7 +65,8 @@ export class RoomQrController {
   @SkipThrottle()
   async getAllQrCodes(@Request() req) {
     const restaurantId = req.user.restaurantId;
-    return this.roomQrService.findAllByRestaurant(restaurantId);
+    const frontendUrl = this.resolveFrontendUrl(req);
+    return this.roomQrService.findAllByRestaurant(restaurantId, frontendUrl);
   }
 
   /**
@@ -51,7 +77,7 @@ export class RoomQrController {
   @SkipThrottle()
   async generateQrCode(@Request() req, @Body() createRoomQrDto: CreateRoomQrDto) {
     const restaurantId = req.user.restaurantId;
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const frontendUrl = this.resolveFrontendUrl(req);
 
     try {
       const qrCode = await this.roomQrService.generateQrCode(
@@ -82,7 +108,7 @@ export class RoomQrController {
   @SkipThrottle()
   async generateBulkQrCodes(@Request() req, @Body() bulkRoomQrDto: BulkRoomQrDto) {
     const restaurantId = req.user.restaurantId;
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const frontendUrl = this.resolveFrontendUrl(req);
 
     try {
       const qrCodes = await this.roomQrService.generateBulkQrCodes(
