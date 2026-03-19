@@ -9,7 +9,7 @@
 }
 
 .bg-gradient-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  background: linear-gradient(135deg, #2D7C7E, #235D5F) !important;
 }
 
 .user-info {
@@ -42,7 +42,7 @@
 }
 
 .dropdown-item:hover {
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(45, 124, 126, 0.1);
   padding-left: 1.5rem;
 }
 
@@ -73,11 +73,11 @@
 }
 
 .dropdown-item-text:hover {
-  background: rgba(102, 126, 234, 0.05);
+  background: rgba(45, 124, 126, 0.05);
 }
 
 .dropdown-header {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #2D7C7E, #235D5F);
   color: white;
   font-weight: 600;
   padding: 0.75rem 1rem;
