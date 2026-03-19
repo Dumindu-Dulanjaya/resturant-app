@@ -109,15 +109,15 @@ const PricingPage = () => {
 
                     <p className="pp-plan-description">{plan.description}</p>
 
-                    <Link className="pp-plan-btn" to={`/register?package=${plan.ctaPackage}`}>
-                      Choose Package <i className="fas fa-long-arrow-alt-right"></i>
+                    <Link className="pp-plan-btn" to={`/login`}>
+                      Choose Package <i className="fas fa-long-arrow-alt-right ms-2 mt-1"></i>
                     </Link>
 
                     <ul className="pp-feature-list">
                       {plan.features.map((feature) => (
                         <li key={feature}>
                           <span className="pp-check" aria-hidden="true">
-                            <i className="fas fa-check"></i>
+                            <i className="fas fa-check-circle"></i>
                           </span>
                           <span>{feature}</span>
                         </li>
@@ -127,12 +127,6 @@ const PricingPage = () => {
                 ))}
               </div>
             )}
-
-            <div className="pp-bottom-link-wrap">
-              <Link to="/contact" className="pp-bottom-link">
-                Need custom pricing for more stores? Talk to our team.
-              </Link>
-            </div>
           </div>
         </section>
       </main>

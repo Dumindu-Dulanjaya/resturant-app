@@ -42,6 +42,7 @@ import ContactPage from './pages/ContactPage';
 import PricingPage from './pages/PricingPage';
 import CashierDashboard from './pages/CashierDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
+import AdminHotelProfile from './pages/AdminHotelProfile';
 
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -396,6 +397,17 @@ function App() {
                 <PrivateRoute>
                   <RoleRoute allowedRoles={['admin', 'super_admin', 'kitchen', 'housekeeper', 'cashier', 'accountant']}>
                     <Profile />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/my-hotel"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin']}>
+                    <AdminHotelProfile />
                   </RoleRoute>
                 </PrivateRoute>
               }

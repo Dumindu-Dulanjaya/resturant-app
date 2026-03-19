@@ -78,6 +78,15 @@ function Sidebar() {
           </li>
         )}
 
+        {isAdmin && (
+          <li className={isActive('/my-hotel')}>
+            <Link to="/my-hotel">
+              <i className="fas fa-hotel"></i>
+              <span>Hotel Profile</span>
+            </Link>
+          </li>
+        )}
+
         {canAccessCashierDashboard && (
           <>
             <li className={isCashierTabActive('queue')}>

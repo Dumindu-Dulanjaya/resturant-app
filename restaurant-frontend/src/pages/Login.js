@@ -32,6 +32,8 @@ function Login() {
         return '/accountant/dashboard';
 
       case 'admin':
+        return '/my-hotel';
+
       case 'housekeeper':
       case 'manager':
       case 'staff':
@@ -127,11 +129,16 @@ function Login() {
       <Navbar />
       <div className="login-page">
         <div className="container">
-          <div className="row align-items-center login-row">
-            {/* Left: illustration + heading */}
-            <div className="col-lg-6 login-left">
+          <div className="row mb-5 justify-content-center text-center">
+            <div className="col-lg-8">
               <span className="login-badge">Welcome Back</span>
-              <h1 className="login-heading">Login to Your Hotel / Restaurant Account</h1>
+              <h1 className="login-heading mb-0">Login to Your Hotel / Restaurant Account</h1>
+            </div>
+          </div>
+
+          <div className="row align-items-center login-row">
+            {/* Left: illustration */}
+            <div className="col-lg-6 login-left text-center">
               <div className="login-illustration">
                 <img
                   src="/assets/images/features/20824342_6343845.jpg"
