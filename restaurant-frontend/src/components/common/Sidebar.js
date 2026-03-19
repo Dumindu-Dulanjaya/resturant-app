@@ -17,10 +17,31 @@ function Sidebar() {
   });
 
   const toggleMenu = (menuName) => {
-    setMenuStates(prev => ({
-      ...prev,
-      [menuName]: !prev[menuName]
-    }));
+    setMenuStates(prev => {
+      const nextState = { ...prev };
+      const isCurrentlyOpen = prev[menuName];
+      
+      // Close all menus first
+      Object.keys(nextState).forEach(key => {
+        nextState[key] = false;
+      });
+
+      // Toggle the targeted menu
+      nextState[menuName] = !isCurrentlyOpen;
+      return nextState;
+    });
+  };
+
+  const closeSubmenus = () => {
+    setMenuStates({
+      menus: false,
+      qrcodes: false,
+      kitchen: false,
+      housekeeping: false,
+      offers: false,
+      reports: false,
+      settings: false
+    });
   };
 
   const isActive = (path) => {
@@ -71,7 +92,7 @@ function Sidebar() {
       <ul className="sidebar-menu">
         {!isCashier && !isAccountant && (
           <li className={isActive(dashboardPath)}>
-            <Link to={dashboardPath}>
+            <Link to={dashboardPath} onClick={closeSubmenus}>
               <i className="fas fa-home"></i>
               <span>Dashboard</span>
             </Link>
@@ -80,7 +101,7 @@ function Sidebar() {
 
         {isAdmin && (
           <li className={isActive('/my-hotel')}>
-            <Link to="/my-hotel">
+            <Link to="/my-hotel" onClick={closeSubmenus}>
               <i className="fas fa-hotel"></i>
               <span>Hotel Profile</span>
             </Link>
@@ -90,19 +111,19 @@ function Sidebar() {
         {canAccessCashierDashboard && (
           <>
             <li className={isCashierTabActive('queue')}>
-              <Link to="/cashier/dashboard/queue">
+              <Link to="/cashier/dashboard/queue" onClick={closeSubmenus}>
                 <i className="fas fa-cash-register"></i>
                 <span>Cashier Queue</span>
               </Link>
             </li>
             <li className={isCashierTabActive('transfers')}>
-              <Link to="/cashier/dashboard/transfers">
+              <Link to="/cashier/dashboard/transfers" onClick={closeSubmenus}>
                 <i className="fas fa-share-square"></i>
                 <span>Accountant Transfers</span>
               </Link>
             </li>
             <li className={isCashierTabActive('history')}>
-              <Link to="/cashier/dashboard/history">
+              <Link to="/cashier/dashboard/history" onClick={closeSubmenus}>
                 <i className="fas fa-history"></i>
                 <span>Invoice History</span>
               </Link>
@@ -112,7 +133,7 @@ function Sidebar() {
 
         {canAccessAccountantDashboard && (
           <li className={isActive('/accountant/dashboard')}>
-            <Link to="/accountant/dashboard">
+            <Link to="/accountant/dashboard" onClick={closeSubmenus}>
               <i className="fas fa-calculator"></i>
               <span>Accountant Dashboard</span>
             </Link>
@@ -184,7 +205,7 @@ function Sidebar() {
         {/* QR Codes Section - Admin Only */}
         {canAccessAdminFeatures && (
           <li className={isActive('/qr-codes/generate')}>
-          <Link to="/qr-codes/generate">
+          <Link to="/qr-codes/generate" onClick={closeSubmenus}>
             <i className="fas fa-qrcode"></i>
             <span>QR Codes</span>
           </Link>
@@ -307,13 +328,13 @@ function Sidebar() {
         {isSuperAdmin && (
           <>
             <li className={isActive('/restaurants')}>
-              <Link to="/restaurants">
+              <Link to="/restaurants" onClick={closeSubmenus}>
                 <i className="fas fa-building"></i>
                 <span>Restaurants</span>
               </Link>
             </li>
             <li className={isActive('/admins')}>
-              <Link to="/admins">
+              <Link to="/admins" onClick={closeSubmenus}>
                 <i className="fas fa-user-shield"></i>
                 <span>Admins</span>
               </Link>

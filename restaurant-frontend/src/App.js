@@ -43,6 +43,9 @@ import PricingPage from './pages/PricingPage';
 import CashierDashboard from './pages/CashierDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
 import AdminHotelProfile from './pages/AdminHotelProfile';
+import CheckoutPage from './pages/CheckoutPage';
+import BlogPage from './pages/BlogPage';
+import BlogPostPage from './pages/BlogPostPage';
 
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -529,6 +532,9 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:id" element={<BlogPostPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/" element={<LandingPage />} />
             <Route path="*" element={<RoleBasedRedirect />} />
           </Routes>

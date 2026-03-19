@@ -128,7 +128,7 @@ export class AuthController {
 
   @Get('admins')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async getAllAdmins() {
     const admins = await this.authService.getAllAdmins();
     return {

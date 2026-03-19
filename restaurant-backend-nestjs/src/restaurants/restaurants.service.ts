@@ -228,4 +228,28 @@ export class RestaurantsService {
     restaurant.approvalStatus = 'rejected';
     return this.restaurantRepository.save(restaurant);
   }
+
+  /**
+   * Upgrade restaurant package
+   */
+  async upgrade(restaurantId: number, packageId: number): Promise<Restaurant> {
+    const restaurant = await this.findById(restaurantId);
+    if (!restaurant) {
+      throw new NotFoundException(`Restaurant with ID ${restaurantId} not found`);
+    }
+
+    // Extend subscription for 30 days from now (or add to existing if active)
+    const now = new Date();
+    const currentExpiry = restaurant.subscriptionExpiryDate ? new Date(restaurant.subscriptionExpiryDate) : now;
+    const baseDate = currentExpiry > now ? currentExpiry : now;
+    
+    const newExpiry = new Date(baseDate);
+    newExpiry.setDate(newExpiry.getDate() + 30);
+
+    restaurant.packageId = packageId;
+    restaurant.subscriptionStatus = 'active';
+    restaurant.subscriptionExpiryDate = newExpiry;
+    
+    return this.restaurantRepository.save(restaurant);
+  }
 }

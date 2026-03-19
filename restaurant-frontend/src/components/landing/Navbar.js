@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
 import './Navbar.css';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const { user } = useAuthStore();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -28,7 +30,7 @@ const Navbar = () => {
             <li><a href="/#features" onClick={() => setMenuOpen(false)}>Features</a></li>
             <li><Link to="/pricing" onClick={() => setMenuOpen(false)}>Pricing</Link></li>
             <li><a href="/#about" onClick={() => setMenuOpen(false)}>About</a></li>
-            <li><a href="/#blog" onClick={() => setMenuOpen(false)}>Blogs</a></li>
+            <li><Link to="/blog" onClick={() => setMenuOpen(false)}>Blogs</Link></li>
             <li><Link to="/contact" onClick={() => setMenuOpen(false)} style={{ borderBottom: scrolled ? 'none' : '2px solid #2D7C7E' }}>Contact</Link></li>
             <li
               className="dropdown-parent"
@@ -53,12 +55,25 @@ const Navbar = () => {
 
           {/* CTA Buttons */}
           <div className={`nav-cta${menuOpen ? ' open' : ''}`}>
-            <Link to="/register" className="nav-link-register">
-              Register Restaurant <i className="fas fa-arrow-right"></i>
-            </Link>
-            <Link to="/login" className="nav-btn-login">
-              Restaurant Login <i className="fas fa-lock" style={{ marginLeft: '6px', fontSize: '12px' }}></i>
-            </Link>
+            {user ? (
+              <div className="nav-user-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Link to="/my-hotel" className="nav-restaurant-name" style={{ fontWeight: 600, color: '#2d7c7e' }}>
+                  {user.restaurantName || 'My Hotel'}
+                </Link>
+                <div className="nav-user-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className="fas fa-user" style={{ fontSize: '14px', color: '#666' }}></i>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Link to="/register" className="nav-link-register">
+                  Register Restaurant <i className="fas fa-arrow-right"></i>
+                </Link>
+                <Link to="/login" className="nav-btn-login">
+                  Restaurant Login <i className="fas fa-lock" style={{ marginLeft: '6px', fontSize: '12px' }}></i>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Hamburger */}

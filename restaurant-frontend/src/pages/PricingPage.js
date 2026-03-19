@@ -109,7 +109,7 @@ const PricingPage = () => {
 
                     <p className="pp-plan-description">{plan.description}</p>
 
-                    <Link className="pp-plan-btn" to={`/login`}>
+                    <Link className="pp-plan-btn" to={`/checkout?package=${plan.key}`}>
                       Choose Package <i className="fas fa-long-arrow-alt-right ms-2 mt-1"></i>
                     </Link>
 

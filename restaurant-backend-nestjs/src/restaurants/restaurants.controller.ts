@@ -93,6 +93,23 @@ export class RestaurantsController {
     };
   }
 
+  @Post('upgrade')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async upgrade(
+    @Body() body: { restaurantId: number; packageId: number; promoCode?: string },
+  ) {
+    const restaurant = await this.restaurantsService.upgrade(
+      +body.restaurantId,
+      +body.packageId,
+    );
+    return {
+      success: true,
+      data: restaurant,
+      message: 'Package upgraded successfully',
+    };
+  }
+
   // Super Admin Endpoints
 
   @Post('upload-logo')
@@ -174,7 +191,7 @@ export class RestaurantsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async findOne(@Param('id') id: string) {
     const restaurant = await this.restaurantsService.findById(+id);
     return {

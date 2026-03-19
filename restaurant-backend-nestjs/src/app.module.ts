@@ -23,6 +23,7 @@ import { SettingsRequestsModule } from './settings-requests/settings-requests.mo
 import { ContactModule } from './contact/contact.module';
 import { BillingModule } from './billing/billing.module';
 import { PricingModule } from './pricing/pricing.module';
+import { BlogModule } from './blog/blog.module';
 
 @Module({
   imports: [
@@ -44,7 +45,7 @@ import { PricingModule } from './pricing/pricing.module';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         autoLoadEntities: true,
-        synchronize: false, // Set to false in production
+        synchronize: true, // Set to false in production
         logging: true,
       }),
       inject: [ConfigService],
@@ -67,6 +68,7 @@ import { PricingModule } from './pricing/pricing.module';
     ContactModule,
     BillingModule,
     PricingModule,
+    BlogModule,
   ],
   controllers: [AppController],
   providers: [

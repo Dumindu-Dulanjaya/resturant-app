@@ -189,7 +189,23 @@ function AdminHotelProfile() {
       <Navbar />
       <Sidebar />
       <div className="content-wrapper">
-        <div className="rp-shell">
+        <div className="content-header">
+          <div className="container-fluid">
+            <div className="row mb-2">
+              <div className="col-sm-6">
+                <h1 className="m-0">Hotel Profile</h1>
+              </div>
+              <div className="col-sm-6">
+                <ol className="breadcrumb float-sm-right">
+                  <li className="breadcrumb-item"><a href="/dashboard">Home</a></li>
+                  <li className="breadcrumb-item active">Hotel Profile</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="content">
+          <div className="rp-shell">
           {isTrialAccess && (
             <section className="rp-trial-banner">
               <div className="rp-trial-copy">
@@ -373,6 +389,7 @@ function AdminHotelProfile() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
 
