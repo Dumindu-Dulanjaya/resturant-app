@@ -24,6 +24,7 @@ import { ContactModule } from './contact/contact.module';
 import { BillingModule } from './billing/billing.module';
 import { PricingModule } from './pricing/pricing.module';
 import { BlogModule } from './blog/blog.module';
+import { AboutModule } from './about/about.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { BlogModule } from './blog/blog.module';
     BillingModule,
     PricingModule,
     BlogModule,
+    AboutModule,
   ],
   controllers: [AppController],
   providers: [

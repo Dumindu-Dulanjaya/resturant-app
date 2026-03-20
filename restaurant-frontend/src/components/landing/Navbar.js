@@ -29,7 +29,7 @@ const Navbar = () => {
             <li><a href="/#home" onClick={() => setMenuOpen(false)}>Home</a></li>
             <li><a href="/#features" onClick={() => setMenuOpen(false)}>Features</a></li>
             <li><Link to="/pricing" onClick={() => setMenuOpen(false)}>Pricing</Link></li>
-            <li><a href="/#about" onClick={() => setMenuOpen(false)}>About</a></li>
+            <li><Link to="/about" onClick={() => setMenuOpen(false)}>About</Link></li>
             <li><Link to="/blog" onClick={() => setMenuOpen(false)}>Blogs</Link></li>
             <li><Link to="/contact" onClick={() => setMenuOpen(false)} style={{ borderBottom: scrolled ? 'none' : '2px solid #2D7C7E' }}>Contact</Link></li>
             <li

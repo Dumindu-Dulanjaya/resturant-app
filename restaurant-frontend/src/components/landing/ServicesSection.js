@@ -1,4 +1,5 @@
 import React from 'react';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import './ServicesSection.css';
 
 const services = [
@@ -36,13 +37,13 @@ const services = [
     icon: 'fas fa-tag',
     img: '/assets/images/services/offer.png',
     title: 'Special Offers Management',
-    desc: 'Create and manage pop-up special offers or discounts that appear directly on the guest\'s screen to drive upsells.',
+    desc: "Create and manage pop-up special offers or discounts that appear directly on the guest's screen to drive upsells.",
   },
   {
     icon: 'fas fa-chart-line',
     img: '/assets/images/services/analytics-1.png',
     title: 'Business Analytics',
-    desc: 'Track your restaurant\'s performance with data on daily and monthly sales reports, and popular dishes.',
+    desc: "Track your restaurant's performance with data on daily and monthly sales reports, and popular dishes.",
   },
   {
     icon: 'fas fa-concierge-bell',
@@ -52,38 +53,47 @@ const services = [
   },
 ];
 
-const ServicesSection = () => (
-  <section className="services-section-landing" id="services">
-    <div className="landing-container">
-      <div className="services-heading-wrap">
-        <span className="section-sub-label">Optimized Services for Your Success</span>
-        <h2 className="services-heading">
-          Everything you need to run a smarter, faster restaurant.
-        </h2>
-      </div>
+const delayMap = ['', 'reveal-delay-1', 'reveal-delay-2', 'reveal-delay-3', '', 'reveal-delay-1', 'reveal-delay-2', 'reveal-delay-3'];
 
-      <div className="services-grid">
-        {services.map((svc, i) => (
-          <div className="service-card" key={i}>
-            {/* Top-right icon badge */}
-            <div className="svc-icon-badge">
-              <i className={svc.icon}></i>
+const ServicesSection = () => {
+  const { ref: headRef, inView: headIn } = useScrollReveal();
+  const { ref: gridRef, inView: gridIn } = useScrollReveal();
+
+  return (
+    <section className="services-section-landing" id="services">
+      <div className="landing-container">
+        <div
+          ref={headRef}
+          className={`services-heading-wrap reveal reveal-up ${headIn ? 'in-view' : ''}`}
+        >
+          <span className="section-sub-label">Optimized Services for Your Success</span>
+          <h2 className="services-heading">
+            Everything you need to run a smarter, faster restaurant.
+          </h2>
+        </div>
+
+        <div ref={gridRef} className="services-grid">
+          {services.map((svc, i) => (
+            <div
+              className={`service-card reveal reveal-scale ${delayMap[i]} ${gridIn ? 'in-view' : ''}`}
+              key={i}
+            >
+              <div className="svc-icon-badge">
+                <i className={svc.icon}></i>
+              </div>
+              <img src={svc.img} alt={svc.title} className="svc-img" />
+              <div className="svc-title-badge">
+                <h4>{svc.title}</h4>
+              </div>
+              <div className="svc-desc-overlay">
+                <p>{svc.desc}</p>
+              </div>
             </div>
-            {/* Background image */}
-            <img src={svc.img} alt={svc.title} className="svc-img" />
-            {/* Default title overlay */}
-            <div className="svc-title-badge">
-              <h4>{svc.title}</h4>
-            </div>
-            {/* Hover description overlay */}
-            <div className="svc-desc-overlay">
-              <p>{svc.desc}</p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default ServicesSection;

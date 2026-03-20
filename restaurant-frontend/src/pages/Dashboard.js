@@ -189,10 +189,10 @@ function Dashboard() {
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
                       <h2>
-                        <i className="fas fa-hand-wave me-2"></i>
+                        <i className="fas fa-store me-2"></i>
                         Welcome back, {user?.name || user?.email?.split('@')[0] || 'User'}!
                       </h2>
-                      <p className="text-muted mb-0">
+                      <p className="text-white mb-0" style={{ opacity: 0.9 }}>
                         Here's what's happening with your restaurant today
                       </p>
                     </div>
@@ -219,7 +219,7 @@ function Dashboard() {
               <div className="col-xl-3 col-md-6">
                 <div className="stats-card gradient-blue">
                   <div className="stats-icon">
-                    <i className="fas fa-shopping-cart"></i>
+                    <i className="fas fa-receipt"></i>
                   </div>
                   <div className="stats-content">
                     <h3>{stats.todayOrders}</h3>
@@ -231,7 +231,7 @@ function Dashboard() {
               <div className="col-xl-3 col-md-6">
                 <div className="stats-card gradient-green">
                   <div className="stats-icon">
-                    <i className="fas fa-dollar-sign"></i>
+                    <i className="fas fa-wallet"></i>
                   </div>
                   <div className="stats-content">
                     <h3>${stats.totalRevenue.toLocaleString()}</h3>
@@ -243,7 +243,7 @@ function Dashboard() {
               <div className="col-xl-3 col-md-6">
                 <div className="stats-card gradient-orange">
                   <div className="stats-icon">
-                    <i className="fas fa-clock"></i>
+                    <i className="fas fa-hourglass-half"></i>
                   </div>
                   <div className="stats-content">
                     <h3>{stats.pendingOrders}</h3>
@@ -255,7 +255,7 @@ function Dashboard() {
               <div className="col-xl-3 col-md-6">
                 <div className="stats-card gradient-purple">
                   <div className="stats-icon">
-                    <i className="fas fa-book-open"></i>
+                    <i className="fas fa-clipboard-list"></i>
                   </div>
                   <div className="stats-content">
                     <h3>{stats.activeMenus}</h3>
@@ -268,11 +268,11 @@ function Dashboard() {
             {/* Charts and Recent Orders */}
             <div className="row g-4">
               {/* Recent Orders */}
-              <div className="col-lg-8">
+              <div className="col-12">
                 <div className="card shadow-sm">
                   <div className="card-header bg-white">
                     <h5 className="mb-0">
-                      <i className="fas fa-list-alt me-2"></i>
+                      <i className="fas fa-concierge-bell me-2"></i>
                       Recent Orders
                     </h5>
                   </div>
@@ -321,44 +321,6 @@ function Dashboard() {
                           )}
                         </tbody>
                       </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="col-lg-4">
-                <div className="card shadow-sm">
-                  <div className="card-header bg-white">
-                    <h5 className="mb-0">
-                      <i className="fas fa-bolt me-2"></i>
-                      Quick Actions
-                    </h5>
-                  </div>
-                  <div className="card-body">
-                    <div className="d-grid gap-2">
-                      <button className="btn btn-primary btn-lg">
-                        <i className="fas fa-plus-circle me-2"></i>
-                        New Order
-                      </button>
-                      <button className="btn btn-success btn-lg">
-                        <i className="fas fa-hamburger me-2"></i>
-                        Add Food Item
-                      </button>
-                      <button className="btn btn-info btn-lg">
-                        <i className="fas fa-qrcode me-2"></i>
-                        Generate QR Code
-                      </button>
-                      <button className="btn btn-warning btn-lg">
-                        <i className="fas fa-chart-line me-2"></i>
-                        View Reports
-                      </button>
-                      {isSuperAdmin && (
-                        <button className="btn btn-danger btn-lg">
-                          <i className="fas fa-building me-2"></i>
-                          Manage Restaurants
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

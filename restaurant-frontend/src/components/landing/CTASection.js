@@ -1,25 +1,36 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import './CTASection.css';
 
-const CTASection = () => (
-  <section className="cta-section" id="contact">
-    <div className="landing-container">
-      <div className="cta-inner">
-        {/* Left */}
-        <div className="cta-text">
+const CTASection = () => {
+  const { ref: textRef, inView: textIn } = useScrollReveal();
+  const { ref: imgRef,  inView: imgIn  } = useScrollReveal();
+
+  return (
+    <section className="cta-section" id="contact">
+      <div className="cta-inner-full">
+        {/* Left — text */}
+        <div
+          ref={textRef}
+          className={`cta-text reveal reveal-left ${textIn ? 'in-view' : ''}`}
+        >
           <h2 className="cta-heading">Get in Touch with Anawuma</h2>
           <p className="cta-body">
-            Whether you're a small café, a busy restaurant, or a multi-floor hotel — we have a plan
-            tailored for you. Our team is ready to walk you through everything and get you set up
-            fast.
+            Have questions or need support? Our dedicated team is here to help you! Whether you need
+            assistance with implementation, custom feature requests, or inquiries about our services,
+            we are just a message away.
           </p>
           <Link to="/contact" className="cta-link-btn">
             For Custom Developments <i className="fas fa-arrow-right"></i>
           </Link>
         </div>
-        {/* Right */}
-        <div className="cta-img-wrap">
+
+        {/* Right — photo */}
+        <div
+          ref={imgRef}
+          className={`cta-img-wrap reveal reveal-right ${imgIn ? 'in-view' : ''}`}
+        >
           <img
             src="/assets/images/contacts/contact-us.png"
             alt="Contact Anawuma"
@@ -27,8 +38,8 @@ const CTASection = () => (
           />
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default CTASection;

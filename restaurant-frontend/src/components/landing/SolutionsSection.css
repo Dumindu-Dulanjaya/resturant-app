@@ -3,7 +3,7 @@
    ====================== */
 .solutions-section {
   padding: 100px 0;
-  background: linear-gradient(180deg, #f0fdf4 0%, #e8f5e9 50%, #f0fdf4 100%);
+  background: linear-gradient(180deg, #f5f9f5 0%, #eef7ee 40%, #f5f9f5 100%);
   overflow: hidden;
 }
 
@@ -38,10 +38,11 @@
 
 .solution-card {
   position: relative;
-  background: var(--card-bg, #d4f0d6);
-  border-radius: 22px;
+  /* Green gradient like reference */
+  background: linear-gradient(160deg, #c8e6c9 0%, #a8d8a8 100%);
+  border-radius: 20px;
   padding: 34px 26px;
-  border: 2px solid transparent;
+  border: none;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }

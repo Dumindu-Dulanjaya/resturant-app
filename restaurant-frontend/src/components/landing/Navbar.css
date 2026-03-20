@@ -87,7 +87,7 @@
 
 .dropdown-menu-custom {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 4px);
   left: 50%;
   transform: translateX(-50%);
   background: #fff;
@@ -100,6 +100,17 @@
   min-width: 200px;
   z-index: 10;
   animation: dropdownFadeIn 0.2s ease;
+}
+
+/* Bridge the gap so mouse doesn't leave the hover zone */
+.dropdown-menu-custom::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
 }
 
 @keyframes dropdownFadeIn {

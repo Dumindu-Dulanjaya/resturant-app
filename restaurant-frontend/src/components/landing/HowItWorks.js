@@ -1,4 +1,5 @@
 import React from 'react';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import './HowItWorks.css';
 
 const steps = [
@@ -52,41 +53,52 @@ const steps = [
   },
 ];
 
-const HowItWorks = () => (
-  <section className="how-it-works-section" id="how-it-works">
-    <div className="landing-container">
-      {/* Heading */}
-      <div className="hiw-heading-wrap">
-        <span className="section-sub-label">How It Works</span>
-        <h2 className="hiw-heading">
-          Simple. Smart. <span className="text-green-gradient">Seamless Dining Experience.</span>
-        </h2>
-      </div>
+const cardDelays = ['reveal-delay-1', 'reveal-delay-2', 'reveal-delay-3', 'reveal-delay-4', 'reveal-delay-5', 'reveal-delay-6'];
 
-      {/* Steps Grid */}
-      <div className="hiw-grid">
-        {steps.map((s) => (
-          <div className={`hiw-card ${s.cls}`} key={s.num}>
-            <div className="hiw-step-num">{s.num}</div>
-            <div className="hiw-icon-wrap">
-              <i className={s.icon}></i>
-            </div>
-            <div className="hiw-content">
-              <h4>{s.title}</h4>
-              <span className="hiw-subtitle">{s.subtitle}</span>
-              <p>{s.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+const HowItWorks = () => {
+  const { ref: headRef, inView: headIn } = useScrollReveal();
+  const { ref: gridRef, inView: gridIn } = useScrollReveal();
 
-      <div className="hiw-cta-row">
-        <a href="/register" className="solutions-cta-btn">
-          Get Started <i className="fas fa-arrow-right"></i>
-        </a>
+  return (
+    <section className="how-it-works-section" id="how-it-works">
+      <div className="landing-container">
+        {/* Heading */}
+        <div ref={headRef} className={`hiw-heading-wrap reveal reveal-up ${headIn ? 'in-view' : ''}`}>
+          <span className="section-sub-label">How It Works</span>
+          <h2 className="hiw-heading">
+            Simple. Smart. <span className="text-green-gradient">Seamless Dining Experience.</span>
+          </h2>
+        </div>
+
+        {/* Steps Grid */}
+        <div ref={gridRef} className="hiw-grid">
+          {steps.map((s) => (
+            <div
+              className={`hiw-card ${s.cls} reveal reveal-up ${cardDelays[s.num - 1]} ${gridIn ? 'in-view' : ''}`}
+              key={s.num}
+            >
+              <div className="hiw-step-num">{s.num}</div>
+              <div className="hiw-icon-wrap">
+                <i className={s.icon}></i>
+              </div>
+              <div className="hiw-content">
+                <h4>{s.title}</h4>
+                <span className="hiw-subtitle">{s.subtitle}</span>
+                <p>{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hiw-cta-row">
+          <a href="/register" className="solutions-cta-btn">
+            Get Started <i className="fas fa-arrow-right"></i>
+          </a>
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default HowItWorks;
+

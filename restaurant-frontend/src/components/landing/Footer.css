@@ -10,7 +10,7 @@
   overflow: hidden;
 }
 
-/* -- Floating Shapes in CTA -- */
+/* Floating Shapes in CTA */
 .cta-shape-circle,
 .cta-shape-dots,
 .cta-shape-striped {
@@ -23,54 +23,29 @@
   top: 15%;
   left: 10%;
   animation: float-shape 6s ease-in-out infinite;
-  opacity: 0.6;
-}
-
-.cta-shape-dots {
-  bottom: 0px;
-  right: 48%;
-  /* Adjust to look like screenshot */
-  animation: spin 30s linear infinite;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .cta-shape-dots {
   bottom: 25px;
   right: 32%;
   animation: float-shape 5s ease-in-out infinite alternate;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .cta-shape-striped {
   top: -65px;
   right: 5%;
   width: 200px;
-  /* Guessing the size */
   animation: float-shape 8s ease-in-out infinite;
+  opacity: 0.5;
 }
 
-/* Base keyframe for float */
 @keyframes float-shape {
-  0% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-15px);
-  }
-
-  100% {
-    transform: translateY(0);
-  }
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-15px); }
 }
 
-@keyframes spin {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Small white dot — bottom left accent */
 .fcta-dot {
   position: absolute;
   width: 14px;
@@ -93,7 +68,7 @@
 }
 
 .fcta-text h2 {
-  font-family: 'Georgia', serif;
+  font-family: 'Inter', 'Georgia', serif;
   font-size: clamp(1.35rem, 2.5vw, 1.9rem);
   font-weight: 700;
   color: #fff;
@@ -117,7 +92,6 @@
   flex-wrap: wrap;
 }
 
-/* "Register Now" — white bg, teal text */
 .fcta-btn-primary {
   display: inline-flex;
   align-items: center;
@@ -141,7 +115,6 @@
   transform: translateY(-2px);
 }
 
-/* "Learn More" — white outline */
 .fcta-btn-outline {
   display: inline-flex;
   align-items: center;
@@ -166,27 +139,30 @@
   transform: translateY(-2px);
 }
 
-/* -- Footer Body -- */
+/* ==============================
+   Footer Body — Light Grey like the reference
+   ============================== */
 .landing-footer {
-  background: #fcfdfe;
-  /* Matches the screenshot background better than pure white */
+  background: #f5f7fa;
   position: relative;
   overflow: hidden;
 }
 
 .footer-body {
   padding: 60px 0 0;
-  border-top: 1px solid #e5eaef;
+  border-top: 1px solid #e2e8f0;
   position: relative;
   z-index: 2;
 }
 
+/* 3-column grid: Logo | About+QuickLinks | Get in Touch */
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.3fr 0.8fr 0.9fr 0.9fr 1.6fr;
-  gap: 40px;
+  grid-template-columns: 1.1fr 1.5fr 2fr;
+  gap: 50px;
   padding-bottom: 50px;
-  border-bottom: 1px solid #e5eaef;
+  border-bottom: 1px solid #e2e8f0;
+  align-items: start;
 }
 
 /* Logo col */
@@ -194,28 +170,21 @@
   height: 44px;
   width: auto;
   display: block;
-  margin-bottom: 14px;
-}
-
-.footer-logo-desc {
-  font-size: 13.5px;
-  color: #6c757d;
-  line-height: 1.65;
-  margin-bottom: 22px;
-  max-width: 220px;
+  margin-bottom: 18px;
 }
 
 .footer-social {
   display: flex;
   gap: 10px;
+  margin-top: 6px;
 }
 
 .footer-social a {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: #eef2fa;
-  border: none;
+  background: #fff;
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -223,23 +192,30 @@
   font-size: 13px;
   text-decoration: none;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 .footer-social a:hover {
   background: #2D7C7E;
   color: #fff;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(45,124,126,0.3);
+}
+
+/* Col group — About + Quick Links side by side */
+.footer-col-group {
+  display: flex;
+  gap: 48px;
 }
 
 /* Column titles */
 .footer-col-title {
   font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #1a1a2e;
-  margin-bottom: 20px;
+  letter-spacing: 0.3px;
+  color: #1a202c;
+  margin-bottom: 18px;
   position: relative;
-  padding-bottom: 11px;
 }
 
 /* Links */
@@ -255,18 +231,24 @@
 
 .footer-links li a {
   font-size: 14px;
-  color: #5a6672;
+  color: #4a5568;
   text-decoration: none;
-  transition: color 0.2s ease;
-  display: flex;
-  align-items: center;
+  transition: color 0.2s ease, transform 0.2s ease;
+  display: inline-block;
 }
 
 .footer-links li a:hover {
   color: #2D7C7E;
+  transform: translateX(3px);
 }
 
-/* Contact list */
+/* Quick Links two-column layout */
+.footer-links-two-col {
+  display: flex;
+  gap: 32px;
+}
+
+/* Get in Touch — Grouped Office contacts */
 .footer-contact-list {
   list-style: none;
   padding: 0;
@@ -277,22 +259,34 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 13px;
-  color: #5a6672;
-  margin-bottom: 7px;
-  line-height: 1.55;
+  font-size: 13.5px;
+  color: #4a5568;
+  margin-bottom: 6px;
+  line-height: 1.6;
 }
 
 .footer-contact-list li i {
   color: #2D7C7E;
-  margin-top: 2px;
+  margin-top: 3px;
   flex-shrink: 0;
-  width: 14px;
+  width: 15px;
   font-size: 13px;
 }
 
+.footer-contact-list li.contact-office-label {
+  margin-top: 14px;
+  margin-bottom: 5px;
+  font-weight: 700;
+  color: #1a202c;
+  font-size: 13.5px;
+}
+
+.footer-contact-list li.contact-office-label:first-child {
+  margin-top: 0;
+}
+
 .footer-contact-list li a {
-  color: #5a6672;
+  color: #4a5568;
   text-decoration: none;
   transition: color 0.2s ease;
 }
@@ -305,12 +299,13 @@
 .footer-copyright {
   padding: 20px 0;
   text-align: center;
-  background: #fff;
+  background: #edf0f5;
+  margin-top: 0;
 }
 
 .footer-copyright p {
   font-size: 13px;
-  color: #8a94a0;
+  color: #718096;
   margin: 0;
 }
 
@@ -325,97 +320,24 @@
   color: #1d5a5c;
 }
 
-/* Floating Decorative Shapes */
-.footer-shape {
-  position: absolute;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.8;
-}
-
-/* Specific Positions & Animations */
-
-/* Blue Striped Semi-circle (Top Left) */
-.shape-striped-blue {
-  top: 40px;
-  left: 40%;
-  width: 160px;
-  animation: float-y 8s ease-in-out infinite alternate;
-}
-
-/* White Dots (Behind Logo) */
-.shape-dots-white {
-  top: -30px;
-  left: -40px;
-  width: 140px;
-  opacity: 0.4;
-  z-index: -1;
-  animation: float-dots 12s linear infinite;
-}
-
-/* Purple X (Above Register) */
-.shape-purple-x {
-  top: -15px;
-  left: -25px;
-  width: 14px;
-  filter: invert(34%) sepia(85%) saturate(4000%) hue-rotate(245deg) brightness(95%) contrast(100%);
-  animation: float-rotate 6s ease-in-out infinite;
-}
-
-/* Purple Triangle (Bottom Left) */
-.shape-purple-triangle {
-  bottom: 60px;
-  left: 10%;
-  width: 14px;
-  filter: invert(34%) sepia(85%) saturate(4000%) hue-rotate(245deg) brightness(95%) contrast(100%);
-  animation: float-y 5s ease-in-out infinite;
-}
-
-/* Yellow Ring (Bottom Right) */
-.shape-yellow-ring {
-  bottom: 80px;
-  right: 10%;
-  width: 18px;
-  animation: pulse-ring 4s ease-in-out infinite;
-}
-
 /* Green Glow */
+.footer-bg-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .footer-green-glow {
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(45, 124, 126, 0.12) 0%, transparent 70%);
-  z-index: 0;
-  pointer-events: none;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(45, 124, 126, 0.08) 0%, transparent 70%);
 }
 
-/* Animations */
-@keyframes float-y {
-  from { transform: translateY(0); }
-  to { transform: translateY(-20px); }
-}
-
-@keyframes float-rotate {
-  0% { transform: translateY(0) rotate(0); }
-  50% { transform: translateY(-10px) rotate(180deg); }
-  100% { transform: translateY(0) rotate(360deg); }
-}
-
-@keyframes float-dots {
-  0% { transform: translate(0, 0); }
-  50% { transform: translate(10px, 10px); }
-  100% { transform: translate(0, 0); }
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.2); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 0.8; }
-}
-
-/* Logo col needs relative for dots positioning */
+/* Logo col needs relative */
 .logo-col {
   position: relative;
 }
@@ -426,14 +348,23 @@
 @media (max-width: 1100px) {
   .footer-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 50px;
+    gap: 40px;
+  }
+
+  .footer-col-group {
+    grid-column: 1 / -1;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   .footer-grid {
     grid-template-columns: 1fr;
     gap: 30px;
+  }
+
+  .footer-col-group {
+    flex-direction: column;
+    gap: 24px;
   }
 
   .fcta-inner {
@@ -443,14 +374,5 @@
 
   .fcta-btns {
     justify-content: center;
-  }
-
-  .footer-col-title::after {
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .footer-shape {
-    display: none; /* Hide complex decor on mobile for performance */
   }
 }

@@ -3,7 +3,7 @@
    ====================== */
 .benefits-section {
   padding: 100px 0;
-  background: #fff;
+  background: linear-gradient(160deg, #e8f5e9 0%, #f0fdf4 40%, #eef7ee 100%);
   overflow: hidden;
 }
 
@@ -39,7 +39,7 @@
 }
 
 .text-green-gradient {
-  background: linear-gradient(135deg, #1b5e20, #66bb6a);
+  background: linear-gradient(135deg, #1b5e20, #43a047);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -56,11 +56,12 @@
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  background: linear-gradient(135deg, #f0fdf4, #e6f4ea);
-  border: 2px solid rgba(67, 160, 71, 0.2);
+  background: #fff;
+  border: 1px solid #e0e0e0;
   border-radius: 16px;
-  padding: 18px 24px;
+  padding: 16px 22px;
   margin-top: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
 
 .trust-icon {
@@ -76,7 +77,7 @@
 .trust-number {
   font-size: 20px;
   font-weight: 800;
-  color: #2e7d32;
+  color: #1b5e20;
 }
 
 /* ---- Right: 2x2 Grid ---- */
@@ -91,8 +92,8 @@
   background: #fff;
   border-radius: 20px;
   padding: 28px 22px;
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.07);
-  border: 2px solid transparent;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1.5px solid #e8f5e9;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }

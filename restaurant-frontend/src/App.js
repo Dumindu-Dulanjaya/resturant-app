@@ -46,6 +46,7 @@ import AdminHotelProfile from './pages/AdminHotelProfile';
 import CheckoutPage from './pages/CheckoutPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
+import AboutPage from './pages/AboutPage';
 
 import PrivateRoute from './components/auth/PrivateRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -533,6 +534,7 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/blog" element={<BlogPage />} />
+            <Route path="/about" element={<AboutPage />} />
             <Route path="/blog/:id" element={<BlogPostPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/" element={<LandingPage />} />

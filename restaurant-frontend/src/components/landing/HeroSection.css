@@ -10,12 +10,11 @@
   align-items: center;
   padding: 120px 0 80px;
   background: linear-gradient(
-    140deg,
-    #f8fff8 0%,
-    #edfaed 20%,
-    #fffdf0 55%,
-    #fff8e1 80%,
-    #f0fdf4 100%
+    120deg,
+    #ffffff 0%,
+    #f5fff5 30%,
+    #fffef5 65%,
+    #fffff0 100%
   );
   overflow: hidden;
 }
@@ -96,10 +95,11 @@
   letter-spacing: -0.02em;
 }
 .hs-brand {
-  background: linear-gradient(130deg, #1b5e20, #66bb6a);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #2D7C7E;
+  -webkit-text-fill-color: #1b5e20;
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
 }
 
 /* description */
