@@ -115,14 +115,15 @@ export class AuthController {
 
   @Post('admin/create')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
-  async createAdmin(@Body() createAdminDto: CreateAdminDto) {
-    const admin = await this.authService.createAdmin(createAdminDto);
+  async createAdmin(@Request() req, @Body() createAdminDto: CreateAdminDto) {
+    const ownerRestaurantId = req.user.role === UserRole.ADMIN ? req.user.restaurantId : undefined;
+    const admin = await this.authService.createAdmin(createAdminDto, ownerRestaurantId);
     return {
       success: true,
       data: admin,
-      message: 'Admin created successfully',
+      message: 'Admin account created successfully',
     };
   }
 
@@ -139,9 +140,10 @@ export class AuthController {
 
   @Delete('admins/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
-  async deleteAdmin(@Param('id') id: string) {
-    await this.authService.deleteAdmin(parseInt(id));
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  async deleteAdmin(@Request() req, @Param('id') id: string) {
+    const ownerRestaurantId = req.user.role === UserRole.ADMIN ? req.user.restaurantId : undefined;
+    await this.authService.deleteAdmin(parseInt(id), ownerRestaurantId);
     return { success: true, message: 'Admin deleted successfully' };
   }
 

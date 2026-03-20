@@ -5,4 +5,5 @@ export enum UserRole {
   CASHIER = 'cashier',
   ACCOUNTANT = 'accountant',
   HOUSEKEEPER = 'housekeeper',
+  STEWARD = 'steward',
 }

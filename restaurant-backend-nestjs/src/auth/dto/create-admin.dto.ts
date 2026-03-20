@@ -18,7 +18,7 @@ export class CreateAdminDto {
   @MinLength(6)
   password: string;
 
-  @IsIn(['admin', 'super_admin', 'housekeeper', 'kitchen', 'cashier', 'accountant'])
+  @IsIn(['admin', 'super_admin', 'housekeeper', 'kitchen', 'cashier', 'accountant', 'steward'])
   @IsNotEmpty()
   role:
     | 'admin'
@@ -26,7 +26,8 @@ export class CreateAdminDto {
     | 'housekeeper'
     | 'kitchen'
     | 'cashier'
-    | 'accountant';
+    | 'accountant'
+    | 'steward';
 
   @IsNumber()
   @IsOptional()

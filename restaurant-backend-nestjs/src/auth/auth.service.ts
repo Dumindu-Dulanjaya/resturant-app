@@ -91,12 +91,6 @@ export class AuthService {
         };
       }
 
-      if (admin.role === 'steward') {
-        return {
-          success: false,
-          message: 'Steward access is no longer supported in this project.',
-        };
-      }
 
       // Check if restaurant subscription is active (for non-housekeeper roles)
       if (admin.role !== 'housekeeper' && admin.restaurant) {
@@ -271,9 +265,19 @@ export class AuthService {
   }
 
   /**
-   * Create a new admin (Super Admin only)
+   * Create a new admin (Super Admin can create any, Restaurant Admin can only create their own staff)
    */
-  async createAdmin(createAdminDto: CreateAdminDto): Promise<Admin> {
+  async createAdmin(createAdminDto: CreateAdminDto, ownerRestaurantId?: number): Promise<Admin> {
+    // If ownerRestaurantId is provided (called by a restaurant owner), enforce it
+    if (ownerRestaurantId) {
+      createAdminDto.restaurantId = ownerRestaurantId;
+      
+      // Prevent owners from creating other owners or super admins
+      if (createAdminDto.role === 'admin' || createAdminDto.role === 'super_admin') {
+        throw new UnauthorizedException('You can only create staff roles (kitchen, cashier, etc.)');
+      }
+    }
+
     // Check if email already exists
     const existingAdmin = await this.adminRepository.findOne({
       where: { email: createAdminDto.email },
@@ -307,7 +311,22 @@ export class AuthService {
     });
   }
 
-  async deleteAdmin(adminId: number): Promise<void> {
+  async deleteAdmin(adminId: number, ownerRestaurantId?: number): Promise<void> {
+    if (ownerRestaurantId) {
+      const admin = await this.adminRepository.findOne({
+        where: { adminId },
+      });
+
+      if (!admin || admin.restaurantId !== ownerRestaurantId) {
+        throw new UnauthorizedException('You can only delete staff from your own restaurant');
+      }
+
+      // Prevent owner from deleting themselves via this endpoint (usually they are the only 'admin' role)
+      if (admin.role === 'admin') {
+         throw new UnauthorizedException('You cannot delete the primary owner account');
+      }
+    }
+
     await this.adminRepository.delete(adminId);
   }
 
