@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import apiClient from '../../api/apiClient';
 import './Sidebar.css';
 
 function Sidebar() {
   const location = useLocation();
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const [menuStates, setMenuStates] = useState({
     menus: false,
     qrcodes: false,
@@ -15,6 +16,23 @@ function Sidebar() {
     reports: false,
     settings: false
   });
+
+  useEffect(() => {
+    // If we're an admin/staff and don't have restaurant name/logo in the store, fetch it
+    if (user && (user.role !== 'super_admin') && user.restaurantId && (!user.restaurantName || !user.restaurantLogo)) {
+      apiClient.get(`/restaurant/${user.restaurantId}`)
+        .then(response => {
+          if (response.data && response.data.success) {
+            const restaurant = response.data.data;
+            updateUser({
+              restaurantName: restaurant.restaurantName,
+              restaurantLogo: restaurant.logo
+            });
+          }
+        })
+        .catch(err => console.error('Error fetching restaurant info for sidebar:', err));
+    }
+  }, [user, updateUser]);
 
   const toggleMenu = (menuName) => {
     setMenuStates(prev => {
@@ -44,8 +62,15 @@ function Sidebar() {
     });
   };
 
-  const isActive = (path) => {
+  const isActive = (path, exact = true) => {
+    if (exact) {
+      return location.pathname === path && !location.search ? 'active' : '';
+    }
     return location.pathname === path ? 'active' : '';
+  };
+
+  const isQueryActive = (path, search) => {
+    return location.pathname === path && location.search === search ? 'active' : '';
   };
 
   const isCashierTabActive = (tab) => {
@@ -87,8 +112,25 @@ function Sidebar() {
   return (
     <div className="sidebar" id="sidebar">
       <div className="sidebar-header">
-        <i className="fas fa-utensils me-2"></i>
-        Restaurant System
+        <div className="d-flex align-items-center justify-content-center flex-column gap-2">
+          {user?.restaurantLogo ? (
+            <img 
+              src={user.restaurantLogo.startsWith('http') ? user.restaurantLogo : `${apiClient.defaults.baseURL.replace('/api', '')}/${user.restaurantLogo.startsWith('/') ? user.restaurantLogo.substring(1) : user.restaurantLogo}`} 
+              alt={user.restaurantName || 'Logo'} 
+              className="sidebar-logo mb-2" 
+              style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'inline-block';
+              }}
+            />
+          ) : (
+            <i className="fas fa-utensils fs-4"></i>
+          )}
+          <span className="restaurant-name text-truncate w-100 px-2" title={user?.restaurantName || 'Restaurant System'}>
+            {user?.restaurantName || 'Restaurant System'}
+          </span>
+        </div>
       </div>
       
       <ul className="sidebar-menu">
@@ -146,33 +188,34 @@ function Sidebar() {
         {canAccessAdminFeatures && (
           <li className={`has-submenu ${menuStates.menus ? 'open' : ''}`}>
           <a href="#" onClick={(e) => { e.preventDefault(); toggleMenu('menus'); }}>
-            <i className="fas fa-book-open"></i>
+            <i className="fas fa-bars"></i>
             <span>Menus</span>
             <i className={`fas fa-chevron-${menuStates.menus ? 'down' : 'right'} submenu-arrow`}></i>
           </a>
           <ul className="submenu" style={{ display: menuStates.menus ? 'block' : 'none' }}>
-            <li className={isActive('/menus/all')}>
+            <li className={isActive('/menus/all', true)}>
               <Link to="/menus/all">
-                <i className="fas fa-list"></i>
                 All Menus
               </Link>
             </li>
-            <li className={isActive('/menus/categories')}>
-              <Link to="/menus/categories">
-                <i className="fas fa-th-large"></i>
-                Categories
+            <li className={isQueryActive('/menus/all', '?add=true')}>
+              <Link to="/menus/all?add=true">
+                Add Menu
               </Link>
             </li>
-            <li className={isActive('/menus/subcategories')}>
-              <Link to="/menus/subcategories">
-                <i className="fas fa-th"></i>
-                Subcategories
+            <li className={isQueryActive('/menus/categories', '?add=true')}>
+              <Link to="/menus/categories?add=true">
+                Add Category
               </Link>
             </li>
-            <li className={isActive('/menus/food-items')}>
-              <Link to="/menus/food-items">
-                <i className="fas fa-hamburger"></i>
-                Food Items
+            <li className={isQueryActive('/menus/subcategories', '?add=true')}>
+              <Link to="/menus/subcategories?add=true">
+                Add Subcategories
+              </Link>
+            </li>
+            <li className={isQueryActive('/menus/food-items', '?add=true')}>
+              <Link to="/menus/food-items?add=true">
+                Add Food Items
               </Link>
             </li>
           </ul>

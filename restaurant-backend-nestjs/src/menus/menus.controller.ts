@@ -8,7 +8,15 @@ import {
   Delete,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  menuImageFileFilter,
+  menuImageStorage,
+  maxMenuImageFileSize,
+} from '../config/menu-image-multer.config';
 import { MenusService } from './menus.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
@@ -31,6 +39,33 @@ interface RequestWithUser extends Request {
 @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 export class MenusController {
   constructor(private readonly menusService: MenusService) {}
+
+  @Post('upload-image')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: menuImageStorage,
+      fileFilter: menuImageFileFilter,
+      limits: { fileSize: maxMenuImageFileSize },
+    }),
+  )
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      return {
+        success: false,
+        message: 'No file uploaded',
+      };
+    }
+
+    const imageUrl = `/uploads/menus/${file.filename}`;
+
+    return {
+      success: true,
+      message: 'Menu image uploaded successfully',
+      imageUrl,
+      filename: file.filename,
+      size: file.size,
+    };
+  }
 
   @Post()
   create(@Body() createMenuDto: CreateMenuDto, @Request() req: RequestWithUser) {

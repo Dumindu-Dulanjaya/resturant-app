@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import AddCategoryModal from '../components/categories/AddCategoryModal';
@@ -8,6 +9,7 @@ import apiClient from '../api/apiClient';
 import './Categories.css';
 
 function Categories() {
+  const location = useLocation();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -16,7 +18,13 @@ function Categories() {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+    
+    // Check if we should open the add modal
+    const query = new URLSearchParams(location.search);
+    if (query.get('add') === 'true') {
+      setShowAddModal(true);
+    }
+  }, [location.search]);
 
   const fetchCategories = async () => {
     try {

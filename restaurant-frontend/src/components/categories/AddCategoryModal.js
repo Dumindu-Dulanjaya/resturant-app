@@ -123,16 +123,28 @@ function AddCategoryModal({ show, onHide, onSuccess }) {
     setSubmitting(true);
 
     try {
+      let finalImageUrl = formData.imageUrl.trim();
+
+      // Upload image if selected
+      if (selectedFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('image', selectedFile);
+        
+        const uploadRes = await apiClient.post('/categories/upload-image', uploadFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        if (uploadRes.data && uploadRes.data.imageUrl) {
+          finalImageUrl = uploadRes.data.imageUrl;
+        }
+      }
+
       const payload = {
         categoryName: formData.categoryName.trim(),
         description: formData.description.trim(),
         menuId: parseInt(formData.menuId),
+        imageUrl: finalImageUrl || undefined
       };
-
-      // Only include imageUrl if provided
-      if (formData.imageUrl.trim()) {
-        payload.imageUrl = formData.imageUrl.trim();
-      }
 
       const response = await apiClient.post('/categories', payload);
 

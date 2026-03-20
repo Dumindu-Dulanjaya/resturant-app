@@ -10,7 +10,15 @@ import {
   Request,
   Query,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  foodItemImageFileFilter,
+  foodItemImageStorage,
+  maxFoodItemImageFileSize,
+} from '../config/food-item-image-multer.config';
 import { FoodItemsService } from './food-items.service';
 import { CreateFoodItemDto } from './dto/create-food-item.dto';
 import { UpdateFoodItemDto } from './dto/update-food-item.dto';
@@ -22,6 +30,35 @@ import { UserRole } from '../auth/enums/role.enum';
 @Controller('food-items')
 export class FoodItemsController {
   constructor(private readonly foodItemsService: FoodItemsService) {}
+
+  @Post('upload-image')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: foodItemImageStorage,
+      fileFilter: foodItemImageFileFilter,
+      limits: { fileSize: maxFoodItemImageFileSize },
+    }),
+  )
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      return {
+        success: false,
+        message: 'No file uploaded',
+      };
+    }
+
+    const imageUrl = `/uploads/food-items/${file.filename}`;
+
+    return {
+      success: true,
+      message: 'Food item image uploaded successfully',
+      imageUrl,
+      filename: file.filename,
+      size: file.size,
+    };
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)

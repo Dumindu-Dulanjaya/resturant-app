@@ -10,9 +10,34 @@ function AddMenuModal({ show, onHide, onSuccess }) {
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, files } = e.target;
+    
+    if (name === 'imageFile') {
+      const file = files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          setErrors(prev => ({ ...prev, imageUrl: 'Please select an image file' }));
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          setErrors(prev => ({ ...prev, imageUrl: 'Image size must be less than 5MB' }));
+          return;
+        }
+        
+        setSelectedFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      }
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -59,15 +84,27 @@ function AddMenuModal({ show, onHide, onSuccess }) {
     setSubmitting(true);
 
     try {
+      let finalImageUrl = formData.imageUrl.trim();
+
+      // Upload image if selected
+      if (selectedFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('image', selectedFile);
+        
+        const uploadRes = await apiClient.post('/menus/upload-image', uploadFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        if (uploadRes.data && uploadRes.data.imageUrl) {
+          finalImageUrl = uploadRes.data.imageUrl;
+        }
+      }
+
       const payload = {
         menuName: formData.menuName.trim(),
         description: formData.description.trim(),
+        imageUrl: finalImageUrl || undefined
       };
-
-      // Only include imageUrl if provided
-      if (formData.imageUrl.trim()) {
-        payload.imageUrl = formData.imageUrl.trim();
-      }
 
       const response = await apiClient.post('/menus', payload);
 
@@ -85,6 +122,8 @@ function AddMenuModal({ show, onHide, onSuccess }) {
         description: '',
         imageUrl: ''
       });
+      setSelectedFile(null);
+      setImagePreview(null);
       setErrors({});
 
       // Close modal and refresh list
@@ -121,6 +160,8 @@ function AddMenuModal({ show, onHide, onSuccess }) {
         description: '',
         imageUrl: ''
       });
+      setSelectedFile(null);
+      setImagePreview(null);
       setErrors({});
       onHide();
     }
@@ -183,28 +224,52 @@ function AddMenuModal({ show, onHide, onSuccess }) {
                 )}
               </div>
 
-              {/* Image URL */}
+              {/* Image Upload */}
               <div className="mb-3">
-                <label htmlFor="imageUrl" className="form-label">
-                  Image URL <span className="text-muted">(Optional)</span>
+                <label htmlFor="imageFile" className="form-label">
+                  Menu Image <span className="text-muted">(Optional)</span>
                 </label>
-                <input
-                  type="text"
-                  className={`form-control ${errors.imageUrl ? 'is-invalid' : ''}`}
-                  id="imageUrl"
-                  name="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={handleChange}
-                  maxLength={255}
-                  placeholder="assets/imgs/menu-img/menu.jpg"
-                  disabled={submitting}
-                />
+                <div className="input-group">
+                  <input
+                    type="file"
+                    className={`form-control ${errors.imageUrl ? 'is-invalid' : ''}`}
+                    id="imageFile"
+                    name="imageFile"
+                    onChange={handleChange}
+                    accept="image/*"
+                    disabled={submitting}
+                  />
+                </div>
                 {errors.imageUrl && (
-                  <div className="invalid-feedback">{errors.imageUrl}</div>
+                  <div className="text-danger mt-1" style={{fontSize: '0.875em'}}>{errors.imageUrl}</div>
                 )}
                 <small className="form-text text-muted">
-                  Relative path to the image file
+                  Maximum file size: 5MB (JPEG, PNG only). Leave blank to keep current image.
                 </small>
+
+                {imagePreview && (
+                  <div className="mt-3 text-center">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'cover' }}
+                      className="img-thumbnail"
+                    />
+                    <div className="mt-1">
+                      <button 
+                        type="button" 
+                        className="btn btn-sm btn-outline-danger" 
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setImagePreview(null);
+                          document.getElementById('imageFile').value = '';
+                        }}
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="modal-footer">

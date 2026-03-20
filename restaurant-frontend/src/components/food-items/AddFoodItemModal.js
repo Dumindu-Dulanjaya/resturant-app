@@ -23,6 +23,18 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState({
+    image1: null,
+    image2: null,
+    image3: null,
+    image4: null
+  });
+  const [previews, setPreviews] = useState({
+    image1: null,
+    image2: null,
+    image3: null,
+    image4: null
+  });
 
   useEffect(() => {
     if (show) {
@@ -58,7 +70,31 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, files } = e.target;
+    
+    if (name.startsWith('imageFile')) {
+      const index = name.charAt(name.length - 1);
+      const file = files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'Please select an image file' });
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'Image size must be less than 5MB' });
+          return;
+        }
+        
+        setSelectedFiles(prev => ({ ...prev, [`image${index}`]: file }));
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviews(prev => ({ ...prev, [`image${index}`]: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      }
+      return;
+    }
+
     setFormData({
       ...formData,
       [name]: value
@@ -99,6 +135,29 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
     setLoading(true);
 
     try {
+      const imageUrls = { ...formData };
+      
+      // Upload images one by one
+      for (let i = 1; i <= 4; i++) {
+        const file = selectedFiles[`image${i}`];
+        if (file) {
+          const uploadFormData = new FormData();
+          uploadFormData.append('image', file);
+          
+          try {
+            const uploadRes = await apiClient.post('/food-items/upload-image', uploadFormData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (uploadRes.data && uploadRes.data.imageUrl) {
+              imageUrls[`imageUrl${i}`] = uploadRes.data.imageUrl;
+            }
+          } catch (uploadError) {
+            console.error(`Error uploading image ${i}:`, uploadError);
+            // Continue with other images if one fails
+          }
+        }
+      }
+
       const submitData = {
         itemName: formData.itemName.trim(),
         description: formData.description.trim() || undefined,
@@ -107,10 +166,10 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
         currencyId: parseInt(formData.currencyId),
         categoryId: parseInt(formData.categoryId),
         subcategoryId: formData.subcategoryId ? parseInt(formData.subcategoryId) : undefined,
-        imageUrl1: formData.imageUrl1.trim() || undefined,
-        imageUrl2: formData.imageUrl2.trim() || undefined,
-        imageUrl3: formData.imageUrl3.trim() || undefined,
-        imageUrl4: formData.imageUrl4.trim() || undefined,
+        imageUrl1: imageUrls.imageUrl1.trim() || undefined,
+        imageUrl2: imageUrls.imageUrl2.trim() || undefined,
+        imageUrl3: imageUrls.imageUrl3.trim() || undefined,
+        imageUrl4: imageUrls.imageUrl4.trim() || undefined,
         videoLink: formData.videoLink.trim() || undefined,
         blogLink: formData.blogLink.trim() || undefined
       };
@@ -141,6 +200,8 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
         videoLink: '',
         blogLink: ''
       });
+      setSelectedFiles({ image1: null, image2: null, image3: null, image4: null });
+      setPreviews({ image1: null, image2: null, image3: null, image4: null });
 
       onSuccess();
       onHide();
@@ -271,62 +332,42 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
               </Form.Group>
             </div>
 
-            {/* Image URLs */}
-            <div className="col-md-6 mb-3">
-              <Form.Group>
-                <Form.Label>Image URL 1</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="imageUrl1"
-                  value={formData.imageUrl1}
-                  onChange={handleChange}
-                  placeholder="Enter image URL"
-                  maxLength={255}
-                />
-              </Form.Group>
-            </div>
-
-            <div className="col-md-6 mb-3">
-              <Form.Group>
-                <Form.Label>Image URL 2</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="imageUrl2"
-                  value={formData.imageUrl2}
-                  onChange={handleChange}
-                  placeholder="Enter image URL"
-                  maxLength={255}
-                />
-              </Form.Group>
-            </div>
-
-            <div className="col-md-6 mb-3">
-              <Form.Group>
-                <Form.Label>Image URL 3</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="imageUrl3"
-                  value={formData.imageUrl3}
-                  onChange={handleChange}
-                  placeholder="Enter image URL"
-                  maxLength={255}
-                />
-              </Form.Group>
-            </div>
-
-            <div className="col-md-6 mb-3">
-              <Form.Group>
-                <Form.Label>Image URL 4</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="imageUrl4"
-                  value={formData.imageUrl4}
-                  onChange={handleChange}
-                  placeholder="Enter image URL"
-                  maxLength={255}
-                />
-              </Form.Group>
-            </div>
+            {/* Image Uploads */}
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="col-md-6 mb-3">
+                <Form.Group>
+                  <Form.Label>Image {i}</Form.Label>
+                  <Form.Control
+                    type="file"
+                    name={`imageFile${i}`}
+                    onChange={handleChange}
+                    accept="image/*"
+                    disabled={loading}
+                  />
+                  {previews[`image${i}`] && (
+                    <div className="mt-2 text-center">
+                      <img
+                        src={previews[`image${i}`]}
+                        alt={`Preview ${i}`}
+                        style={{ height: '80px', objectFit: 'cover' }}
+                        className="img-thumbnail"
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-link text-danger d-block mx-auto"
+                        onClick={() => {
+                          setSelectedFiles(prev => ({ ...prev, [`image${i}`]: null }));
+                          setPreviews(prev => ({ ...prev, [`image${i}`]: null }));
+                          document.getElementsByName(`imageFile${i}`)[0].value = '';
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </Form.Group>
+              </div>
+            ))}
 
             {/* Video and Blog Links */}
             <div className="col-md-6 mb-3">

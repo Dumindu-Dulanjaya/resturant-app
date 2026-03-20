@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import AddSubcategoryModal from '../components/subcategories/AddSubcategoryModal';
@@ -8,6 +9,7 @@ import apiClient from '../api/apiClient';
 import './Subcategories.css';
 
 function Subcategories() {
+  const location = useLocation();
   const [subcategories, setSubcategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
@@ -18,7 +20,13 @@ function Subcategories() {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+    
+    // Check if we should open the add modal
+    const query = new URLSearchParams(location.search);
+    if (query.get('add') === 'true') {
+      setShowAddModal(true);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (selectedCategoryId) {

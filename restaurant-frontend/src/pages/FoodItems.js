@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import AddFoodItemModal from '../components/food-items/AddFoodItemModal';
@@ -8,6 +9,7 @@ import apiClient from '../api/apiClient';
 import './FoodItems.css';
 
 function FoodItems() {
+  const location = useLocation();
   const [foodItems, setFoodItems] = useState([]);
   const [menus, setMenus] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -27,7 +29,13 @@ function FoodItems() {
 
   useEffect(() => {
     fetchMenus();
-  }, []);
+    
+    // Check if we should open the add modal
+    const query = new URLSearchParams(location.search);
+    if (query.get('add') === 'true') {
+      setShowAddModal(true);
+    }
+  }, [location.search]);
 
   // Fetch categories when menu changes
   useEffect(() => {

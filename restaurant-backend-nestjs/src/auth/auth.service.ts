@@ -148,6 +148,8 @@ export class AuthService {
             email: admin.email,
             role: admin.role,
             restaurantId: admin.restaurantId,
+            restaurantName: admin.restaurant?.restaurantName,
+            restaurantLogo: admin.restaurant?.logo,
             type: 'admin',
             restaurantSettings: admin.restaurant ? {
               enableHousekeeping: admin.restaurant.enableHousekeeping,

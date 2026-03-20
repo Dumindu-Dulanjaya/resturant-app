@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import AddMenuModal from '../components/menus/AddMenuModal';
@@ -8,6 +9,7 @@ import apiClient from '../api/apiClient';
 import './Menus.css';
 
 function Menus() {
+  const location = useLocation();
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -16,7 +18,13 @@ function Menus() {
 
   useEffect(() => {
     fetchMenus();
-  }, []);
+    
+    // Check if we should open the add modal
+    const query = new URLSearchParams(location.search);
+    if (query.get('add') === 'true') {
+      setShowAddModal(true);
+    }
+  }, [location.search]);
 
   const fetchMenus = async () => {
     try {
