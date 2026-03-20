@@ -21,4 +21,12 @@ export class UpdateRestaurantDto extends PartialType(CreateRestaurantDto) {
   @IsOptional()
   @IsBoolean()
   enableReports?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  enableAccountant?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  enableCashier?: boolean;
 }

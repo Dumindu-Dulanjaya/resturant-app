@@ -23,7 +23,7 @@ export class SettingsRequest {
   @Column()
   restaurantId: number;
 
-  @ManyToOne(() => Restaurant)
+  @ManyToOne(() => Restaurant, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'restaurantId' })
   restaurant: Restaurant;
 

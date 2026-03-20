@@ -64,4 +64,10 @@ export class CreateRestaurantDto {
 
   @IsOptional()
   enableReports?: boolean;
+
+  @IsOptional()
+  enableAccountant?: boolean;
+
+  @IsOptional()
+  enableCashier?: boolean;
 }

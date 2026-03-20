@@ -24,6 +24,8 @@ function RestaurantSettings() {
     enableHousekeeping: false,
     enableKds: false,
     enableReports: false,
+    enableAccountant: false,
+    enableCashier: false,
   });
 
   // Admin's locally desired changes (starts as copy of savedSettings)
@@ -31,6 +33,8 @@ function RestaurantSettings() {
     enableHousekeeping: false,
     enableKds: false,
     enableReports: false,
+    enableAccountant: false,
+    enableCashier: false,
   });
 
   // Current pending settings-request (if any)
@@ -120,6 +124,8 @@ function RestaurantSettings() {
           enableHousekeeping: Boolean(d.enableHousekeeping),
           enableKds: Boolean(d.enableKds),
           enableReports: Boolean(d.enableReports),
+          enableAccountant: Boolean(d.enableAccountant),
+          enableCashier: Boolean(d.enableCashier),
         };
       }
     } catch (error) {
@@ -178,6 +184,8 @@ function RestaurantSettings() {
           enableHousekeeping: Boolean(localChanges.enableHousekeeping),
           enableKds: Boolean(localChanges.enableKds),
           enableReports: Boolean(localChanges.enableReports),
+          enableAccountant: Boolean(localChanges.enableAccountant),
+          enableCashier: Boolean(localChanges.enableCashier),
         };
         if (requestReason.trim()) {
           payload.requestReason = requestReason.trim();
@@ -204,6 +212,8 @@ function RestaurantSettings() {
           enableHousekeeping: Boolean(localChanges.enableHousekeeping),
           enableKds: Boolean(localChanges.enableKds),
           enableReports: Boolean(localChanges.enableReports),
+          enableAccountant: Boolean(localChanges.enableAccountant),
+          enableCashier: Boolean(localChanges.enableCashier),
         };
 
         const response = await apiClient.patch('/restaurant/settings', payload);
@@ -275,6 +285,22 @@ function RestaurantSettings() {
       title: 'Reports Module',
       description:
         'Enable reporting features including daily, monthly, and sales reports with analytics.',
+    },
+    {
+      key: 'enableAccountant',
+      icon: 'fas fa-calculator',
+      iconClass: 'accountant',
+      title: 'Accountant Management',
+      description:
+        'Enable the Accountant module for managing transfers, expenses, and financial monitoring.',
+    },
+    {
+      key: 'enableCashier',
+      icon: 'fas fa-cash-register',
+      iconClass: 'cashier',
+      title: 'Cashier Management',
+      description:
+        'Enable the Cashier module for order queue management, billing, and accountant transfers.',
     },
   ];
 

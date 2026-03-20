@@ -92,4 +92,14 @@ export class RegisterRestaurantDto {
   @Transform(({ value }) => parseBoolean(value))
   @IsBoolean()
   enableReports?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  enableAccountant?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsBoolean()
+  enableCashier?: boolean;
 }

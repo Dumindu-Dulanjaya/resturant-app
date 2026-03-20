@@ -83,6 +83,12 @@ export class Restaurant {
   @Column({ name: 'enable_reports', type: 'tinyint', width: 1, default: 1 })
   enableReports: boolean;
 
+  @Column({ name: 'enable_accountant', type: 'tinyint', width: 1, default: 1 })
+  enableAccountant: boolean;
+
+  @Column({ name: 'enable_cashier', type: 'tinyint', width: 1, default: 1 })
+  enableCashier: boolean;
+
   @OneToMany(() => Admin, (admin) => admin.restaurant)
   admins: Admin[];
 }

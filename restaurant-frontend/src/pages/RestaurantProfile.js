@@ -19,6 +19,9 @@ const formatRole = (role) => {
     super_admin: 'Super Admin',
     housekeeper: 'Housekeeper',
     kitchen: 'Kitchen',
+    cashier: 'Cashier',
+    accountant: 'Accountant',
+    steward: 'Steward',
   };
 
   return labels[role] || role;
@@ -105,24 +108,63 @@ function RestaurantProfile() {
       await apiClient.delete(`/auth/admins/${adminId}`);
       Swal.fire('Deleted!', 'Admin removed successfully.', 'success');
       fetchData();
-    } catch {
-      Swal.fire('Error!', 'Failed to delete admin.', 'error');
+    } catch (error) {
+      Swal.fire('Error!', error.response?.data?.message || 'Failed to delete admin.', 'error');
     }
   };
 
-  const openAddUser = (role) => {
-    if (!restaurant?.restaurantId) {
-      return;
-    }
+  const handleAddRole = async () => {
+    if (!restaurant?.restaurantId) return;
 
-    const params = new URLSearchParams({
-      restaurantId: String(restaurant.restaurantId),
-      role,
-      returnTo: `/super-admin/hotel-profile/${restaurant.restaurantId}`,
+    const { value: formValues } = await Swal.fire({
+      title: 'Add Role to Hotel',
+      html: `
+        <div style="text-align: left;">
+          <label style="display: block; margin-bottom: 5px;">Email</label>
+          <input id="swal-input-email" class="swal2-input" placeholder="Email" type="email">
+          <label style="display: block; margin-bottom: 5px; margin-top: 15px;">Password</label>
+          <input id="swal-input-password" class="swal2-input" placeholder="Password" type="password">
+          <select id="swal-input-role" class="swal2-input" style="width: 100%; box-sizing: border-box;">
+            <option value="admin">Admin (Hotel Owner)</option>
+            ${restaurant.enableSteward ? '<option value="steward">Steward</option>' : ''}
+            ${restaurant.enableKds ? '<option value="kitchen">Kitchen</option>' : ''}
+            ${restaurant.enableCashier ? '<option value="cashier">Cashier</option>' : ''}
+            ${restaurant.enableAccountant ? '<option value="accountant">Accountant</option>' : ''}
+            ${restaurant.enableHousekeeping ? '<option value="housekeeper">Housekeeper</option>' : ''}
+          </select>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Add Role',
+      preConfirm: () => {
+        const email = document.getElementById('swal-input-email').value;
+        const password = document.getElementById('swal-input-password').value;
+        const role = document.getElementById('swal-input-role').value;
+
+        if (!email || !password || !role) {
+          Swal.showValidationMessage('Please fill in all fields');
+          return false;
+        }
+
+        return { email, password, role };
+      }
     });
 
-    navigate(`/super-admin/add-admin?${params.toString()}`);
+    if (formValues) {
+      try {
+        await apiClient.post('/auth/admin/create', {
+          ...formValues,
+          restaurantId: parseInt(restaurant.restaurantId)
+        });
+        Swal.fire('Success!', 'Role added successfully.', 'success');
+        fetchData();
+      } catch (error) {
+        Swal.fire('Error!', error.response?.data?.message || 'Failed to add role.', 'error');
+      }
+    }
   };
+
 
   if (loading) {
     return (
@@ -182,7 +224,9 @@ function RestaurantProfile() {
     'QR Menu System',
     restaurant.enableHousekeeping && 'QR Housekeeping System',
     restaurant.enableKds && 'Kitchen Display System',
-    restaurant.enableReports && 'Reports',
+    restaurant.enableReports && 'Reports & Analytics',
+    restaurant.enableAccountant && 'Accountant Management',
+    restaurant.enableCashier && 'Cashier Management',
     'Special Offers',
   ].filter(Boolean);
 
@@ -320,19 +364,10 @@ function RestaurantProfile() {
                   <button
                     type="button"
                     className="rp-action-btn rp-action-btn-primary"
-                    onClick={() => openAddUser('admin')}
+                    onClick={handleAddRole}
                   >
-                    Add Admin
+                    Add Role
                   </button>
-                  {restaurant.enableHousekeeping && (
-                    <button
-                      type="button"
-                      className="rp-action-btn rp-action-btn-success"
-                      onClick={() => openAddUser('housekeeper')}
-                    >
-                      Add Housekeeper
-                    </button>
-                  )}
                 </div>
               </div>
 

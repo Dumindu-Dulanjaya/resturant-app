@@ -16,6 +16,8 @@ function AddRestaurant() {
     enableHousekeeping: true,
     enableKds: true,
     enableReports: true,
+    enableAccountant: true,
+    enableCashier: true,
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -132,6 +134,8 @@ function AddRestaurant() {
           enableHousekeeping: true,
           enableKds: true,
           enableReports: true,
+          enableAccountant: true,
+          enableCashier: true,
         });
         setSelectedFile(null);
         setImagePreview(null);
@@ -297,6 +301,26 @@ function AddRestaurant() {
                   onChange={handleChange}
                 />
                 <label className="form-check-label">Reports & Analytics</label>
+              </div>
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  name="enableAccountant"
+                  checked={formData.enableAccountant}
+                  onChange={handleChange}
+                />
+                <label className="form-check-label">Accountant Management</label>
+              </div>
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  name="enableCashier"
+                  checked={formData.enableCashier}
+                  onChange={handleChange}
+                />
+                <label className="form-check-label">Cashier Management</label>
               </div>
             </div>
           </div>

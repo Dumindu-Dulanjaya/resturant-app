@@ -17,6 +17,13 @@ export interface AuthResponse {
       role: string;
       restaurantId?: number;
       type: string;
+      restaurantSettings?: {
+        enableHousekeeping: boolean;
+        enableKds: boolean;
+        enableReports: boolean;
+        enableAccountant: boolean;
+        enableCashier: boolean;
+      } | null;
     };
   };
 }

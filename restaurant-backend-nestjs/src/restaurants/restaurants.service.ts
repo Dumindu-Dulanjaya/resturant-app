@@ -6,6 +6,7 @@ import { UpdateRestaurantSettingsDto } from './dto/update-restaurant-settings.dt
 import { RestaurantSettingsResponseDto } from './dto/restaurant-settings-response.dto';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
+import { Admin } from '../auth/entities/admin.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -13,6 +14,8 @@ export class RestaurantsService {
   constructor(
     @InjectRepository(Restaurant)
     private readonly restaurantRepository: Repository<Restaurant>,
+    @InjectRepository(Admin)
+    private readonly adminRepository: Repository<Admin>,
   ) {}
 
   async findByApiKey(apiKey: string): Promise<Restaurant | null> {
@@ -33,6 +36,8 @@ export class RestaurantsService {
       enableHousekeeping: Boolean(restaurant.enableHousekeeping),
       enableKds: Boolean(restaurant.enableKds),
       enableReports: Boolean(restaurant.enableReports),
+      enableAccountant: Boolean(restaurant.enableAccountant),
+      enableCashier: Boolean(restaurant.enableCashier),
     };
   }
 
@@ -56,6 +61,12 @@ export class RestaurantsService {
     if (updateDto.enableReports !== undefined) {
       restaurant.enableReports = updateDto.enableReports;
     }
+    if (updateDto.enableAccountant !== undefined) {
+      restaurant.enableAccountant = updateDto.enableAccountant;
+    }
+    if (updateDto.enableCashier !== undefined) {
+      restaurant.enableCashier = updateDto.enableCashier;
+    }
 
     await this.restaurantRepository.save(restaurant);
 
@@ -63,6 +74,8 @@ export class RestaurantsService {
       enableHousekeeping: Boolean(restaurant.enableHousekeeping),
       enableKds: Boolean(restaurant.enableKds),
       enableReports: Boolean(restaurant.enableReports),
+      enableAccountant: Boolean(restaurant.enableAccountant),
+      enableCashier: Boolean(restaurant.enableCashier),
     };
   }
 
@@ -85,27 +98,45 @@ export class RestaurantsService {
       ? await bcrypt.hash(createRestaurantDto.password, 10)
       : await bcrypt.hash('default123', 10);
 
-    const newRestaurant: Partial<Restaurant> = {
-      restaurantName: createRestaurantDto.restaurantName,
-      address: createRestaurantDto.address,
-      contactNumber: createRestaurantDto.contactNumber,
-      email: createRestaurantDto.email,
-      logo: createRestaurantDto.logo || undefined,
-      openingTime: createRestaurantDto.openingTime || '09:00',
-      closingTime: createRestaurantDto.closingTime || '22:00',
-      subscriptionStatus: createRestaurantDto.subscriptionStatus || 'inactive',
-      subscriptionExpiryDate: createRestaurantDto.subscriptionExpiryDate
-        ? new Date(createRestaurantDto.subscriptionExpiryDate)
-        : undefined,
-      password: hashedPassword,
-      enableSteward: false,
-      enableHousekeeping: createRestaurantDto.enableHousekeeping ?? true,
-      enableKds: createRestaurantDto.enableKds ?? true,
-      enableReports: createRestaurantDto.enableReports ?? true,
-    };
+    return this.restaurantRepository.manager.transaction(async (manager) => {
+      const restaurantRepo = manager.getRepository(Restaurant);
+      const adminRepo = manager.getRepository(Admin);
 
-    const saved = await this.restaurantRepository.save(newRestaurant);
-    return saved as Restaurant;
+      const newRestaurant: Partial<Restaurant> = {
+        restaurantName: createRestaurantDto.restaurantName,
+        address: createRestaurantDto.address,
+        contactNumber: createRestaurantDto.contactNumber,
+        email: createRestaurantDto.email,
+        logo: createRestaurantDto.logo || undefined,
+        openingTime: createRestaurantDto.openingTime || '09:00',
+        closingTime: createRestaurantDto.closingTime || '22:00',
+        subscriptionStatus: createRestaurantDto.subscriptionStatus || 'inactive',
+        subscriptionExpiryDate: createRestaurantDto.subscriptionExpiryDate
+          ? new Date(createRestaurantDto.subscriptionExpiryDate)
+          : undefined,
+        password: hashedPassword,
+        enableSteward: false,
+        enableHousekeeping: createRestaurantDto.enableHousekeeping ?? true,
+        enableKds: createRestaurantDto.enableKds ?? true,
+        enableReports: createRestaurantDto.enableReports ?? true,
+        enableAccountant: createRestaurantDto.enableAccountant ?? true,
+        enableCashier: createRestaurantDto.enableCashier ?? true,
+      };
+
+      const savedRestaurant = await restaurantRepo.save(newRestaurant);
+
+      // Create initial admin account for this restaurant
+      const newAdmin = adminRepo.create({
+        email: createRestaurantDto.email,
+        password: hashedPassword,
+        role: 'admin',
+        restaurantId: savedRestaurant.restaurantId,
+      });
+
+      await adminRepo.save(newAdmin);
+
+      return savedRestaurant as Restaurant;
+    });
   }
 
   /**
@@ -164,6 +195,12 @@ export class RestaurantsService {
     }
     if (updateRestaurantDto.enableReports !== undefined) {
       restaurant.enableReports = updateRestaurantDto.enableReports;
+    }
+    if (updateRestaurantDto.enableAccountant !== undefined) {
+      restaurant.enableAccountant = updateRestaurantDto.enableAccountant;
+    }
+    if (updateRestaurantDto.enableCashier !== undefined) {
+      restaurant.enableCashier = updateRestaurantDto.enableCashier;
     }
 
     return this.restaurantRepository.save(restaurant);

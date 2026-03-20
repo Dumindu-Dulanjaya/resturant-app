@@ -126,13 +126,12 @@ function AdminHotelProfile() {
           <input id="swal-input-email" class="swal2-input" placeholder="Email" type="email">
           <label style="display: block; margin-bottom: 5px; margin-top: 15px;">Password</label>
           <input id="swal-input-password" class="swal2-input" placeholder="Password" type="password">
-          <label style="display: block; margin-bottom: 5px; margin-top: 15px;">Role</label>
           <select id="swal-input-role" class="swal2-input" style="width: 100%; box-sizing: border-box;">
-            <option value="kitchen">Kitchen</option>
-            <option value="cashier">Cashier</option>
-            <option value="accountant">Accountant</option>
-            <option value="housekeeper">Housekeeper</option>
-            <option value="steward">Steward</option>
+            ${restaurant.enableSteward ? '<option value="steward">Steward</option>' : ''}
+            ${restaurant.enableKds ? '<option value="kitchen">Kitchen</option>' : ''}
+            ${restaurant.enableCashier ? '<option value="cashier">Cashier</option>' : ''}
+            ${restaurant.enableAccountant ? '<option value="accountant">Accountant</option>' : ''}
+            ${restaurant.enableHousekeeping ? '<option value="housekeeper">Housekeeper</option>' : ''}
           </select>
         </div>
       `,
@@ -230,7 +229,9 @@ function AdminHotelProfile() {
     'QR Menu System',
     restaurant.enableHousekeeping && 'QR Housekeeping System',
     restaurant.enableKds && 'Kitchen Display System',
-    restaurant.enableReports && 'Reports',
+    restaurant.enableReports && 'Reports & Analytics',
+    restaurant.enableAccountant && 'Accountant Management',
+    restaurant.enableCashier && 'Cashier Management',
     'Special Offers',
   ].filter(Boolean);
 

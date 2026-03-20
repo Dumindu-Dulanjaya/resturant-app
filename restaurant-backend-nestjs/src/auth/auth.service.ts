@@ -149,6 +149,13 @@ export class AuthService {
             role: admin.role,
             restaurantId: admin.restaurantId,
             type: 'admin',
+            restaurantSettings: admin.restaurant ? {
+              enableHousekeeping: admin.restaurant.enableHousekeeping,
+              enableKds: admin.restaurant.enableKds,
+              enableReports: admin.restaurant.enableReports,
+              enableAccountant: admin.restaurant.enableAccountant,
+              enableCashier: admin.restaurant.enableCashier,
+            } : null,
           },
         },
       };

@@ -49,11 +49,13 @@ export class SettingsRequestsService {
       enableHousekeeping: restaurant.enableHousekeeping,
       enableKds: restaurant.enableKds,
       enableReports: restaurant.enableReports,
+      enableAccountant: restaurant.enableAccountant,
+      enableCashier: restaurant.enableCashier,
     };
 
     // Extract only the fields that actually changed
     const changedSettings: any = {};
-    const settingsKeys = ['enableHousekeeping', 'enableKds', 'enableReports'];
+    const settingsKeys = ['enableHousekeeping', 'enableKds', 'enableReports', 'enableAccountant', 'enableCashier'];
     
     settingsKeys.forEach(key => {
       if (

@@ -121,6 +121,8 @@ function ManageRestaurants() {
       enableHousekeeping: formData.get('enable_housekeeping') === 'on',
       enableKds: formData.get('enable_kds') === 'on',
       enableReports: formData.get('enable_reports') === 'on',
+      enableAccountant: formData.get('enable_accountant') === 'on',
+      enableCashier: formData.get('enable_cashier') === 'on',
     };
 
     try {
@@ -193,6 +195,18 @@ function ManageRestaurants() {
                       <div className="privilege-item">QR Menu System</div>
                       {restaurant.enableHousekeeping && (
                         <div className="privilege-item">QR Housekeeping System</div>
+                      )}
+                      {restaurant.enableKds && (
+                        <div className="privilege-item">Kitchen Display System</div>
+                      )}
+                      {restaurant.enableReports && (
+                        <div className="privilege-item">Reports & Analytics</div>
+                      )}
+                      {restaurant.enableAccountant && (
+                        <div className="privilege-item">Accountant Management</div>
+                      )}
+                      {restaurant.enableCashier && (
+                        <div className="privilege-item">Cashier Management</div>
                       )}
                       <div className="privilege-item">Special Offers</div>
                     </div>
@@ -302,6 +316,30 @@ function ManageRestaurants() {
                         />
                         <label className="form-check-label" htmlFor="enable_reports">
                           Reports & Analytics
+                        </label>
+                      </div>
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          name="enable_accountant"
+                          id="enable_accountant"
+                          defaultChecked={editModal.restaurant.enableAccountant}
+                        />
+                        <label className="form-check-label" htmlFor="enable_accountant">
+                          Accountant Management
+                        </label>
+                      </div>
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          name="enable_cashier"
+                          id="enable_cashier"
+                          defaultChecked={editModal.restaurant.enableCashier}
+                        />
+                        <label className="form-check-label" htmlFor="enable_cashier">
+                          Cashier Management
                         </label>
                       </div>
                     </div>

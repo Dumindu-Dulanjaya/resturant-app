@@ -24,7 +24,7 @@ export class Admin {
   @Column({ name: 'restaurant_id', nullable: true })
   restaurantId: number;
 
-  @ManyToOne(() => Restaurant, { nullable: true })
+  @ManyToOne(() => Restaurant, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'restaurant_id' })
   restaurant: Restaurant;
 }

@@ -65,13 +65,15 @@ function Sidebar() {
   const isHousekeepingEnabled = restaurantSettings.enableHousekeeping == null || Boolean(restaurantSettings.enableHousekeeping);
   const isKdsEnabled = restaurantSettings.enableKds == null || Boolean(restaurantSettings.enableKds);
   const isReportsEnabled = restaurantSettings.enableReports == null || Boolean(restaurantSettings.enableReports);
+  const isAccountantEnabled = restaurantSettings.enableAccountant == null || Boolean(restaurantSettings.enableAccountant);
+  const isCashierEnabled = restaurantSettings.enableCashier == null || Boolean(restaurantSettings.enableCashier);
 
   // Permission helpers
   const canAccessAdminFeatures = isSuperAdmin || isAdmin;
   const canAccessKitchen = (isSuperAdmin || isAdmin || isKitchen) && isKdsEnabled;
   const canAccessKitchenDashboard = (isKitchen || isSuperAdmin) && isKdsEnabled;
-  const canAccessCashierDashboard = isCashier;
-  const canAccessAccountantDashboard = isAccountant;
+  const canAccessCashierDashboard = isCashier && isCashierEnabled;
+  const canAccessAccountantDashboard = isAccountant && isAccountantEnabled;
   const canAccessHousekeeping = (isSuperAdmin || isAdmin || isHousekeeper) && isHousekeepingEnabled;
   const canAccessReports = (canAccessAdminFeatures || isAccountant) && isReportsEnabled;
   const dashboardPath = isKitchen

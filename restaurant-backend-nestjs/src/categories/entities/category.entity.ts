@@ -31,11 +31,11 @@ export class Category {
   @Column({ name: 'restaurant_id' })
   restaurantId: number;
 
-  @ManyToOne(() => Menu)
+  @ManyToOne(() => Menu, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'menu_id' })
   menu: Menu;
 
-  @ManyToOne(() => Restaurant)
+  @ManyToOne(() => Restaurant, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'restaurant_id' })
   restaurant: Restaurant;
 

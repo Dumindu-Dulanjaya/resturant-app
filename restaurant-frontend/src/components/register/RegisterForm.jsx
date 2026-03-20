@@ -15,6 +15,8 @@ const RegisterForm = () => {
     enable_housekeeping: true,
     enable_kds: true,
     enable_reports: true,
+    enable_accountant: true,
+    enable_cashier: true,
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -69,6 +71,8 @@ const RegisterForm = () => {
       formData.append('enableHousekeeping', String(form.enable_housekeeping));
       formData.append('enableKds', String(form.enable_kds));
       formData.append('enableReports', String(form.enable_reports));
+      formData.append('enableAccountant', String(form.enable_accountant));
+      formData.append('enableCashier', String(form.enable_cashier));
 
       if (form.logo) {
         formData.append('logo', form.logo);
@@ -274,6 +278,28 @@ const RegisterForm = () => {
                 onChange={handleFeatureToggle}
               />
               <span>Reports and Analytics</span>
+            </label>
+
+            <label className="reg-feature-item" htmlFor="enable_accountant">
+              <input
+                type="checkbox"
+                id="enable_accountant"
+                name="enable_accountant"
+                checked={form.enable_accountant}
+                onChange={handleFeatureToggle}
+              />
+              <span>Accountant Management</span>
+            </label>
+
+            <label className="reg-feature-item" htmlFor="enable_cashier">
+              <input
+                type="checkbox"
+                id="enable_cashier"
+                name="enable_cashier"
+                checked={form.enable_cashier}
+                onChange={handleFeatureToggle}
+              />
+              <span>Cashier Management</span>
             </label>
           </div>
         </div>
