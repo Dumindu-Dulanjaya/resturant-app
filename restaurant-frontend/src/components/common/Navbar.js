@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import apiClient from '../../api/apiClient';
 import Swal from 'sweetalert2';
 import './Navbar.css';
 
@@ -141,21 +142,37 @@ function Navbar() {
   };
 
   const toggleSidebar = () => {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('mobile-open');
+    document.body.classList.toggle('sb-sidenav-toggled');
   };
+
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('sb-sidenav-toggled');
+    };
+  }, []);
+
+  const restaurantName = user?.restaurantName || 'Restaurant';
+  const restaurantLogoUrl = user?.restaurantLogo
+    ? (user.restaurantLogo.startsWith('http')
+      ? user.restaurantLogo
+      : `${apiClient.defaults.baseURL.replace('/api', '')}/${user.restaurantLogo.startsWith('/') ? user.restaurantLogo.substring(1) : user.restaurantLogo}`)
+    : null;
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-gradient-primary">
       <div className="container-fluid">
-        <button className="btn btn-link text-white d-lg-none" onClick={toggleSidebar}>
+        <div className="hotel-brand" title={restaurantName}>
+          {restaurantLogoUrl ? (
+            <img src={restaurantLogoUrl} alt={restaurantName} className="hotel-brand-logo" />
+          ) : (
+            <i className="fas fa-hotel hotel-brand-fallback"></i>
+          )}
+          <span className="hotel-brand-name">{restaurantName}</span>
+        </div>
+
+        <button className="btn btn-link text-white sidebar-toggle-btn" onClick={toggleSidebar} type="button">
           <i className="fas fa-bars"></i>
         </button>
-        
-        <span className="navbar-brand mb-0 h1">
-          <i className="fas fa-tachometer-alt me-2"></i>
-          Dashboard
-        </span>
 
         <div className="ms-auto d-flex align-items-center">
           {/* Notifications */}

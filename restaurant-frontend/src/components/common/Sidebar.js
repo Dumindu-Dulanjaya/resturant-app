@@ -62,6 +62,27 @@ function Sidebar() {
     });
   };
 
+  const closeSidebar = () => {
+    document.body.classList.remove('sb-sidenav-toggled');
+  };
+
+  useEffect(() => {
+    const sidebarEl = document.getElementById('sidebar');
+    if (!sidebarEl) return;
+
+    const handleSidebarClick = (event) => {
+      if (!event.target.closest('a')) return;
+      if (window.innerWidth < 992) {
+        closeSidebar();
+      }
+    };
+
+    sidebarEl.addEventListener('click', handleSidebarClick);
+    return () => {
+      sidebarEl.removeEventListener('click', handleSidebarClick);
+    };
+  }, []);
+
   const isActive = (path, exact = true) => {
     if (exact) {
       return location.pathname === path && !location.search ? 'active' : '';
@@ -110,29 +131,8 @@ function Sidebar() {
         : '/dashboard';
 
   return (
+    <>
     <div className="sidebar" id="sidebar">
-      <div className="sidebar-header">
-        <div className="d-flex align-items-center justify-content-center flex-column gap-2">
-          {user?.restaurantLogo ? (
-            <img 
-              src={user.restaurantLogo.startsWith('http') ? user.restaurantLogo : `${apiClient.defaults.baseURL.replace('/api', '')}/${user.restaurantLogo.startsWith('/') ? user.restaurantLogo.substring(1) : user.restaurantLogo}`} 
-              alt={user.restaurantName || 'Logo'} 
-              className="sidebar-logo mb-2" 
-              style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }}
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'inline-block';
-              }}
-            />
-          ) : (
-            <i className="fas fa-utensils fs-4"></i>
-          )}
-          <span className="restaurant-name text-truncate w-100 px-2" title={user?.restaurantName || 'Restaurant System'}>
-            {user?.restaurantName || 'Restaurant System'}
-          </span>
-        </div>
-      </div>
-      
       <ul className="sidebar-menu">
         {!isCashier && !isAccountant && (
           <li className={isActive(dashboardPath)}>
@@ -419,6 +419,13 @@ function Sidebar() {
         </li>
       </ul>
     </div>
+    <button
+      type="button"
+      className="sidebar-backdrop"
+      aria-label="Close sidebar"
+      onClick={closeSidebar}
+    />
+    </>
   );
 }
 

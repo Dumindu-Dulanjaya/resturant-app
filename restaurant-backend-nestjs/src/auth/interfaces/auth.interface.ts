@@ -16,6 +16,8 @@ export interface AuthResponse {
       email: string;
       role: string;
       restaurantId?: number;
+      restaurantName?: string;
+      restaurantLogo?: string;
       type: string;
       restaurantSettings?: {
         enableHousekeeping: boolean;
