@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import apiClient from '../api/apiClient';
+import apiClient, { BASE_URL } from '../api/apiClient';
 import Swal from 'sweetalert2';
 import SuperAdminDashboard from './SuperAdminDashboard';
 import './RestaurantProfile.css';
@@ -185,7 +185,7 @@ function RestaurantProfile() {
   }
 
   const logoUrl = restaurant.logo
-    ? `http://localhost:3000${restaurant.logo.startsWith('/') ? '' : '/'}${restaurant.logo}`
+    ? `${BASE_URL}${restaurant.logo.startsWith('/') ? '' : '/'}${restaurant.logo}`
     : null;
 
   const expiryDate = restaurant.subscriptionExpiryDate

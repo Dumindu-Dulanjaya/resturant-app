@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import apiClient from '../../api/apiClient';
+import apiClient, { BASE_URL } from '../../api/apiClient';
 import Swal from 'sweetalert2';
 import './Navbar.css';
 
@@ -42,7 +42,7 @@ function Navbar() {
 
     const unsubscribeNewOrder = subscribe('order:new', (order) => {
       setNotificationCount(prev => prev + 1);
-      
+
       // Add to notification history
       const newNotif = {
         id: Date.now(),
@@ -54,13 +54,13 @@ function Navbar() {
         icon: 'shopping-cart',
         color: 'success'
       };
-      
+
       setNotifications(prev => [newNotif, ...prev].slice(0, 10)); // Keep last 10
     });
 
     const unsubscribeStatusUpdate = subscribe('order:status-update', (order) => {
       setNotificationCount(prev => prev + 1);
-      
+
       // Add to notification history
       const statusColors = {
         'READY': 'warning',
@@ -68,7 +68,7 @@ function Navbar() {
         'COMPLETED': 'success',
         'CANCELLED': 'danger'
       };
-      
+
       const newNotif = {
         id: Date.now(),
         type: 'status',
@@ -78,7 +78,7 @@ function Navbar() {
         icon: 'info-circle',
         color: statusColors[order.status] || 'info'
       };
-      
+
       setNotifications(prev => [newNotif, ...prev].slice(0, 10)); // Keep last 10
     });
 
@@ -155,7 +155,7 @@ function Navbar() {
   const restaurantLogoUrl = user?.restaurantLogo
     ? (user.restaurantLogo.startsWith('http')
       ? user.restaurantLogo
-      : `${apiClient.defaults.baseURL.replace('/api', '')}/${user.restaurantLogo.startsWith('/') ? user.restaurantLogo.substring(1) : user.restaurantLogo}`)
+      : `${BASE_URL}/${user.restaurantLogo.startsWith('/') ? user.restaurantLogo.substring(1) : user.restaurantLogo}`)
     : null;
 
   return (
@@ -177,8 +177,8 @@ function Navbar() {
         <div className="ms-auto d-flex align-items-center">
           {/* Notifications */}
           <div className="dropdown me-3 position-relative">
-            <button 
-              className="btn btn-link text-white position-relative" 
+            <button
+              className="btn btn-link text-white position-relative"
               type="button"
               onClick={toggleNotifications}
               title="Notifications"
@@ -194,9 +194,9 @@ function Navbar() {
 
             {/* Notification Dropdown */}
             {showNotifications && (
-              <div className="dropdown-menu dropdown-menu-end show" style={{ 
-                width: '350px', 
-                maxHeight: '400px', 
+              <div className="dropdown-menu dropdown-menu-end show" style={{
+                width: '350px',
+                maxHeight: '400px',
                 overflowY: 'auto',
                 position: 'absolute',
                 right: 0,
@@ -206,7 +206,7 @@ function Navbar() {
                 <div className="dropdown-header d-flex justify-content-between align-items-center">
                   <span><i className="fas fa-bell me-2"></i>Notifications</span>
                   {notifications.length > 0 && (
-                    <button 
+                    <button
                       className="btn btn-sm btn-link text-danger p-0"
                       onClick={clearAllNotifications}
                       style={{ fontSize: '0.8rem' }}
@@ -216,7 +216,7 @@ function Navbar() {
                   )}
                 </div>
                 <div className="dropdown-divider"></div>
-                
+
                 {notifications.length === 0 ? (
                   <div className="text-center py-4 text-muted">
                     <i className="fas fa-bell-slash fa-2x mb-2"></i>
@@ -266,7 +266,7 @@ function Navbar() {
                 <div className="user-role">{getRoleLabel(user?.role)}</div>
               </div>
             </button>
-            
+
             {showDropdown && (
               <ul className="dropdown-menu dropdown-menu-end show">
                 <li>

@@ -54,6 +54,7 @@ const resolveApiBaseUrl = () => {
 };
 
 const API_BASE_URL = resolveApiBaseUrl();
+export const BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -98,13 +99,13 @@ apiClient.interceptors.response.use(
 export const authAPI = {
   login: (email, password) =>
     apiClient.post('/auth/login', { email, password }),
-  
+
   getProfile: () =>
     apiClient.get('/auth/profile'),
-  
+
   updateProfile: (data) =>
     apiClient.patch('/auth/profile', data),
-  
+
   changePassword: (data) =>
     apiClient.patch('/auth/change-password', data),
 };

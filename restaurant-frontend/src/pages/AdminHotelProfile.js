@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../api/apiClient';
+import apiClient, { BASE_URL } from '../api/apiClient';
 import Swal from 'sweetalert2';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
@@ -190,7 +190,7 @@ function AdminHotelProfile() {
   }
 
   const logoUrl = restaurant.logo
-    ? `http://localhost:3000${restaurant.logo.startsWith('/') ? '' : '/'}${restaurant.logo}`
+    ? `${BASE_URL}${restaurant.logo.startsWith('/') ? '' : '/'}${restaurant.logo}`
     : null;
 
   const expiryDate = restaurant.subscriptionExpiryDate
@@ -257,181 +257,181 @@ function AdminHotelProfile() {
         </div>
         <div className="content">
           <div className="rp-shell">
-          {isTrialAccess && (
-            <section className="rp-trial-banner">
-              <div className="rp-trial-copy">
-                <h2 className="rp-trial-title">
-                  <i className="fas fa-star"></i>
-                  30 days Free Trial
-                </h2>
-                <p className="rp-trial-text">
-                  You are currently using our free trial. Enjoy all features for {daysRemaining} more day{daysRemaining === 1 ? '' : 's'}!
-                </p>
-                <div className="rp-trial-countdown">
-                  <i className="fas fa-clock"></i>
-                  {daysRemaining} days remaining
-                </div>
-              </div>
-              <div className="rp-trial-action">
-                <p>Upgrade now to continue using the service without interruption after the trial ends.</p>
-                <button
-                  type="button"
-                  className="rp-upgrade-btn"
-                  onClick={() => navigate('/pricing')}
-                >
-                  View Pricing
-                </button>
-              </div>
-            </section>
-          )}
-
-          <div className="rp-layout">
-            <aside className="rp-left-card">
-              <div className="rp-avatar-wrap">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="logo" className="rp-avatar" />
-                ) : (
-                  <div className="rp-avatar-placeholder">
-                    <i className="fas fa-hotel"></i>
-                  </div>
-                )}
-              </div>
-              <div className="rp-identity">
-                <h1 className="rp-name">{restaurant.restaurantName}</h1>
-                <p className="rp-address">{restaurant.address}</p>
-              </div>
-
-              <div className="rp-privilege-card">
-                <h5 className="rp-section-title">Privileges</h5>
-                <div className="rp-privilege-list">
-                  {privileges.map((privilege) => (
-                    <div key={privilege} className="rp-privilege-item">{privilege}</div>
-                  ))}
-                </div>
-              </div>
-            </aside>
-
-            <section className="rp-right-card">
-              <div className="rp-detail-list">
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Restaurant Name</div>
-                  <div className="rp-detail-value">{restaurant.restaurantName}</div>
-                </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Email</div>
-                  <div className="rp-detail-value">{restaurant.email}</div>
-                </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Contact Number</div>
-                  <div className="rp-detail-value">{restaurant.contactNumber}</div>
-                </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Country</div>
-                  <div className="rp-detail-value">{countryName}</div>
-                </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Currency</div>
-                  <div className="rp-detail-value">{currencyName}</div>
-                </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Address</div>
-                  <div className="rp-detail-value">{restaurant.address}</div>
-                </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Subscription Status</div>
-                  <div className="rp-detail-value">
-                    <span className={`rp-status-badge rp-status-${subscriptionVariant}`}>
-                      {subscriptionLabel}
-                    </span>
+            {isTrialAccess && (
+              <section className="rp-trial-banner">
+                <div className="rp-trial-copy">
+                  <h2 className="rp-trial-title">
+                    <i className="fas fa-star"></i>
+                    30 days Free Trial
+                  </h2>
+                  <p className="rp-trial-text">
+                    You are currently using our free trial. Enjoy all features for {daysRemaining} more day{daysRemaining === 1 ? '' : 's'}!
+                  </p>
+                  <div className="rp-trial-countdown">
+                    <i className="fas fa-clock"></i>
+                    {daysRemaining} days remaining
                   </div>
                 </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Subscription Expiry</div>
-                  <div className="rp-detail-value">
-                    {expiryDate ? expiryDate.toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    }) : 'Not set'}
-                  </div>
+                <div className="rp-trial-action">
+                  <p>Upgrade now to continue using the service without interruption after the trial ends.</p>
+                  <button
+                    type="button"
+                    className="rp-upgrade-btn"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    View Pricing
+                  </button>
                 </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Package</div>
-                  <div className="rp-detail-value">{packageName}</div>
-                </div>
-                <div className="rp-detail-row rp-detail-row-action">
-                  <div className="rp-detail-label"></div>
-                  <div className="rp-detail-value">
-                    <button
-                      type="button"
-                      className="rp-primary-btn"
-                      style={{ background: '#ffc107', color: '#000' }}
-                      onClick={() => navigate('/pricing')}
-                    >
-                      Upgrade Package
-                    </button>
-                  </div>
-                </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Opening Time</div>
-                  <div className="rp-detail-value">{restaurant.openingTime}</div>
-                </div>
-                <div className="rp-detail-row">
-                  <div className="rp-detail-label">Closing Time</div>
-                  <div className="rp-detail-value">{restaurant.closingTime}</div>
-                </div>
-              </div>
+              </section>
+            )}
 
-              <div className="rp-admin-section">
-                <div className="rp-admins-header">
-                  <h5 className="rp-section-title">Admins</h5>
-                  <div className="rp-admin-buttons">
-                    <button
-                      type="button"
-                      className="rp-action-btn rp-action-btn-primary"
-                      onClick={handleAddRole}
-                    >
-                      Add Role
-                    </button>
+            <div className="rp-layout">
+              <aside className="rp-left-card">
+                <div className="rp-avatar-wrap">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="logo" className="rp-avatar" />
+                  ) : (
+                    <div className="rp-avatar-placeholder">
+                      <i className="fas fa-hotel"></i>
+                    </div>
+                  )}
+                </div>
+                <div className="rp-identity">
+                  <h1 className="rp-name">{restaurant.restaurantName}</h1>
+                  <p className="rp-address">{restaurant.address}</p>
+                </div>
+
+                <div className="rp-privilege-card">
+                  <h5 className="rp-section-title">Privileges</h5>
+                  <div className="rp-privilege-list">
+                    {privileges.map((privilege) => (
+                      <div key={privilege} className="rp-privilege-item">{privilege}</div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+
+              <section className="rp-right-card">
+                <div className="rp-detail-list">
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Restaurant Name</div>
+                    <div className="rp-detail-value">{restaurant.restaurantName}</div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Email</div>
+                    <div className="rp-detail-value">{restaurant.email}</div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Contact Number</div>
+                    <div className="rp-detail-value">{restaurant.contactNumber}</div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Country</div>
+                    <div className="rp-detail-value">{countryName}</div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Currency</div>
+                    <div className="rp-detail-value">{currencyName}</div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Address</div>
+                    <div className="rp-detail-value">{restaurant.address}</div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Subscription Status</div>
+                    <div className="rp-detail-value">
+                      <span className={`rp-status-badge rp-status-${subscriptionVariant}`}>
+                        {subscriptionLabel}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Subscription Expiry</div>
+                    <div className="rp-detail-value">
+                      {expiryDate ? expiryDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      }) : 'Not set'}
+                    </div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Package</div>
+                    <div className="rp-detail-value">{packageName}</div>
+                  </div>
+                  <div className="rp-detail-row rp-detail-row-action">
+                    <div className="rp-detail-label"></div>
+                    <div className="rp-detail-value">
+                      <button
+                        type="button"
+                        className="rp-primary-btn"
+                        style={{ background: '#ffc107', color: '#000' }}
+                        onClick={() => navigate('/pricing')}
+                      >
+                        Upgrade Package
+                      </button>
+                    </div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Opening Time</div>
+                    <div className="rp-detail-value">{restaurant.openingTime}</div>
+                  </div>
+                  <div className="rp-detail-row">
+                    <div className="rp-detail-label">Closing Time</div>
+                    <div className="rp-detail-value">{restaurant.closingTime}</div>
                   </div>
                 </div>
 
-                {admins.length === 0 ? (
-                  <p className="rp-empty-state">No admins found for this restaurant.</p>
-                ) : (
-                  <table className="rp-admins-table">
-                    <thead>
-                      <tr>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {admins.map((admin) => (
-                        <tr key={admin.adminId}>
-                          <td>{admin.email}</td>
-                          <td>{formatRole(admin.role)}</td>
-                          <td>
-                            <button
-                              className="rp-btn-delete"
-                              onClick={() => handleDeleteAdmin(admin.adminId)}
-                            >
-                              Delete
-                            </button>
-                          </td>
+                <div className="rp-admin-section">
+                  <div className="rp-admins-header">
+                    <h5 className="rp-section-title">Admins</h5>
+                    <div className="rp-admin-buttons">
+                      <button
+                        type="button"
+                        className="rp-action-btn rp-action-btn-primary"
+                        onClick={handleAddRole}
+                      >
+                        Add Role
+                      </button>
+                    </div>
+                  </div>
+
+                  {admins.length === 0 ? (
+                    <p className="rp-empty-state">No admins found for this restaurant.</p>
+                  ) : (
+                    <table className="rp-admins-table">
+                      <thead>
+                        <tr>
+                          <th>Email</th>
+                          <th>Role</th>
+                          <th>Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </section>
+                      </thead>
+                      <tbody>
+                        {admins.map((admin) => (
+                          <tr key={admin.adminId}>
+                            <td>{admin.email}</td>
+                            <td>{formatRole(admin.role)}</td>
+                            <td>
+                              <button
+                                className="rp-btn-delete"
+                                onClick={() => handleDeleteAdmin(admin.adminId)}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   );
 }
 
