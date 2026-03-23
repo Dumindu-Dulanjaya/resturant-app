@@ -632,54 +632,51 @@ const CustomerQROrder = () => {
       {/* Cart Drawer */}
       <div className={`cart-drawer ${showCart ? 'open' : ''}`}>
         <div className="cart-header">
-          <h4><i className="fas fa-shopping-cart me-2"></i> Your Order</h4>
-          <button className="btn-close" onClick={() => setShowCart(false)}></button>
+          <h4><i className="fas fa-shopping-cart me-2" style={{marginRight: '8px'}}></i> Your Order</h4>
+          <button className="btn-close" onClick={() => setShowCart(false)} style={{fontSize: '1.5rem', opacity: 0.7}}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
 
         <div className="cart-body">
           {cart.length === 0 ? (
-            <div className="empty-cart">
-              <i className="fas fa-shopping-basket fa-3x mb-3"></i>
+            <div className="empty-cart-modern">
+              <i className="fas fa-shopping-basket"></i>
               <p>Your cart is empty</p>
             </div>
           ) : (
             <>
               <div className="cart-items">
                 {cart.map(item => (
-                  <div key={item.foodItemId} className="cart-item">
-                    <div className="cart-item-info">
-                      <h6>{item.name}</h6>
-                      <p className="cart-item-price">${item.price.toFixed(2)} each</p>
+                  <div key={item.foodItemId} className="cart-item-modern">
+                    <div className="cart-item-info" style={{ flex: 1, paddingRight: '10px' }}>
+                      <h5>{item.name}</h5>
+                      <p>Rs. {parseFloat(item.price).toFixed(0)}</p>
                       <input
                         type="text"
                         className="form-control form-control-sm mt-2"
                         placeholder="Special instructions..."
                         value={item.notes}
                         onChange={(e) => updateCartItemNotes(item.foodItemId, e.target.value)}
+                        style={{ borderRadius: '8px', fontSize: '0.85rem' }}
                       />
                     </div>
-                    <div className="cart-item-controls">
-                      <div className="qty-controls">
-                        <button
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => updateCartItemQty(item.foodItemId, -1)}
-                        >
-                          <i className="fas fa-minus"></i>
-                        </button>
-                        <span className="qty-display">{item.qty}</span>
-                        <button
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => updateCartItemQty(item.foodItemId, 1)}
-                        >
-                          <i className="fas fa-plus"></i>
-                        </button>
-                      </div>
+                    <div className="cart-item-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                       <button
-                        className="btn btn-sm btn-outline-danger mt-2"
+                        className="remove-btn"
                         onClick={() => removeFromCart(item.foodItemId)}
                       >
                         <i className="fas fa-trash"></i>
                       </button>
+                      <div className="qty-controls">
+                        <button onClick={() => updateCartItemQty(item.foodItemId, -1)}>
+                          <i className="fas fa-minus"></i>
+                        </button>
+                        <span>{item.qty}</span>
+                        <button onClick={() => updateCartItemQty(item.foodItemId, 1)}>
+                          <i className="fas fa-plus"></i>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -730,12 +727,13 @@ const CustomerQROrder = () => {
                 </div>
 
                 <div className="cart-total">
-                  <h5>Total: <span>${calculateTotal()}</span></h5>
+                  <h5>Total: <span>Rs. {parseFloat(calculateTotal()).toFixed(0)}</span></h5>
                 </div>
 
                 <button
-                  className="btn btn-success btn-lg w-100"
+                  className="btn btn-lg w-100 text-white"
                   onClick={placeOrder}
+                  style={{ borderRadius: '8px', background: 'var(--primary-color)', border: 'none', fontWeight: '700', padding: '14px', fontSize: '1.05rem', boxShadow: '0 4px 12px rgba(38, 102, 104, 0.2)' }}
                 >
                   <i className="fas fa-check me-2"></i> Place Order
                 </button>
