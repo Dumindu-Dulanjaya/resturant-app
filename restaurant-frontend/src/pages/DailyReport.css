@@ -79,7 +79,7 @@
 }
 
 .filter-row .form-control:focus {
-  border-color: #667eea;
+  border-color: #266668;
   outline: none;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
@@ -124,7 +124,7 @@
 }
 
 .orders-card .card-icon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
 }
 
@@ -177,7 +177,7 @@
 }
 
 .report-table thead {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
 }
 
 .report-table thead th {

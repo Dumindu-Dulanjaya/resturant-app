@@ -1,7 +1,7 @@
 /* Customer Order Page */
 .customer-order-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   padding-bottom: 20px;
 }
 
@@ -75,15 +75,15 @@
 }
 
 .category-item:hover {
-  border-color: #667eea;
+  border-color: #266668;
   background: #f8f9ff;
   transform: translateX(5px);
 }
 
 .category-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: #fff;
-  border-color: #667eea;
+  border-color: #266668;
   box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
 }
 
@@ -154,7 +154,7 @@
 .food-item-price {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #667eea;
+  color: #266668;
 }
 
 /* Cart Drawer */
@@ -182,7 +182,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: #fff;
 }
 
@@ -229,7 +229,7 @@
 
 .cart-item-price {
   font-size: 0.9rem;
-  color: #667eea;
+  color: #266668;
   font-weight: 600;
   margin: 0;
 }
@@ -300,7 +300,7 @@
 }
 
 .cart-total span {
-  color: #667eea;
+  color: #266668;
   font-size: 1.5rem;
 }
 
@@ -408,7 +408,7 @@
 }
 
 .order-details-card h3 {
-  color: #667eea;
+  color: #266668;
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 1px;

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import EditMenuModal from '../components/menus/EditMenuModal';
+import AddMenuModal from '../components/menus/AddMenuModal';
 import Swal from 'sweetalert2';
 import apiClient from '../api/apiClient';
 import './Menus.css';
@@ -13,11 +14,19 @@ function Menus() {
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState(null);
 
   useEffect(() => {
     fetchMenus();
   }, []);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    if (queryParams.get('add') === 'true') {
+      setShowAddModal(true);
+    }
+  }, [location.search]);
 
   const fetchMenus = async () => {
     try {
@@ -99,6 +108,21 @@ function Menus() {
           onSuccess={handleEditSuccess}
           menu={selectedMenu}
         />
+        <AddMenuModal
+          show={showAddModal}
+          onHide={() => {
+            setShowAddModal(false);
+            if (location.search.includes('add=true')) {
+              navigate('/menus/all', { replace: true });
+            }
+          }}
+          onSuccess={() => {
+            fetchMenus();
+            if (location.search.includes('add=true')) {
+              navigate('/menus/all', { replace: true });
+            }
+          }}
+        />
         <div className="dashboard-content">
           <div className="container-fluid">
             {/* Page Header */}
@@ -109,7 +133,7 @@ function Menus() {
                     <i className="fas fa-utensils me-2"></i>
                     All Menus
                   </h2>
-                  <button className="btn btn-primary" onClick={() => navigate('/menus/add')}>
+                  <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
                     <i className="fas fa-plus me-2"></i>
                     Add New Menu
                   </button>
@@ -135,13 +159,17 @@ function Menus() {
                   <div className="col-lg-4 col-md-6" key={menu.menuId}>
                     <div className="menu-card card">
                       <div className="menu-card-image">
-                        <img
-                          src={menu.imageUrl}
-                          alt={menu.menuName}
-                          onError={(e) => {
-                            e.target.src = '/assets/imgs/special-offer.png';
-                          }}
-                        />
+                        {menu.imageUrl ? (
+                          <img
+                            src={menu.imageUrl}
+                            alt={menu.menuName}
+                          />
+                        ) : (
+                          <div className="menu-image-placeholder d-flex flex-column align-items-center justify-content-center h-100 bg-light text-muted">
+                            <i className="fas fa-utensils mb-2" style={{ fontSize: '2rem' }}></i>
+                            <span>No Image</span>
+                          </div>
+                        )}
                       </div>
                       <div className="card-body">
                         <button

@@ -4,7 +4,7 @@
 
 /* -- CTA Banner -- */
 .footer-cta-banner {
-  background: #2D7C7E;
+  background: #266668;
   padding: 55px 0;
   position: relative;
   overflow: hidden;
@@ -98,7 +98,7 @@
   gap: 7px;
   padding: 13px 26px;
   background: #fff;
-  color: #2D7C7E;
+  color: #266668;
   font-size: 15px;
   font-weight: 700;
   border-radius: 50px;
@@ -188,7 +188,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #2D7C7E;
+  color: #266668;
   font-size: 13px;
   text-decoration: none;
   transition: all 0.3s ease;
@@ -196,7 +196,7 @@
 }
 
 .footer-social a:hover {
-  background: #2D7C7E;
+  background: #266668;
   color: #fff;
   transform: translateY(-3px);
   box-shadow: 0 6px 16px rgba(45,124,126,0.3);
@@ -238,7 +238,7 @@
 }
 
 .footer-links li a:hover {
-  color: #2D7C7E;
+  color: #266668;
   transform: translateX(3px);
 }
 
@@ -266,7 +266,7 @@
 }
 
 .footer-contact-list li i {
-  color: #2D7C7E;
+  color: #266668;
   margin-top: 3px;
   flex-shrink: 0;
   width: 15px;
@@ -292,7 +292,7 @@
 }
 
 .footer-contact-list li a:hover {
-  color: #2D7C7E;
+  color: #266668;
 }
 
 /* Copyright */
@@ -310,7 +310,7 @@
 }
 
 .footer-copyright a {
-  color: #2D7C7E;
+  color: #266668;
   font-weight: 600;
   text-decoration: none;
   transition: color 0.2s ease;

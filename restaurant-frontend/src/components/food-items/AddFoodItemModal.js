@@ -71,7 +71,7 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    
+
     if (name.startsWith('imageFile')) {
       const index = name.charAt(name.length - 1);
       const file = files[0];
@@ -84,7 +84,7 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
           Swal.fire({ icon: 'error', title: 'Error', text: 'Image size must be less than 5MB' });
           return;
         }
-        
+
         setSelectedFiles(prev => ({ ...prev, [`image${index}`]: file }));
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -136,24 +136,20 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
 
     try {
       const imageUrls = { ...formData };
-      
+
       // Upload images one by one
       for (let i = 1; i <= 4; i++) {
         const file = selectedFiles[`image${i}`];
         if (file) {
           const uploadFormData = new FormData();
           uploadFormData.append('image', file);
-          
-          try {
-            const uploadRes = await apiClient.post('/food-items/upload-image', uploadFormData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            if (uploadRes.data && uploadRes.data.imageUrl) {
-              imageUrls[`imageUrl${i}`] = uploadRes.data.imageUrl;
-            }
-          } catch (uploadError) {
-            console.error(`Error uploading image ${i}:`, uploadError);
-            // Continue with other images if one fails
+
+          const uploadRes = await apiClient.post('/food-items/upload-image', uploadFormData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+
+          if (uploadRes.data && uploadRes.data.imageUrl) {
+            imageUrls[`imageUrl${i}`] = uploadRes.data.imageUrl;
           }
         }
       }
@@ -347,9 +343,9 @@ function AddFoodItemModal({ show, onHide, onSuccess }) {
                   {previews[`image${i}`] && (
                     <div className="mt-2 text-center">
                       <img
-                        src={previews[`image${i}`]}
+                        src={previews[`image${i}`].startsWith('data:') ? previews[`image${i}`] : (previews[`image${i}`].startsWith('http') ? previews[`image${i}`] : `${previews[`image${i}`]}`)}
                         alt={`Preview ${i}`}
-                        style={{ height: '80px', objectFit: 'cover' }}
+                        style={{ height: '80px', width: '100%', objectFit: 'cover' }}
                         className="img-thumbnail"
                       />
                       <button

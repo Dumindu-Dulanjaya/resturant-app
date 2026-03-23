@@ -14,7 +14,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -28,7 +28,7 @@
 .back-button-modern:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  background: linear-gradient(135deg, #1a4648 0%, #266668 100%);
 }
 
 .back-button-modern:active {
@@ -251,7 +251,7 @@ textarea.form-control {
 }
 
 .image-placeholder-upload:hover {
-  border-color: #667eea;
+  border-color: #266668;
   background: #f0f2ff;
 }
 

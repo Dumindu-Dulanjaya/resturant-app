@@ -55,6 +55,14 @@
   background-color: #a71d2a !important;
 }
 
+.no-image-placeholder {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-weight: 500;
+  height: 180px;
+}
+
 .carousel-container {
   position: relative;
   width: 100%;
@@ -103,4 +111,61 @@
 .page-header {
   border-bottom: 2px solid #eee;
   padding-bottom: 1rem;
+}
+
+/* Category Filter Layout */
+.filter-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.category-filter-bar {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 10px;
+}
+
+.category-filter-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.category-filter-bar::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+.subcategory-filter-bar {
+  opacity: 0;
+  animation: slideDown 0.3s forwards;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.food-item-card .badge {
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 0.4em 0.8em;
+  border-radius: 4px;
+}
+
+.bg-primary-subtle {
+  background-color: #e7f1ff !important;
 }

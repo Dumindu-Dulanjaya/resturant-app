@@ -121,11 +121,26 @@ export class FoodItemsService {
     const apiUrl = process.env.API_URL || 'http://localhost:3000';
     const fields = ['imageUrl1', 'imageUrl2', 'imageUrl3', 'imageUrl4'] as const;
 
+    // Resolve food item images
     fields.forEach((field) => {
       if (item[field] && !item[field].startsWith('http')) {
         item[field] = `${apiUrl}${item[field]}`;
       }
     });
+
+    // Resolve category image if exists
+    if (item.category) {
+      if (item.category.imageUrl && !item.category.imageUrl.startsWith('http')) {
+        item.category.imageUrl = `${apiUrl}${item.category.imageUrl}`;
+      }
+
+      // Resolve menu image if exists
+      if (item.category.menu) {
+        if (item.category.menu.imageUrl && !item.category.menu.imageUrl.startsWith('http')) {
+          item.category.menu.imageUrl = `${apiUrl}${item.category.menu.imageUrl}`;
+        }
+      }
+    }
 
     return item;
   }

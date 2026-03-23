@@ -19,7 +19,7 @@
 }
 
 .welcome-card {
-  background: linear-gradient(135deg, #2D7C7E, #235D5F);
+  background: linear-gradient(135deg, #266668, #1a4648);
   padding: 2rem;
   border-radius: 12px;
   color: white;
@@ -63,7 +63,7 @@
 }
 
 .stats-card.gradient-blue::before {
-  background: linear-gradient(135deg, #2D7C7E, #235D5F);
+  background: linear-gradient(135deg, #266668, #1a4648);
 }
 
 .stats-card.gradient-green::before {
@@ -91,7 +91,7 @@
 }
 
 .gradient-blue .stats-icon {
-  background: linear-gradient(135deg, #2D7C7E, #235D5F);
+  background: linear-gradient(135deg, #266668, #1a4648);
 }
 
 .gradient-green .stats-icon {
@@ -104,7 +104,7 @@
 
 .gradient-purple .stats-icon {
   background: linear-gradient(135deg, #a8edea, #fed6e3);
-  color: #235D5F;
+  color: #1a4648;
 }
 
 .stats-content h3 {

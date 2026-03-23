@@ -8,7 +8,7 @@
 
 /* Header Card */
 .page-header-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
   padding: 2rem;
   border-radius: 12px;
@@ -146,7 +146,7 @@
 }
 
 .qr-card-actions .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   border: none;
 }
 
@@ -195,7 +195,7 @@
 }
 
 .empty-state .btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   border: none;
   padding: 0.75rem 2rem;
   font-weight: 600;

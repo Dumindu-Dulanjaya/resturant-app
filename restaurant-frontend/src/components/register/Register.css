@@ -33,8 +33,8 @@
 .reg-badge {
   display: inline-block;
   padding: 5px 20px;
-  border: 1.5px solid #2D7C7E;
-  color: #2D7C7E;
+  border: 1.5px solid #266668;
+  color: #266668;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -117,7 +117,7 @@
 }
 
 .reg-field input:focus {
-  border-bottom-color: #2D7C7E;
+  border-bottom-color: #266668;
 }
 
 /* Password wrap (position the eye toggle) */
@@ -140,7 +140,7 @@
 }
 
 .reg-eye-toggle:hover {
-  color: #2D7C7E;
+  color: #266668;
 }
 
 /* Logo upload helper text */
@@ -153,7 +153,7 @@
 }
 
 .reg-upload-label a {
-  color: #2D7C7E;
+  color: #266668;
   text-decoration: none;
   font-weight: 600;
 }
@@ -201,7 +201,7 @@
 }
 
 .reg-feature-item input {
-  accent-color: #2D7C7E;
+  accent-color: #266668;
 }
 
 /* File input */
@@ -238,7 +238,7 @@
   display: inline-block;
   margin-top: 28px;
   padding: 13px 38px;
-  background: #2D7C7E;
+  background: #266668;
   color: #fff;
   font-size: 15px;
   font-weight: 700;
@@ -268,7 +268,7 @@
 }
 
 .reg-login-text a {
-  color: #2D7C7E;
+  color: #266668;
   font-weight: 600;
   text-decoration: none;
 }

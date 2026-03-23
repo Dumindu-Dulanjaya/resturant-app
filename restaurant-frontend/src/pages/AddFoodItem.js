@@ -22,7 +22,7 @@ function AddFoodItem() {
   const [categories, setCategories] = useState([]);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  
+
   // File states
   const [imageFiles, setImageFiles] = useState({
     image1: null,
@@ -55,8 +55,8 @@ function AddFoodItem() {
     const file = e.target.files[0];
     if (file) {
       if (key.startsWith('image')) {
-        if (file.size > 3 * 1024 * 1024) {
-          Swal.fire('Error', 'Image size must be less than 3MB', 'error');
+        if (file.size > 5 * 1024 * 1024) {
+          Swal.fire('Error', 'Image size must be less than 5MB', 'error');
           e.target.value = '';
           return;
         }
@@ -79,7 +79,7 @@ function AddFoodItem() {
     if (!formData.categoryId) newErrors.categoryId = 'Please select a category';
     if (formData.description.length > 350) newErrors.description = 'Limit exceeded';
     if (formData.moreDetails.length > 400) newErrors.moreDetails = 'Limit exceeded';
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -147,12 +147,12 @@ function AddFoodItem() {
             <button className="btn btn-secondary btn-sm mb-3" onClick={() => navigate('/menus/food-items')}>Back</button>
             <div className="add-food-container bg-white p-4 rounded shadow-sm">
               <h1 className="add-menu-title mb-4">Add Food Item</h1>
-              
+
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <label className="form-label">Item Name</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className={`form-control ${errors.itemName ? 'is-invalid' : ''}`}
                     name="itemName"
                     value={formData.itemName}
@@ -162,7 +162,7 @@ function AddFoodItem() {
 
                 <div className="mb-4">
                   <label className="form-label">Description</label>
-                  <textarea 
+                  <textarea
                     className="form-control"
                     name="description"
                     rows="3"
@@ -178,7 +178,7 @@ function AddFoodItem() {
 
                 <div className="mb-4">
                   <label className="form-label">More Details</label>
-                  <textarea 
+                  <textarea
                     className="form-control"
                     name="moreDetails"
                     rows="3"
@@ -199,8 +199,8 @@ function AddFoodItem() {
                   </div>
                   <div className="col-md-6">
                     <label className="form-label">Price</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       className={`form-control ${errors.price ? 'is-invalid' : ''}`}
                       name="price"
                       value={formData.price}
@@ -211,7 +211,7 @@ function AddFoodItem() {
 
                 <div className="mb-4">
                   <label className="form-label">Category</label>
-                  <select 
+                  <select
                     className={`form-select ${errors.categoryId ? 'is-invalid' : ''}`}
                     name="categoryId"
                     value={formData.categoryId}
@@ -227,7 +227,7 @@ function AddFoodItem() {
                     <div className="col-md-6" key={num}>
                       <label className="form-label">Image {num}</label>
                       <input type="file" className="form-control" onChange={(e) => handleFileChange(e, `image${num}`)} accept="image/*" />
-                      <small className="text-muted" style={{ fontSize: '0.75rem' }}>Optional (JPG, JPEG, PNG, GIF - Max 3MB)</small>
+                      <small className="text-muted" style={{ fontSize: '0.75rem' }}>Optional (JPG, JPEG, PNG, GIF - Max 5MB)</small>
                     </div>
                   ))}
                 </div>
@@ -240,11 +240,11 @@ function AddFoodItem() {
                   </div>
                   <div className="col-md-6">
                     <label className="form-label">Blog Link</label>
-                    <input 
-                      type="url" 
-                      className="form-control" 
-                      name="blogLink" 
-                      value={formData.blogLink} 
+                    <input
+                      type="url"
+                      className="form-control"
+                      name="blogLink"
+                      value={formData.blogLink}
                       onChange={handleChange}
                       placeholder="Optional (must be a valid URL)"
                     />
@@ -258,7 +258,7 @@ function AddFoodItem() {
                 </div>
               </form>
             </div>
-            
+
             <footer className="mt-5 text-muted" style={{ fontSize: '0.9rem' }}>
               Copyright © Knoweb PVT LTD {new Date().getFullYear()}
             </footer>

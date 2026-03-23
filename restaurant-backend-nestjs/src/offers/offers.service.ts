@@ -14,7 +14,7 @@ export class OffersService {
   constructor(
     @InjectRepository(Offer)
     private offersRepository: Repository<Offer>,
-  ) {}
+  ) { }
 
   /**
    * Create a new offer
@@ -43,17 +43,19 @@ export class OffersService {
       restaurantId,
     });
 
-    return await this.offersRepository.save(offer);
+    const savedOffer = await this.offersRepository.save(offer);
+    return this.resolveImageUrl(savedOffer);
   }
 
   /**
    * Find all offers for a restaurant
    */
   async findAll(restaurantId: number): Promise<Offer[]> {
-    return await this.offersRepository.find({
+    const offers = await this.offersRepository.find({
       where: { restaurantId },
       order: { createdAt: 'DESC' },
     });
+    return offers.map(offer => this.resolveImageUrl(offer));
   }
 
   /**
@@ -62,7 +64,7 @@ export class OffersService {
   async findActiveOffers(restaurantId: number): Promise<Offer[]> {
     const now = new Date();
 
-    return await this.offersRepository.find({
+    const offers = await this.offersRepository.find({
       where: {
         restaurantId,
         isActive: true,
@@ -71,6 +73,7 @@ export class OffersService {
       },
       order: { createdAt: 'DESC' },
     });
+    return offers.map(offer => this.resolveImageUrl(offer));
   }
 
   /**
@@ -87,7 +90,7 @@ export class OffersService {
       );
     }
 
-    return offer;
+    return this.resolveImageUrl(offer);
   }
 
   /**
@@ -127,7 +130,8 @@ export class OffersService {
     // Merge the updates
     Object.assign(offer, updateOfferDto);
 
-    return await this.offersRepository.save(offer);
+    const updatedOffer = await this.offersRepository.save(offer);
+    return this.resolveImageUrl(updatedOffer);
   }
 
   /**
@@ -155,5 +159,13 @@ export class OffersService {
 
     const finalPrice = price - discount;
     return finalPrice < 0 ? 0 : parseFloat(finalPrice.toFixed(2));
+  }
+
+  private resolveImageUrl(offer: Offer): Offer {
+    if (offer.imageUrl && !offer.imageUrl.startsWith('http')) {
+      const baseUrl = process.env.API_URL || 'http://localhost:3000';
+      offer.imageUrl = `${baseUrl}${offer.imageUrl}`;
+    }
+    return offer;
   }
 }

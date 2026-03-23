@@ -179,7 +179,7 @@ const ContactPage = () => {
               </div>
 
               {submitStatus === 'success' && (
-                <div style={{ color: '#2D7C7E', marginTop: '20px', textAlign: 'center', fontWeight: 'bold' }}>
+                <div style={{ color: '#266668', marginTop: '20px', textAlign: 'center', fontWeight: 'bold' }}>
                   Thank you! Your message has been sent successfully. We will get back to you soon.
                 </div>
               )}

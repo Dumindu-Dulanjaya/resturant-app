@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import EditCategoryModal from '../components/categories/EditCategoryModal';
+import AddCategoryModal from '../components/categories/AddCategoryModal';
 import Swal from 'sweetalert2';
 import apiClient from '../api/apiClient';
 import './Categories.css';
@@ -14,6 +15,7 @@ function Categories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   const queryParams = new URLSearchParams(location.search);
@@ -24,7 +26,13 @@ function Categories() {
     if (menuId) {
       fetchMenuName();
     }
-  }, [menuId]);
+
+    // Check if we should open the add modal
+    const addParam = queryParams.get('add');
+    if (addParam === 'true') {
+      setShowAddModal(true);
+    }
+  }, [menuId, location.search]);
 
   const fetchMenuName = async () => {
     try {
@@ -83,7 +91,6 @@ function Categories() {
 
           let errorMessage = 'Failed to delete category';
 
-          // Extract the error message from the backend response
           if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
           } else if (error.response?.data?.error) {
@@ -125,12 +132,21 @@ function Categories() {
       <Sidebar />
       <div className="main-content">
         <Navbar />
+
+        <AddCategoryModal
+          show={showAddModal}
+          onHide={() => setShowAddModal(false)}
+          onSuccess={() => fetchCategories()}
+          menuId={menuId}
+        />
+
         <EditCategoryModal
           show={showEditModal}
           onHide={handleEditModalClose}
           onSuccess={handleEditSuccess}
           category={selectedCategory}
         />
+
         <div className="dashboard-content">
           <div className="container-fluid">
             {/* Back Button and Header */}
@@ -146,7 +162,7 @@ function Categories() {
                 <h2 className="page-title text-dark">
                   {menuName ? `${menuName} Categories` : 'All Categories'}
                 </h2>
-                <button className="btn btn-primary" onClick={() => navigate('/menus/categories/add')}>
+                <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
                   <i className="fas fa-plus me-2"></i>
                   Add New Category
                 </button>
@@ -171,13 +187,17 @@ function Categories() {
                   <div className="col-lg-4 col-md-6" key={category.categoryId}>
                     <div className="category-card card h-100 border-0 shadow-sm">
                       <div className="category-card-image">
-                        <img
-                          src={category.imageUrl || '/assets/imgs/special-offer.png'}
-                          alt={category.categoryName}
-                          onError={(e) => {
-                            e.target.src = '/assets/imgs/special-offer.png';
-                          }}
-                        />
+                        {category.imageUrl ? (
+                          <img
+                            src={category.imageUrl}
+                            alt={category.categoryName}
+                          />
+                        ) : (
+                          <div className="category-image-placeholder d-flex flex-column align-items-center justify-content-center h-100 bg-light text-muted">
+                            <i className="fas fa-th-large mb-2" style={{ fontSize: '2rem' }}></i>
+                            <span>No Image</span>
+                          </div>
+                        )}
                       </div>
                       <div className="card-body">
                         <h5 className="category-title">{category.categoryName}</h5>

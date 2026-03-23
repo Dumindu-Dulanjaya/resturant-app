@@ -8,7 +8,7 @@
 
 /* Header Card */
 .page-header-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
   padding: 2rem;
   border-radius: 12px;
@@ -50,7 +50,7 @@
   width: 60px;
   height: 60px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +94,7 @@
 }
 
 .generation-card .form-control:focus {
-  border-color: #667eea;
+  border-color: #266668;
   box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
 }
 
@@ -112,7 +112,7 @@
 }
 
 .generation-card .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   border: none;
 }
 
@@ -198,7 +198,7 @@
 .qr-preview-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  border-color: #667eea;
+  border-color: #266668;
 }
 
 .qr-preview-header {

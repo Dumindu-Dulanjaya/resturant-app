@@ -277,7 +277,7 @@ input:checked + .slider:before {
 
 .reason-textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #266668;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
@@ -300,7 +300,7 @@ input:checked + .slider:before {
 }
 
 .btn-save {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
   border: none;
   padding: 0.75rem 2rem;

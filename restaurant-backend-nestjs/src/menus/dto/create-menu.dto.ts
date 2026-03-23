@@ -8,7 +8,7 @@ export class CreateMenuDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(100)
+  @MaxLength(500)
   description: string;
 
   @IsString()

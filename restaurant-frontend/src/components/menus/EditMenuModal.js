@@ -29,7 +29,7 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    
+
     if (name === 'imageFile') {
       const file = files[0];
       if (file) {
@@ -41,7 +41,7 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
           setErrors(prev => ({ ...prev, imageUrl: 'Image size must be less than 5MB' }));
           return;
         }
-        
+
         setSelectedFile(file);
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -76,8 +76,8 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
 
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
-    } else if (formData.description.length > 100) {
-      newErrors.description = 'Description must not exceed 100 characters';
+    } else if (formData.description.length > 500) {
+      newErrors.description = 'Description must not exceed 500 characters';
     }
 
     if (formData.imageUrl && formData.imageUrl.length > 255) {
@@ -104,11 +104,11 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
       if (selectedFile) {
         const uploadFormData = new FormData();
         uploadFormData.append('image', selectedFile);
-        
+
         const uploadRes = await apiClient.post('/menus/upload-image', uploadFormData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        
+
         if (uploadRes.data && uploadRes.data.imageUrl) {
           finalImageUrl = uploadRes.data.imageUrl;
         }
@@ -137,7 +137,7 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
       }
     } catch (error) {
       console.error('Error updating menu:', error);
-      
+
       let errorMessage = 'Failed to update menu';
       if (error.response?.data?.message) {
         if (Array.isArray(error.response.data.message)) {
@@ -213,7 +213,7 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  maxLength={100}
+                  maxLength={500}
                   rows="3"
                   placeholder="Brief description of the menu"
                   disabled={submitting}
@@ -240,7 +240,7 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
                   />
                 </div>
                 {errors.imageUrl && (
-                  <div className="text-danger mt-1" style={{fontSize: '0.875em'}}>{errors.imageUrl}</div>
+                  <div className="text-danger mt-1" style={{ fontSize: '0.875em' }}>{errors.imageUrl}</div>
                 )}
                 <small className="form-text text-muted">
                   Maximum file size: 5MB (JPEG, PNG only). Leave blank to keep current image.
@@ -255,9 +255,9 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
                       className="img-thumbnail"
                     />
                     <div className="mt-1">
-                      <button 
-                        type="button" 
-                        className="btn btn-sm btn-outline-danger" 
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
                         onClick={() => {
                           setSelectedFile(null);
                           setImagePreview(menu.imageUrl || null);
@@ -272,16 +272,16 @@ function EditMenuModal({ show, onHide, onSuccess, menu }) {
               </div>
             </div>
             <div className="modal-footer">
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
+              <button
+                type="button"
+                className="btn btn-secondary"
                 onClick={handleClose}
                 disabled={submitting}
               >
                 Cancel
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn btn-primary"
                 disabled={submitting}
               >

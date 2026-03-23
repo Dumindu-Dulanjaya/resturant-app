@@ -21,7 +21,8 @@ export class CategoriesService {
       restaurantId,
     });
 
-    return await this.categoriesRepository.save(category);
+    const savedCategory = await this.categoriesRepository.save(category);
+    return this.resolveImageUrl(savedCategory);
   }
 
   async findAll(restaurantId?: number): Promise<Category[]> {
@@ -32,13 +33,7 @@ export class CategoriesService {
       order: { categoryId: 'DESC' },
     });
 
-    // Add API URL prefix to image URLs
-    return categories.map((category) => ({
-      ...category,
-      imageUrl: category.imageUrl && !category.imageUrl.startsWith('http')
-        ? `${process.env.API_URL || 'http://localhost:3000'}${category.imageUrl}`
-        : category.imageUrl,
-    }));
+    return categories.map((category) => this.resolveImageUrl(category));
   }
 
   async findByMenu(menuId: number, restaurantId?: number): Promise<Category[]> {
@@ -51,13 +46,7 @@ export class CategoriesService {
       order: { categoryId: 'DESC' },
     });
 
-    // Add API URL prefix to image URLs
-    return categories.map((category) => ({
-      ...category,
-      imageUrl: category.imageUrl && !category.imageUrl.startsWith('http')
-        ? `${process.env.API_URL || 'http://localhost:3000'}${category.imageUrl}`
-        : category.imageUrl,
-    }));
+    return categories.map((category) => this.resolveImageUrl(category));
   }
 
   async findOne(id: number, restaurantId: number): Promise<Category> {
@@ -70,7 +59,7 @@ export class CategoriesService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    return category;
+    return this.resolveImageUrl(category);
   }
 
   async update(
@@ -78,10 +67,17 @@ export class CategoriesService {
     updateCategoryDto: UpdateCategoryDto,
     restaurantId: number,
   ): Promise<Category> {
-    const category = await this.findOne(id, restaurantId);
+    const category = await this.categoriesRepository.findOne({
+      where: { categoryId: id, restaurantId },
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
 
     Object.assign(category, updateCategoryDto);
-    return await this.categoriesRepository.save(category);
+    const updatedCategory = await this.categoriesRepository.save(category);
+    return this.resolveImageUrl(updatedCategory);
   }
 
   async remove(id: number, restaurantId: number): Promise<void> {
@@ -130,12 +126,24 @@ export class CategoriesService {
       order: { categoryId: 'DESC' },
     });
 
-    // Add API URL prefix to image URLs
-    return categories.map((category) => ({
-      ...category,
-      imageUrl: category.imageUrl && !category.imageUrl.startsWith('http')
-        ? `${process.env.API_URL || 'http://localhost:3000'}${category.imageUrl}`
-        : category.imageUrl,
-    }));
+    return categories.map((category) => this.resolveImageUrl(category));
+  }
+
+  private resolveImageUrl(category: Category): Category {
+    const baseUrl = process.env.API_URL || 'http://localhost:3000';
+
+    // Resolve category image
+    if (category.imageUrl && !category.imageUrl.startsWith('http')) {
+      category.imageUrl = `${baseUrl}${category.imageUrl}`;
+    }
+
+    // Resolve menu image if joined
+    if (category.menu) {
+      if (category.menu.imageUrl && !category.menu.imageUrl.startsWith('http')) {
+        category.menu.imageUrl = `${baseUrl}${category.menu.imageUrl}`;
+      }
+    }
+
+    return category;
   }
 }

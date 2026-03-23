@@ -22,7 +22,7 @@
 .about-text-block h5 {
   font-size: 1.1rem;
   margin-bottom: 8px;
-  color: #2D7C7E;
+  color: #266668;
 }
 
 .about-text-block p {
@@ -60,7 +60,7 @@
 }
 
 .value-icon i {
-  color: #2D7C7E;
+  color: #266668;
   font-size: 1.5rem;
 }
 
@@ -77,7 +77,7 @@
 
 .work-step:hover {
   box-shadow: 0 10px 20px rgba(45, 124, 126, 0.1);
-  border-color: #2D7C7E;
+  border-color: #266668;
   transform: translateY(-3px);
 }
 
@@ -89,7 +89,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #2D7C7E;
+  color: #266668;
   flex-shrink: 0;
 }
 

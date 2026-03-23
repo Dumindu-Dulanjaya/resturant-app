@@ -51,7 +51,7 @@
 /* Modal Header */
 .modal-header-custom {
   padding: 20px 25px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -99,7 +99,7 @@
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 25px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #266668;
 }
 
 .info-group {
@@ -157,7 +157,7 @@
 }
 
 .section-title i {
-  color: #667eea;
+  color: #266668;
 }
 
 .order-items-table {
@@ -198,7 +198,7 @@
 
 .quantity-badge {
   display: inline-block;
-  background-color: #667eea;
+  background-color: #266668;
   color: white;
   padding: 4px 12px;
   border-radius: 12px;

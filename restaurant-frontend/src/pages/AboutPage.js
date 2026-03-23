@@ -61,21 +61,21 @@ const AboutPage = () => {
             <div className="col-lg-6 ps-lg-5">
               <h2 className="display-5 fw-bold mb-4" style={{ color: '#1E1E2E' }}>
                 Anawuma:<br />
-                <span style={{ color: '#2D7C7E' }}>More Than Software. It's a Service.</span>
+                <span style={{ color: '#266668' }}>More Than Software. It's a Service.</span>
               </h2>
               
               <div className="about-text-block mb-4">
-                <h5 className="fw-bold" style={{ color: '#2D7C7E' }}>The Spark</h5>
+                <h5 className="fw-bold" style={{ color: '#266668' }}>The Spark</h5>
                 <p className="text-muted">{data.sparkDescription}</p>
               </div>
 
               <div className="about-text-block mb-4">
-                <h5 className="fw-bold" style={{ color: '#2D7C7E' }}>The Solution</h5>
+                <h5 className="fw-bold" style={{ color: '#266668' }}>The Solution</h5>
                 <p className="text-muted">{data.solutionDescription}</p>
               </div>
 
               <div className="about-text-block">
-                <h5 className="fw-bold" style={{ color: '#2D7C7E' }}>Our Mission</h5>
+                <h5 className="fw-bold" style={{ color: '#266668' }}>Our Mission</h5>
                 <p className="text-muted">{data.missionDescription}</p>
               </div>
             </div>
@@ -111,7 +111,7 @@ const AboutPage = () => {
       <section className="how-it-works py-5">
         <div className="container py-5">
           <div className="text-center mb-5">
-            <span className="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-3" style={{ background: '#E6F0F0', color: '#2D7C7E' }}>
+            <span className="badge bg-soft-primary text-primary px-3 py-2 rounded-pill mb-3" style={{ background: '#E6F0F0', color: '#266668' }}>
               How It Works
             </span>
             <h2 className="fw-bold" style={{ color: '#1E1E2E' }}>How Our System Works for You</h2>

@@ -121,7 +121,7 @@ function Navbar() {
       text: 'You will be logged out from the system',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#667eea',
+      confirmButtonColor: '#266668',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes, logout!'
     }).then((result) => {

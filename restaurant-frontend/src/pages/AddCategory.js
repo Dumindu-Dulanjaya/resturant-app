@@ -34,7 +34,7 @@ function AddCategory() {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    
+
     if (name === 'imageFile') {
       const file = files[0];
       if (file) {
@@ -43,11 +43,11 @@ function AddCategory() {
           setErrors(prev => ({ ...prev, imageUrl: 'Please select a valid image file (JPG, JPEG, PNG, GIF)' }));
           return;
         }
-        if (file.size > 3 * 1024 * 1024) {
-          setErrors(prev => ({ ...prev, imageUrl: 'Image size must be less than 3MB' }));
+        if (file.size > 5 * 1024 * 1024) {
+          setErrors(prev => ({ ...prev, imageUrl: 'Image size must be less than 5MB' }));
           return;
         }
-        
+
         setSelectedFile(file);
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -62,7 +62,7 @@ function AddCategory() {
       ...prev,
       [name]: value
     }));
-    
+
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -109,11 +109,11 @@ function AddCategory() {
       if (selectedFile) {
         const uploadFormData = new FormData();
         uploadFormData.append('image', selectedFile);
-        
+
         const uploadRes = await apiClient.post('/categories/upload-image', uploadFormData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        
+
         if (uploadRes.data && uploadRes.data.imageUrl) {
           finalImageUrl = uploadRes.data.imageUrl;
         }
@@ -139,7 +139,7 @@ function AddCategory() {
       navigate('/menus/categories');
     } catch (error) {
       console.error('Error creating category:', error);
-      
+
       let errorMessage = 'Failed to create category';
       if (error.response?.data?.message) {
         if (Array.isArray(error.response.data.message)) {
@@ -172,7 +172,7 @@ function AddCategory() {
           <div className="container-fluid py-4">
             <div className="add-menu-container">
               <h1 className="add-menu-title">Add New Category</h1>
-              
+
               <form onSubmit={handleSubmit} className="add-menu-form">
                 {/* Category Name */}
                 <div className="form-group mb-4">
@@ -261,7 +261,7 @@ function AddCategory() {
                     />
                   </div>
                   <small className="form-text text-muted">
-                    Allowed formats: JPG, JPEG, PNG, GIF (Max 3MB)
+                    Allowed formats: JPG, JPEG, PNG, GIF (Max 5MB)
                   </small>
                   {errors.imageUrl && (
                     <div className="text-danger mt-1">{errors.imageUrl}</div>
@@ -281,16 +281,16 @@ function AddCategory() {
 
                 {/* Actions */}
                 <div className="form-actions mt-5">
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="btn btn-primary btn-add-menu me-2"
                     disabled={submitting}
                   >
                     {submitting ? 'Adding...' : 'Add Category'}
                   </button>
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary btn-cancel" 
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-cancel"
                     onClick={handleCancel}
                     disabled={submitting}
                   >
@@ -301,7 +301,7 @@ function AddCategory() {
             </div>
           </div>
         </div>
-        
+
         {/* Simple Dashboard Footer */}
         <footer className="dashboard-simple-footer py-3 px-4">
           <div className="container-fluid text-muted" style={{ fontSize: '0.9rem' }}>

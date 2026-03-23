@@ -16,14 +16,16 @@ export class RestaurantsService {
     private readonly restaurantRepository: Repository<Restaurant>,
     @InjectRepository(Admin)
     private readonly adminRepository: Repository<Admin>,
-  ) {}
+  ) { }
 
   async findByApiKey(apiKey: string): Promise<Restaurant | null> {
-    return this.restaurantRepository.findOne({ where: { apiKey } });
+    const restaurant = await this.restaurantRepository.findOne({ where: { apiKey } });
+    return restaurant ? this.resolveLogoUrl(restaurant) : null;
   }
 
   async findById(restaurantId: number): Promise<Restaurant | null> {
-    return this.restaurantRepository.findOne({ where: { restaurantId } });
+    const restaurant = await this.restaurantRepository.findOne({ where: { restaurantId } });
+    return restaurant ? this.resolveLogoUrl(restaurant) : null;
   }
 
   async getSettings(restaurantId: number): Promise<RestaurantSettingsResponseDto> {
@@ -85,9 +87,10 @@ export class RestaurantsService {
    * Get all restaurants (Super Admin only)
    */
   async findAll(): Promise<Restaurant[]> {
-    return this.restaurantRepository.find({
+    const restaurants = await this.restaurantRepository.find({
       order: { createdAt: 'DESC' },
     });
+    return restaurants.map(restaurant => this.resolveLogoUrl(restaurant));
   }
 
   /**
@@ -135,7 +138,7 @@ export class RestaurantsService {
 
       await adminRepo.save(newAdmin);
 
-      return savedRestaurant as Restaurant;
+      return this.resolveLogoUrl(savedRestaurant as Restaurant);
     });
   }
 
@@ -203,7 +206,8 @@ export class RestaurantsService {
       restaurant.enableCashier = updateRestaurantDto.enableCashier;
     }
 
-    return this.restaurantRepository.save(restaurant);
+    const savedRestaurant = await this.restaurantRepository.save(restaurant);
+    return this.resolveLogoUrl(savedRestaurant);
   }
 
   /**
@@ -222,10 +226,11 @@ export class RestaurantsService {
    * Get all pending registration requests (Super Admin only)
    */
   async getPendingRegistrations(): Promise<Restaurant[]> {
-    return this.restaurantRepository.find({
+    const restaurants = await this.restaurantRepository.find({
       where: { approvalStatus: 'pending' },
       order: { createdAt: 'DESC' },
     });
+    return restaurants.map(r => this.resolveLogoUrl(r));
   }
 
   /**
@@ -250,7 +255,8 @@ export class RestaurantsService {
     restaurant.approvalStatus = 'approved';
     restaurant.subscriptionStatus = 'active';
     restaurant.subscriptionExpiryDate = trialExpiry;
-    return this.restaurantRepository.save(restaurant);
+    const saved = await this.restaurantRepository.save(restaurant);
+    return this.resolveLogoUrl(saved);
   }
 
   /**
@@ -263,7 +269,8 @@ export class RestaurantsService {
     }
 
     restaurant.approvalStatus = 'rejected';
-    return this.restaurantRepository.save(restaurant);
+    const saved = await this.restaurantRepository.save(restaurant);
+    return this.resolveLogoUrl(saved);
   }
 
   /**
@@ -279,14 +286,23 @@ export class RestaurantsService {
     const now = new Date();
     const currentExpiry = restaurant.subscriptionExpiryDate ? new Date(restaurant.subscriptionExpiryDate) : now;
     const baseDate = currentExpiry > now ? currentExpiry : now;
-    
+
     const newExpiry = new Date(baseDate);
     newExpiry.setDate(newExpiry.getDate() + 30);
 
     restaurant.packageId = packageId;
     restaurant.subscriptionStatus = 'active';
     restaurant.subscriptionExpiryDate = newExpiry;
-    
-    return this.restaurantRepository.save(restaurant);
+
+    const saved = await this.restaurantRepository.save(restaurant);
+    return this.resolveLogoUrl(saved);
+  }
+
+  private resolveLogoUrl(restaurant: Restaurant): Restaurant {
+    if (restaurant.logo && !restaurant.logo.startsWith('http')) {
+      const baseUrl = process.env.API_URL || 'http://localhost:3000';
+      restaurant.logo = `${baseUrl}${restaurant.logo}`;
+    }
+    return restaurant;
   }
 }

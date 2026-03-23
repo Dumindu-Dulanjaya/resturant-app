@@ -1,6 +1,6 @@
 .guest-request-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,7 +31,7 @@
 
 /* Header */
 .request-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
   padding: 40px 30px;
   text-align: center;
@@ -106,7 +106,7 @@
 
 .form-group label i {
   margin-right: 8px;
-  color: #667eea;
+  color: #266668;
 }
 
 .form-control {
@@ -121,7 +121,7 @@
 
 .form-control:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #266668;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -139,7 +139,7 @@ textarea.form-control {
 .submit-btn {
   width: 100%;
   padding: 15px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -196,7 +196,7 @@ textarea.form-control {
 
 .request-footer i {
   margin-right: 8px;
-  color: #667eea;
+  color: #266668;
 }
 
 /* Loading State */
@@ -312,7 +312,7 @@ textarea.form-control {
 }
 /* ========== SUCCESS SCREEN STYLES ========== */
 .request-success-screen {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -369,7 +369,7 @@ textarea.form-control {
 }
 
 .request-details-card h3 {
-  color: #667eea;
+  color: #266668;
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -496,13 +496,13 @@ textarea.form-control {
 }
 
 .timeline-step.completed i {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #266668 0%, #1a4648 100%);
   color: white;
   box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
 }
 
 .timeline-step.completed span {
-  color: #667eea;
+  color: #266668;
   font-weight: 600;
 }
 

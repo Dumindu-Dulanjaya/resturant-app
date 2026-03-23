@@ -31,7 +31,7 @@ const Navbar = () => {
             <li><Link to="/pricing" onClick={() => setMenuOpen(false)}>Pricing</Link></li>
             <li><Link to="/about" onClick={() => setMenuOpen(false)}>About</Link></li>
             <li><Link to="/blog" onClick={() => setMenuOpen(false)}>Blogs</Link></li>
-            <li><Link to="/contact" onClick={() => setMenuOpen(false)} style={{ borderBottom: scrolled ? 'none' : '2px solid #2D7C7E' }}>Contact</Link></li>
+            <li><Link to="/contact" onClick={() => setMenuOpen(false)} style={{ borderBottom: scrolled ? 'none' : '2px solid #266668' }}>Contact</Link></li>
             <li
               className="dropdown-parent"
               onMouseEnter={() => setMoreOpen(true)}
@@ -57,7 +57,7 @@ const Navbar = () => {
           <div className={`nav-cta${menuOpen ? ' open' : ''}`}>
             {user ? (
               <div className="nav-user-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Link to="/my-hotel" className="nav-restaurant-name" style={{ fontWeight: 600, color: '#2d7c7e' }}>
+                <Link to="/my-hotel" className="nav-restaurant-name" style={{ fontWeight: 600, color: '#266668' }}>
                   {user.restaurantName || 'My Hotel'}
                 </Link>
                 <div className="nav-user-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

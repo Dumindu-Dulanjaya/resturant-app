@@ -23,7 +23,7 @@
 .cp-badge {
   display: inline-block;
   background: #E8F2F3;
-  color: #2D7C7E;
+  color: #266668;
   padding: 6px 18px;
   border-radius: 4px;
   font-size: 13px;
@@ -130,7 +130,7 @@
 .cp-form-group input:focus,
 .cp-form-group textarea:focus {
   outline: none;
-  border-color: #2D7C7E;
+  border-color: #266668;
   background: #fff;
 }
 
@@ -156,7 +156,7 @@
   align-items: center;
   gap: 10px;
   padding: 15px 40px;
-  background: #2D7C7E;
+  background: #266668;
   color: #fff;
   border: none;
   border-radius: 6px;

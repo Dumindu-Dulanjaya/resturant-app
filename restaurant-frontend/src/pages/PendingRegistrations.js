@@ -33,7 +33,7 @@ const PendingRegistrations = () => {
       html: `Approve <strong>${restaurant.restaurantName}</strong>?<br/>This will activate their 30-day free trial.`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#2D7C7E',
+      confirmButtonColor: '#266668',
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Yes, Approve',
     });
@@ -95,7 +95,7 @@ const PendingRegistrations = () => {
     <SuperAdminDashboard>
       <div className="pending-requests-container">
         <h2>
-          <i className="fas fa-user-clock" style={{ marginRight: 10, color: '#2D7C7E' }}></i>
+          <i className="fas fa-user-clock" style={{ marginRight: 10, color: '#266668' }}></i>
           Pending Hotel / Restaurant Registrations
         </h2>
 
@@ -150,7 +150,7 @@ const PendingRegistrations = () => {
                         <button
                           onClick={() => handleApprove(r)}
                           style={{
-                            background: '#2D7C7E', color: '#fff', border: 'none',
+                            background: '#266668', color: '#fff', border: 'none',
                             borderRadius: 6, padding: '6px 14px', cursor: 'pointer',
                             fontSize: 13, fontWeight: 600,
                           }}
