@@ -20,7 +20,7 @@ export class FoodItemsService {
     private categoriesRepository: Repository<Category>,
     @InjectRepository(Subcategory)
     private subcategoriesRepository: Repository<Subcategory>,
-  ) {}
+  ) { }
 
   async create(
     createFoodItemDto: CreateFoodItemDto,
@@ -111,7 +111,23 @@ export class FoodItemsService {
 
     query.orderBy('foodItem.foodItemId', 'DESC');
 
-    return await query.getMany();
+    const foodItems = await query.getMany();
+
+    // Add API URL prefix to image URLs
+    return foodItems.map((item) => this.resolveImageUrls(item));
+  }
+
+  private resolveImageUrls(item: FoodItem): FoodItem {
+    const apiUrl = process.env.API_URL || 'http://localhost:3000';
+    const fields = ['imageUrl1', 'imageUrl2', 'imageUrl3', 'imageUrl4'] as const;
+
+    fields.forEach((field) => {
+      if (item[field] && !item[field].startsWith('http')) {
+        item[field] = `${apiUrl}${item[field]}`;
+      }
+    });
+
+    return item;
   }
 
   async findOne(id: number, restaurantId: number): Promise<FoodItem> {
@@ -124,7 +140,7 @@ export class FoodItemsService {
       throw new NotFoundException(`Food item with ID ${id} not found`);
     }
 
-    return foodItem;
+    return this.resolveImageUrls(foodItem);
   }
 
   async update(
@@ -184,9 +200,11 @@ export class FoodItemsService {
 
   // Super admin can access all food items
   async findAllForSuperAdmin(): Promise<FoodItem[]> {
-    return await this.foodItemsRepository.find({
+    const items = await this.foodItemsRepository.find({
       relations: ['category', 'subcategory', 'restaurant'],
       order: { foodItemId: 'DESC' },
     });
+
+    return items.map((item) => this.resolveImageUrls(item));
   }
 }

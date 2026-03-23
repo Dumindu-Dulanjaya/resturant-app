@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
-import AddFoodItemModal from '../components/food-items/AddFoodItemModal';
 import EditFoodItemModal from '../components/food-items/EditFoodItemModal';
 import Swal from 'sweetalert2';
 import apiClient from '../api/apiClient';
@@ -10,12 +9,12 @@ import './FoodItems.css';
 
 function FoodItems() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [foodItems, setFoodItems] = useState([]);
   const [menus, setMenus] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedFoodItem, setSelectedFoodItem] = useState(null);
 
@@ -29,11 +28,24 @@ function FoodItems() {
 
   useEffect(() => {
     fetchMenus();
-    
-    // Check if we should open the add modal
-    const query = new URLSearchParams(location.search);
-    if (query.get('add') === 'true') {
-      setShowAddModal(true);
+    // Check for query params on load
+    const queryParams = new URLSearchParams(location.search);
+    const qMenuId = queryParams.get('menuId');
+    const qCategoryId = queryParams.get('categoryId');
+    const qSubcategoryId = queryParams.get('subcategoryId');
+
+    if (qMenuId || qCategoryId || qSubcategoryId) {
+      setFilters(prev => ({
+        ...prev,
+        menuId: qMenuId || prev.menuId,
+        categoryId: qCategoryId || prev.categoryId,
+        subcategoryId: qSubcategoryId || prev.subcategoryId
+      }));
+
+      if (qCategoryId) {
+        // If we have categoryId but no menuId, we need to find the menuId
+        fetchCategoryDetail(qCategoryId);
+      }
     }
   }, [location.search]);
 
@@ -87,7 +99,7 @@ function FoodItems() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      
+
       if (filters.menuId) params.append('menuId', filters.menuId);
       if (filters.categoryId) params.append('categoryId', filters.categoryId);
       if (filters.subcategoryId) params.append('subcategoryId', filters.subcategoryId);
@@ -95,7 +107,7 @@ function FoodItems() {
 
       const queryString = params.toString();
       const url = queryString ? `/food-items?${queryString}` : '/food-items';
-      
+
       const response = await apiClient.get(url);
       setFoodItems(response.data);
       setLoading(false);
@@ -158,12 +170,27 @@ function FoodItems() {
   };
 
   const handleClearFilters = () => {
+    navigate('/menus/food-items', { replace: true });
     setFilters({
       menuId: '',
       categoryId: '',
       subcategoryId: '',
       search: ''
     });
+  };
+
+  const fetchCategoryDetail = async (id) => {
+    try {
+      const response = await apiClient.get(`/categories/${id}`);
+      if (response.data && response.data.menuId) {
+        setFilters(prev => ({
+          ...prev,
+          menuId: response.data.menuId.toString()
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching category detail:', error);
+    }
   };
 
   const handleDelete = (foodItemId, itemName) => {
@@ -179,7 +206,7 @@ function FoodItems() {
       if (result.isConfirmed) {
         try {
           await apiClient.delete(`/food-items/${foodItemId}`);
-          
+
           Swal.fire({
             icon: 'success',
             title: 'Deleted!',
@@ -187,7 +214,7 @@ function FoodItems() {
             timer: 2000,
             showConfirmButton: false
           });
-          
+
           fetchFoodItems();
         } catch (error) {
           console.error('Error deleting food item:', error);
@@ -218,18 +245,6 @@ function FoodItems() {
     fetchFoodItems();
   };
 
-  const handleAddFoodItem = () => {
-    setShowAddModal(true);
-  };
-
-  const handleAddModalClose = () => {
-    setShowAddModal(false);
-  };
-
-  const handleAddSuccess = () => {
-    fetchFoodItems();
-  };
-
   const formatPrice = (price) => {
     return parseFloat(price).toFixed(2);
   };
@@ -239,130 +254,44 @@ function FoodItems() {
       <Sidebar />
       <div className="main-content">
         <Navbar />
-        <AddFoodItemModal 
-          show={showAddModal} 
-          onHide={handleAddModalClose} 
-          onSuccess={handleAddSuccess}
-        />
-        <EditFoodItemModal 
-          show={showEditModal} 
-          onHide={handleEditModalClose} 
+        <EditFoodItemModal
+          show={showEditModal}
+          onHide={handleEditModalClose}
           onSuccess={handleEditSuccess}
           foodItem={selectedFoodItem}
         />
         <div className="dashboard-content">
           <div className="container-fluid">
-            {/* Page Header */}
-            <div className="row mb-4">
-              <div className="col-12">
-                <div className="page-header">
-                  <h2>
-                    <i className="fas fa-hamburger me-2"></i>
-                    All Food Items
-                  </h2>
-                  <button className="btn btn-primary" onClick={handleAddFoodItem}>
-                    <i className="fas fa-plus me-2"></i>
-                    Add New Food Item
-                  </button>
-                </div>
+            {/* Header with Back and New Item */}
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <button
+                className="btn btn-secondary"
+                onClick={() => navigate(-1)}
+              >
+                <i className="fas fa-arrow-left me-2"></i>
+                Back
+              </button>
+
+              <div className="text-center flex-grow-1">
+                <h5 className="mb-0 text-muted">
+                  {filters.menuId && menus.find(m => m.menuId.toString() === filters.menuId.toString())?.menuName}
+                  {filters.categoryId && categories.find(c => c.categoryId.toString() === filters.categoryId.toString())?.categoryName && ` / ${categories.find(c => c.categoryId.toString() === filters.categoryId.toString())?.categoryName}`}
+                </h5>
               </div>
+
+              <button className="btn btn-primary" onClick={() => navigate('/menus/food-items/add')}>
+                New Item
+              </button>
             </div>
 
-            {/* Filter Section */}
-            <div className="row mb-4">
-              <div className="col-12">
-                <div className="card">
-                  <div className="card-body">
-                    <h5 className="card-title mb-3">
-                      <i className="fas fa-filter me-2"></i>
-                      Filters
-                    </h5>
-                    <div className="row g-3">
-                      {/* Menu Filter */}
-                      <div className="col-md-3">
-                        <label htmlFor="menuFilter" className="form-label">Menu</label>
-                        <select
-                          id="menuFilter"
-                          className="form-select"
-                          value={filters.menuId}
-                          onChange={handleMenuChange}
-                        >
-                          <option value="">All Menus</option>
-                          {menus.map((menu) => (
-                            <option key={menu.menuId} value={menu.menuId}>
-                              {menu.menuName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Category Filter */}
-                      <div className="col-md-3">
-                        <label htmlFor="categoryFilter" className="form-label">Category</label>
-                        <select
-                          id="categoryFilter"
-                          className="form-select"
-                          value={filters.categoryId}
-                          onChange={handleCategoryChange}
-                          disabled={!filters.menuId}
-                        >
-                          <option value="">All Categories</option>
-                          {categories.map((category) => (
-                            <option key={category.categoryId} value={category.categoryId}>
-                              {category.categoryName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Subcategory Filter */}
-                      <div className="col-md-3">
-                        <label htmlFor="subcategoryFilter" className="form-label">Subcategory</label>
-                        <select
-                          id="subcategoryFilter"
-                          className="form-select"
-                          value={filters.subcategoryId}
-                          onChange={handleSubcategoryChange}
-                          disabled={!filters.categoryId}
-                        >
-                          <option value="">All Subcategories</option>
-                          {subcategories.map((subcategory) => (
-                            <option key={subcategory.subcategoryId} value={subcategory.subcategoryId}>
-                              {subcategory.subcategoryName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Search Filter */}
-                      <div className="col-md-3">
-                        <label htmlFor="searchFilter" className="form-label">Search</label>
-                        <div className="input-group">
-                          <input
-                            type="text"
-                            id="searchFilter"
-                            className="form-control"
-                            placeholder="Search by name..."
-                            value={filters.search}
-                            onChange={handleSearchChange}
-                          />
-                          <button 
-                            className="btn btn-outline-secondary" 
-                            type="button"
-                            onClick={handleClearFilters}
-                            title="Clear all filters"
-                          >
-                            <i className="fas fa-times"></i>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Centered All Filter Button (Placeholder as per screenshot) */}
+            <div className="text-center mb-4">
+              <button className="btn btn-outline-dark px-4" onClick={handleClearFilters}>
+                All
+              </button>
             </div>
 
-            {/* Food Items Table */}
+            {/* Food Items Grid */}
             {loading ? (
               <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
@@ -372,101 +301,93 @@ function FoodItems() {
             ) : foodItems.length === 0 ? (
               <div className="alert alert-info text-center">
                 <i className="fas fa-info-circle me-2"></i>
-                No food items found. Click "Add New Food Item" to create one.
+                No food items found.
               </div>
             ) : (
-              <div className="card">
-                <div className="card-body">
-                  <div className="table-responsive">
-                    <table className="table table-hover">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Item Name</th>
-                          <th>Menu</th>
-                          <th>Category</th>
-                          <th>Subcategory</th>
-                          <th>Price</th>
-                          <th>Description</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {foodItems.map((foodItem) => (
-                          <tr key={foodItem.foodItemId}>
-                            <td>{foodItem.foodItemId}</td>
-                            <td>
-                              <strong>{foodItem.itemName}</strong>
-                            </td>
-                            <td>
-                              {foodItem.category?.menu ? (
-                                <span className="badge bg-primary">
-                                  {foodItem.category.menu.menuName}
-                                </span>
-                              ) : (
-                                <span className="text-muted">N/A</span>
-                              )}
-                            </td>
-                            <td>
-                              {foodItem.category ? (
-                                <span className="badge bg-info">
-                                  {foodItem.category.categoryName}
-                                </span>
-                              ) : (
-                                <span className="text-muted">N/A</span>
-                              )}
-                            </td>
-                            <td>
-                              {foodItem.subcategory ? (
-                                <span className="badge bg-secondary">
-                                  {foodItem.subcategory.subcategoryName}
-                                </span>
-                              ) : (
-                                <span className="text-muted">-</span>
-                              )}
-                            </td>
-                            <td>
-                              <strong>${formatPrice(foodItem.price)}</strong>
-                            </td>
-                            <td>
-                              {foodItem.description ? (
-                                <span className="text-truncate" title={foodItem.description}>
-                                  {foodItem.description.substring(0, 50)}
-                                  {foodItem.description.length > 50 ? '...' : ''}
-                                </span>
-                              ) : (
-                                <span className="text-muted">-</span>
-                              )}
-                            </td>
-                            <td>
-                              <div className="btn-group" role="group">
-                                <button 
-                                  className="btn btn-sm btn-outline-primary"
-                                  onClick={() => handleEdit(foodItem.foodItemId)}
-                                  title="Edit"
-                                >
-                                  <i className="fas fa-edit"></i>
-                                </button>
-                                <button 
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => handleDelete(foodItem.foodItemId, foodItem.itemName)}
-                                  title="Delete"
-                                >
-                                  <i className="fas fa-trash"></i>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+              <div className="row g-4">
+                {foodItems.map((foodItem) => {
+                  const images = [
+                    foodItem.imageUrl1,
+                    foodItem.imageUrl2,
+                    foodItem.imageUrl3,
+                    foodItem.imageUrl4
+                  ].filter(Boolean);
+
+                  return (
+                    <div className="col-lg-3 col-md-4 col-sm-6" key={foodItem.foodItemId}>
+                      <div className="food-item-card card h-100 border-0 shadow-sm">
+                        <div className="food-item-card-image">
+                          <ImageCarousel images={images} itemName={foodItem.itemName} />
+                        </div>
+                        <div className="card-body">
+                          <h5 className="food-item-title mb-2">{foodItem.itemName}</h5>
+                          <h6 className="food-item-price mb-3">LKR {formatPrice(foodItem.price)}</h6>
+
+                          <div className="d-flex gap-2">
+                            <button
+                              className="btn btn-primary-blue flex-grow-1"
+                              onClick={() => handleEdit(foodItem.foodItemId)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-danger-red flex-grow-1"
+                              onClick={() => handleDelete(foodItem.foodItemId, foodItem.itemName)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Sub-component for the image carousel within each card
+function ImageCarousel({ images, itemName }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  const displayImage = images.length > 0 ? images[currentIndex] : '/assets/imgs/special-offer.png';
+
+  return (
+    <div className="carousel-container h-100">
+      <img
+        src={displayImage}
+        alt={itemName}
+        className="carousel-image"
+        onError={(e) => {
+          e.target.src = '/assets/imgs/special-offer.png';
+        }}
+        key={currentIndex} // Adding key forces re-render for transition if needed
+      />
+      {images.length > 1 && (
+        <div className="carousel-dots">
+          {images.map((_, idx) => (
+            <span
+              key={idx}
+              className={`dot ${idx === currentIndex ? 'active' : ''}`}
+            ></span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

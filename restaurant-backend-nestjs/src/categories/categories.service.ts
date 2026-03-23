@@ -10,7 +10,7 @@ export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
-  ) {}
+  ) { }
 
   async create(
     createCategoryDto: CreateCategoryDto,
@@ -41,9 +41,13 @@ export class CategoriesService {
     }));
   }
 
-  async findByMenu(menuId: number, restaurantId: number): Promise<Category[]> {
+  async findByMenu(menuId: number, restaurantId?: number): Promise<Category[]> {
+    const where: any = { menuId };
+    if (restaurantId) {
+      where.restaurantId = restaurantId;
+    }
     const categories = await this.categoriesRepository.find({
-      where: { menuId, restaurantId },
+      where,
       order: { categoryId: 'DESC' },
     });
 

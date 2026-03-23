@@ -7,9 +7,12 @@ import CashierLogin from './pages/CashierLogin';
 import AccountantLogin from './pages/AccountantLogin';
 import Dashboard from './pages/Dashboard';
 import Menus from './pages/Menus';
+import AddMenu from './pages/AddMenu';
 import Categories from './pages/Categories';
+import AddCategory from './pages/AddCategory';
 import Subcategories from './pages/Subcategories';
 import FoodItems from './pages/FoodItems';
+import AddFoodItem from './pages/AddFoodItem';
 import KitchenKDS from './pages/KitchenKDS';
 import KitchenDashboard from './pages/KitchenDashboard';
 import CustomerQROrder from './pages/CustomerQROrder';
@@ -177,11 +180,33 @@ function App() {
             />
 
             <Route
+              path="/menus/add"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <AddMenu />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
               path="/menus/categories"
               element={
                 <PrivateRoute>
                   <RoleRoute allowedRoles={['admin', 'super_admin']}>
                     <Categories />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/menus/categories/add"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <AddCategory />
                   </RoleRoute>
                 </PrivateRoute>
               }
@@ -204,6 +229,17 @@ function App() {
                 <PrivateRoute>
                   <RoleRoute allowedRoles={['admin', 'super_admin']}>
                     <FoodItems />
+                  </RoleRoute>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/menus/food-items/add"
+              element={
+                <PrivateRoute>
+                  <RoleRoute allowedRoles={['admin', 'super_admin']}>
+                    <AddFoodItem />
                   </RoleRoute>
                 </PrivateRoute>
               }

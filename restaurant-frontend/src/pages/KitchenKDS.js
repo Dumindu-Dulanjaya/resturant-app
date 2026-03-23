@@ -563,6 +563,7 @@ const KitchenKDS = () => {
           .bill-btn-download { background: #0d6efd; color: #fff; }
           .bill-btn-print { background: #198754; color: #fff; }
           .bill-btn-cashier { background: #fd7e14; color: #fff; }
+          .bill-btn-whatsapp { background: #25D366; color: #fff; }
           .bill-btn-back { background: #6c757d; color: #fff; }
           .bill-btn:disabled { opacity: 0.6; cursor: wait; }
           .bill-hint { color: #555; font-size: 12px; margin-bottom: 10px; text-align: right; }
@@ -598,7 +599,8 @@ const KitchenKDS = () => {
           <div class="bill-actions">
             <button id="downloadPdfBtn" class="bill-btn bill-btn-download" type="button" title="Download PDF"><i class="fas fa-download"></i></button>
             <button id="printBillBtn" class="bill-btn bill-btn-print" type="button" title="Print"><i class="fas fa-print"></i></button>
-            <button id="sendToCashierBtn" class="bill-btn bill-btn-cashier" type="button" title="Send to Cashier"><i class="fas fa-cash-register"></i></button>
+            <button id="sendToCashierBtn" class="bill-btn bill-btn-cashier" type="button" title="Send to Cashier"><i class="fas fa-check"></i></button>
+            <button id="whatsappBtn" class="bill-btn bill-btn-whatsapp" type="button" title="Send WhatsApp Bill"><i class="fab fa-whatsapp"></i></button>
             <button id="backToWhatsappBtn" class="bill-btn bill-btn-back" type="button" title="Return to KDS"><i class="fas fa-arrow-left"></i></button>
           </div>
           <div class="bill-hint">Download is optional. You must complete Print and Send to Cashier, then tap Return to KDS.</div>
@@ -638,6 +640,7 @@ const KitchenKDS = () => {
             const downloadBtn = document.getElementById('downloadPdfBtn');
             const printBtn = document.getElementById('printBillBtn');
             const cashierBtn = document.getElementById('sendToCashierBtn');
+            const whatsappBtn = document.getElementById('whatsappBtn');
             const backBtn = document.getElementById('backToWhatsappBtn');
             const billContent = document.getElementById('billContent');
             const billStatus = document.getElementById('billStatus');
@@ -788,6 +791,53 @@ const KitchenKDS = () => {
               printBtn.disabled = false;
               hasPrinted = true;
               refreshBackButtonState();
+            });
+
+            whatsappBtn.addEventListener('click', function() {
+              const whatsappNumber = ${JSON.stringify(order.whatsappNumber)};
+              const customerName = ${JSON.stringify(order.customerName)};
+              const orderNo = ${JSON.stringify(order.orderNo)};
+              const tableNo = ${JSON.stringify(order.tableNo)};
+              const totalAmount = ${JSON.stringify(order.totalAmount)};
+              
+              // Normalize number logic (simple version for script)
+              let cleaned = String(whatsappNumber || '').trim().replace(/[^\d+]/g, '');
+              if (cleaned.startsWith('+')) cleaned = cleaned.slice(1);
+              cleaned = cleaned.replace(/\D/g, '');
+              if (cleaned.startsWith('00')) cleaned = cleaned.slice(2);
+              if (cleaned.startsWith('0')) cleaned = '94' + cleaned.slice(1);
+              else if (cleaned.length === 9) cleaned = '94' + cleaned;
+
+              if (!cleaned) {
+                setStatus('No WhatsApp number found for this customer.', 'error');
+                alert('No WhatsApp number found for this customer.');
+                return;
+              }
+
+              const itemsContent = [];
+              const rows = document.querySelectorAll('#billContent tbody tr');
+              rows.forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if (cols.length >= 5) {
+                  const name = cols[1].innerText.trim().split('\\n')[0];
+                  const qty = cols[2].innerText.trim();
+                  const total = cols[4].innerText.trim();
+                  itemsContent.push(name + ' x' + qty + ' - ' + total);
+                }
+              });
+
+              const message = 
+                'Hello ' + (customerName || '') + ' 👋\\n' +
+                'Here is your bill for order #' + orderNo + '.\\n\\n' +
+                'Order ID: #' + orderNo + '\\n' +
+                'Table: ' + (tableNo || '-') + '\\n\\n' +
+                'Items:\\n' + itemsContent.join('\\n') + '\\n\\n' +
+                'Total: Rs. ' + parseFloat(totalAmount).toFixed(2) + '\\n\\n' +
+                'Thank you for ordering with us 🍔';
+
+              const whatsappUrl = 'https://api.whatsapp.com/send?phone=' + cleaned + '&text=' + encodeURIComponent(message);
+              window.open(whatsappUrl, '_blank');
+              setStatus('WhatsApp opened. Sending bill to ' + cleaned, 'success');
             });
           })();
         </script>

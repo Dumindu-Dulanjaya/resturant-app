@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
-import AddCategoryModal from '../components/categories/AddCategoryModal';
 import EditCategoryModal from '../components/categories/EditCategoryModal';
 import Swal from 'sweetalert2';
 import apiClient from '../api/apiClient';
@@ -10,26 +9,39 @@ import './Categories.css';
 
 function Categories() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [menuName, setMenuName] = useState('');
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
+  const queryParams = new URLSearchParams(location.search);
+  const menuId = queryParams.get('menuId');
+
   useEffect(() => {
     fetchCategories();
-    
-    // Check if we should open the add modal
-    const query = new URLSearchParams(location.search);
-    if (query.get('add') === 'true') {
-      setShowAddModal(true);
+    if (menuId) {
+      fetchMenuName();
     }
-  }, [location.search]);
+  }, [menuId]);
+
+  const fetchMenuName = async () => {
+    try {
+      const response = await apiClient.get(`/menus/${menuId}`);
+      if (response.data) {
+        setMenuName(response.data.menuName);
+      }
+    } catch (error) {
+      console.error('Error fetching menu name:', error);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/categories');
+      const url = menuId ? `/categories?menuId=${menuId}` : '/categories';
+      const response = await apiClient.get(url);
       setCategories(response.data);
       setLoading(false);
     } catch (error) {
@@ -56,7 +68,7 @@ function Categories() {
       if (result.isConfirmed) {
         try {
           await apiClient.delete(`/categories/${categoryId}`);
-          
+
           Swal.fire({
             icon: 'success',
             title: 'Deleted!',
@@ -64,13 +76,13 @@ function Categories() {
             timer: 2000,
             showConfirmButton: false
           });
-          
+
           fetchCategories();
         } catch (error) {
           console.error('Error deleting category:', error);
-          
+
           let errorMessage = 'Failed to delete category';
-          
+
           // Extract the error message from the backend response
           if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
@@ -79,7 +91,7 @@ function Categories() {
           } else if (error.message) {
             errorMessage = error.message;
           }
-          
+
           Swal.fire({
             icon: 'error',
             title: 'Cannot Delete Category',
@@ -108,53 +120,40 @@ function Categories() {
     fetchCategories();
   };
 
-  const handleAddCategory = () => {
-    setShowAddModal(true);
-  };
-
-  const handleAddModalClose = () => {
-    setShowAddModal(false);
-  };
-
-  const handleAddSuccess = () => {
-    fetchCategories();
-  };
-
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <div className="main-content">
         <Navbar />
-        <AddCategoryModal 
-          show={showAddModal} 
-          onHide={handleAddModalClose} 
-          onSuccess={handleAddSuccess} 
-        />
-        <EditCategoryModal 
-          show={showEditModal} 
-          onHide={handleEditModalClose} 
+        <EditCategoryModal
+          show={showEditModal}
+          onHide={handleEditModalClose}
           onSuccess={handleEditSuccess}
           category={selectedCategory}
         />
         <div className="dashboard-content">
           <div className="container-fluid">
-            {/* Page Header */}
-            <div className="row mb-4">
-              <div className="col-12">
-                <div className="page-header">
-                  <h2>
-                    <i className="fas fa-list me-2"></i>
-                    All Categories
-                  </h2>
-                  <button className="btn btn-primary" onClick={handleAddCategory}>
-                    <i className="fas fa-plus me-2"></i>
-                    Add New Category
-                  </button>
-                </div>
+            {/* Back Button and Header */}
+            <div className="mb-4">
+              <button
+                className="btn btn-secondary mb-3"
+                onClick={() => navigate(-1)}
+              >
+                <i className="fas fa-arrow-left me-2"></i>
+                Back
+              </button>
+              <div className="d-flex justify-content-between align-items-center">
+                <h2 className="page-title text-dark">
+                  {menuName ? `${menuName} Categories` : 'All Categories'}
+                </h2>
+                <button className="btn btn-primary" onClick={() => navigate('/menus/categories/add')}>
+                  <i className="fas fa-plus me-2"></i>
+                  Add New Category
+                </button>
               </div>
             </div>
 
-            {/* Categories Table */}
+            {/* Categories Grid */}
             {loading ? (
               <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
@@ -167,71 +166,52 @@ function Categories() {
                 No categories found. Click "Add New Category" to create one.
               </div>
             ) : (
-              <div className="card">
-                <div className="card-body">
-                  <div className="table-responsive">
-                    <table className="table table-hover">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Image</th>
-                          <th>Category Name</th>
-                          <th>Menu</th>
-                          <th>Description</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {categories.map((category) => (
-                          <tr key={category.categoryId}>
-                            <td>{category.categoryId}</td>
-                            <td>
-                              <img 
-                                src={category.imageUrl || '/assets/imgs/special-offer.png'} 
-                                alt={category.categoryName}
-                                className="category-thumbnail"
-                                onError={(e) => {
-                                  e.target.src = '/assets/imgs/special-offer.png';
-                                }}
-                              />
-                            </td>
-                            <td>
-                              <strong>{category.categoryName}</strong>
-                            </td>
-                            <td>
-                              {category.menu ? (
-                                <span className="badge bg-info">
-                                  {category.menu.menuName}
-                                </span>
-                              ) : (
-                                <span className="text-muted">N/A</span>
-                              )}
-                            </td>
-                            <td>{category.description}</td>
-                            <td>
-                              <div className="btn-group" role="group">
-                                <button 
-                                  className="btn btn-sm btn-outline-primary"
-                                  onClick={() => handleEdit(category.categoryId)}
-                                  title="Edit"
-                                >
-                                  <i className="fas fa-edit"></i>
-                                </button>
-                                <button 
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => handleDelete(category.categoryId, category.categoryName)}
-                                  title="Delete"
-                                >
-                                  <i className="fas fa-trash"></i>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              <div className="row g-4">
+                {categories.map((category) => (
+                  <div className="col-lg-4 col-md-6" key={category.categoryId}>
+                    <div className="category-card card h-100 border-0 shadow-sm">
+                      <div className="category-card-image">
+                        <img
+                          src={category.imageUrl || '/assets/imgs/special-offer.png'}
+                          alt={category.categoryName}
+                          onError={(e) => {
+                            e.target.src = '/assets/imgs/special-offer.png';
+                          }}
+                        />
+                      </div>
+                      <div className="card-body">
+                        <h5 className="category-title">{category.categoryName}</h5>
+                        <p className="category-text text-muted mb-4">{category.description}</p>
+
+                        <div className="category-actions-vertical">
+                          <button
+                            className="btn btn-explore-items w-100 mb-3"
+                            onClick={() => navigate(`/menus/food-items?categoryId=${category.categoryId}`)}
+                          >
+                            Explore Items
+                          </button>
+
+                          <div className="d-flex gap-2">
+                            <button
+                              className="btn btn-edit-category flex-grow-1"
+                              onClick={() => handleEdit(category.categoryId)}
+                            >
+                              <i className="fas fa-edit me-1"></i>
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-delete-category flex-grow-1"
+                              onClick={() => handleDelete(category.categoryId, category.categoryName)}
+                            >
+                              <i className="fas fa-trash me-1"></i>
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             )}
           </div>

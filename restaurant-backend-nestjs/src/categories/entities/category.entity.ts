@@ -25,7 +25,7 @@ export class Category {
   @Column({ name: 'image_url', length: 255 })
   imageUrl: string;
 
-  @Column({ length: 100 })
+  @Column({ length: 500 })
   description: string;
 
   @Column({ name: 'restaurant_id' })

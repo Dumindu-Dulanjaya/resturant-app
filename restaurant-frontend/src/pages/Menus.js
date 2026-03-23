@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
-import AddMenuModal from '../components/menus/AddMenuModal';
 import EditMenuModal from '../components/menus/EditMenuModal';
 import Swal from 'sweetalert2';
 import apiClient from '../api/apiClient';
@@ -10,21 +9,15 @@ import './Menus.css';
 
 function Menus() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState(null);
 
   useEffect(() => {
     fetchMenus();
-    
-    // Check if we should open the add modal
-    const query = new URLSearchParams(location.search);
-    if (query.get('add') === 'true') {
-      setShowAddModal(true);
-    }
-  }, [location.search]);
+  }, []);
 
   const fetchMenus = async () => {
     try {
@@ -56,7 +49,7 @@ function Menus() {
       if (result.isConfirmed) {
         try {
           await apiClient.delete(`/menus/${menuId}`);
-          
+
           Swal.fire({
             icon: 'success',
             title: 'Deleted!',
@@ -64,7 +57,7 @@ function Menus() {
             timer: 2000,
             showConfirmButton: false
           });
-          
+
           fetchMenus();
         } catch (error) {
           console.error('Error deleting menu:', error);
@@ -95,31 +88,14 @@ function Menus() {
     fetchMenus();
   };
 
-  const handleAddMenu = () => {
-    setShowAddModal(true);
-  };
-
-  const handleAddModalClose = () => {
-    setShowAddModal(false);
-  };
-
-  const handleAddSuccess = () => {
-    fetchMenus();
-  };
-
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <div className="main-content">
         <Navbar />
-        <AddMenuModal 
-          show={showAddModal} 
-          onHide={handleAddModalClose} 
-          onSuccess={handleAddSuccess} 
-        />
-        <EditMenuModal 
-          show={showEditModal} 
-          onHide={handleEditModalClose} 
+        <EditMenuModal
+          show={showEditModal}
+          onHide={handleEditModalClose}
           onSuccess={handleEditSuccess}
           menu={selectedMenu}
         />
@@ -133,7 +109,7 @@ function Menus() {
                     <i className="fas fa-utensils me-2"></i>
                     All Menus
                   </h2>
-                  <button className="btn btn-primary" onClick={handleAddMenu}>
+                  <button className="btn btn-primary" onClick={() => navigate('/menus/add')}>
                     <i className="fas fa-plus me-2"></i>
                     Add New Menu
                   </button>
@@ -159,8 +135,8 @@ function Menus() {
                   <div className="col-lg-4 col-md-6" key={menu.menuId}>
                     <div className="menu-card card">
                       <div className="menu-card-image">
-                        <img 
-                          src={menu.imageUrl} 
+                        <img
+                          src={menu.imageUrl}
                           alt={menu.menuName}
                           onError={(e) => {
                             e.target.src = '/assets/imgs/special-offer.png';
@@ -168,21 +144,25 @@ function Menus() {
                         />
                       </div>
                       <div className="card-body">
+                        <button
+                          className="btn btn-explore w-100 mb-3"
+                          onClick={() => navigate(`/menus/categories?menuId=${menu.menuId}`)}
+                        >
+                          Explore
+                        </button>
                         <h5 className="card-title">{menu.menuName}</h5>
                         <p className="card-text text-muted">{menu.description}</p>
-                        <div className="card-actions">
-                          <button 
-                            className="btn btn-sm btn-outline-primary"
+                        <div className="card-actions-vertical">
+                          <button
+                            className="btn btn-edit mb-2 w-100"
                             onClick={() => handleEdit(menu.menuId)}
                           >
-                            <i className="fas fa-edit me-1"></i>
                             Edit
                           </button>
-                          <button 
-                            className="btn btn-sm btn-outline-danger"
+                          <button
+                            className="btn btn-delete w-100"
                             onClick={() => handleDelete(menu.menuId, menu.menuName)}
                           >
-                            <i className="fas fa-trash me-1"></i>
                             Delete
                           </button>
                         </div>

@@ -9,7 +9,7 @@ export class Menu {
   @Column({ name: 'menu_name', length: 20 })
   menuName: string;
 
-  @Column({ length: 100 })
+  @Column({ length: 500 })
   description: string;
 
   @Column({ name: 'image_url', length: 255 })

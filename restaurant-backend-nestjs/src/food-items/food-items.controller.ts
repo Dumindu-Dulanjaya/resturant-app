@@ -60,6 +60,29 @@ export class FoodItemsController {
     };
   }
 
+  @Post('upload-video')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @UseInterceptors(
+    FileInterceptor('video', {
+      storage: foodItemImageStorage, // reusing same storage folder
+      fileFilter: (req, file, callback) => {
+        if (!file.originalname.match(/\.(mp4|webm|avi|mov|mkv)$/i)) {
+          return callback(new Error('Only video files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for video
+    }),
+  )
+  uploadVideo(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      return { success: false, message: 'No video uploaded' };
+    }
+    const videoUrl = `/uploads/food-items/${file.filename}`;
+    return { success: true, videoUrl };
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
