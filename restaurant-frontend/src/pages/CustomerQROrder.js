@@ -29,9 +29,11 @@ const normalizeWhatsAppNumber = (phone) => {
 const CustomerQROrder = () => {
   const { tableKey } = useParams();
   const [tableInfo, setTableInfo] = useState(null);
+  const [menus, setMenus] = useState([]);
   const [categories, setCategories] = useState([]);
   const [foodItems, setFoodItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
+  const [selectedMenu, setSelectedMenu] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [cart, setCart] = useState([]);
   const [customerName, setCustomerName] = useState('');
@@ -55,10 +57,10 @@ const CustomerQROrder = () => {
   // Poll order status when order is placed
   useEffect(() => {
     let pollInterval;
-    
+
     if (orderSuccess && orderSuccess.orderId) {
       setCurrentOrderStatus(orderSuccess.status);
-      
+
       pollInterval = setInterval(async () => {
         try {
           const response = await axios.get(
@@ -69,9 +71,9 @@ const CustomerQROrder = () => {
               }
             }
           );
-          
+
           const newStatus = response.data.status;
-          
+
           // Update status using callback to get latest value
           setCurrentOrderStatus(prevStatus => {
             // Check for status changes
@@ -110,7 +112,7 @@ const CustomerQROrder = () => {
         }
       }, 5000); // Poll every 5 seconds
     }
-    
+
     return () => {
       if (pollInterval) {
         clearInterval(pollInterval);
@@ -135,8 +137,8 @@ const CustomerQROrder = () => {
       // Play sound (optional)
       try {
         const audio = new Audio('/notification.mp3');
-        audio.play().catch(() => {});
-      } catch (e) {}
+        audio.play().catch(() => { });
+      } catch (e) { }
     }
 
     // Also show SweetAlert notification
@@ -165,17 +167,22 @@ const CustomerQROrder = () => {
 
   const fetchMenuData = useCallback(async (restaurantId) => {
     try {
-      const [categoriesRes, foodItemsRes] = await Promise.all([
-        axios.get(`${API_URL}/categories`),
-        axios.get(`${API_URL}/food-items`),
+      const [menusRes, categoriesRes, foodItemsRes] = await Promise.all([
+        axios.get(`${API_URL}/menus/all?restaurantId=${restaurantId}`),
+        axios.get(`${API_URL}/categories?restaurantId=${restaurantId}`),
+        axios.get(`${API_URL}/food-items?restaurantId=${restaurantId}`),
       ]);
 
       // Filter data by restaurant
+      const restaurantMenus = (menusRes.data || []).filter(
+        menu => menu.restaurantId === restaurantId
+      );
       const restaurantCategories = categoriesRes.data || [];
       const restaurantFoodItems = (foodItemsRes.data || []).filter(
         item => item.restaurantId === restaurantId
       );
 
+      setMenus(restaurantMenus);
       setCategories(restaurantCategories);
       setFoodItems(restaurantFoodItems);
       setFilteredItems(restaurantFoodItems);
@@ -207,15 +214,23 @@ const CustomerQROrder = () => {
   }, [tableKey, fetchTableInfo, fetchMenuData]);
 
   useEffect(() => {
-    if (selectedCategory) {
-      const filtered = foodItems.filter(
-        item => item.categoryId === selectedCategory
-      );
-      setFilteredItems(filtered);
-    } else {
-      setFilteredItems(foodItems);
+    let filtered = foodItems;
+
+    if (selectedMenu) {
+      // Filter by menu: categories belonging to this menu
+      const menuCategoryIds = categories
+        .filter(cat => cat.menuId === selectedMenu)
+        .map(cat => cat.categoryId);
+
+      filtered = filtered.filter(item => menuCategoryIds.includes(item.categoryId));
+
+      if (selectedCategory) {
+        filtered = filtered.filter(item => item.categoryId === selectedCategory);
+      }
     }
-  }, [selectedCategory, foodItems]);
+
+    setFilteredItems(filtered);
+  }, [selectedMenu, selectedCategory, foodItems, categories]);
 
   const addToCart = (item) => {
     const existingItem = cart.find(cartItem => cartItem.foodItemId === item.foodItemId);
@@ -318,6 +333,8 @@ const CustomerQROrder = () => {
     setCurrentOrderStatus(null);
     setCustomerName('');
     setWhatsappNumber('');
+    setSelectedMenu(null);
+    setSelectedCategory(null);
     setShownNotifications(new Set());
   };
 
@@ -338,7 +355,7 @@ const CustomerQROrder = () => {
   if (orderSuccess) {
     const statusDisplay = getStatusDisplay(currentOrderStatus || orderSuccess.status);
     const isCancelled = (currentOrderStatus || orderSuccess.status) === 'CANCELLED';
-    
+
     return (
       <div className="customer-qr-order-container">
         <div className="order-success-screen">
@@ -349,7 +366,7 @@ const CustomerQROrder = () => {
           <div className="order-details-card">
             <h3>Order Number</h3>
             <div className="order-number">{orderSuccess.orderNo}</div>
-            
+
             {/* Real-time Status Tracker */}
             <div className="order-status-tracker mt-4">
               <h5>Order Status</h5>
@@ -357,7 +374,7 @@ const CustomerQROrder = () => {
                 <i className={`fas ${statusDisplay.icon} me-2`}></i>
                 {statusDisplay.text}
               </div>
-              
+
               {/* Status Progress */}
               <div className="status-timeline mt-3">
                 <div className={`timeline-step ${['NEW', 'ACCEPTED', 'COOKING', 'READY', 'SERVED'].indexOf(currentOrderStatus || orderSuccess.status) >= 0 ? 'completed' : ''}`}>
@@ -389,36 +406,36 @@ const CustomerQROrder = () => {
               <p><strong>Total:</strong> Rs. {orderSuccess.totalAmount}</p>
             </div>
           </div>
-          
+
           {currentOrderStatus === 'READY' && (
             <div className="alert alert-success mt-3">
               <i className="fas fa-check-circle me-2"></i>
               <strong>Your order is ready!</strong> Our staff will bring it to your table shortly.
             </div>
           )}
-          
+
           {currentOrderStatus === 'CANCELLED' && (
             <div className="alert alert-danger mt-3">
               <i className="fas fa-times-circle me-2"></i>
               <strong>Order Cancelled!</strong> Your order has been cancelled. Please contact our staff for assistance.
             </div>
           )}
-          
+
           {currentOrderStatus === 'SERVED' && (
             <div className="alert alert-info mt-3">
               <i className="fas fa-smile me-2"></i>
               <strong>Enjoy your meal!</strong> Thank you for dining with us.
             </div>
           )}
-          
+
           <p className="success-message">
-            {currentOrderStatus === 'CANCELLED' 
-              ? 'Please contact our staff if you have any questions.' 
-              : currentOrderStatus === 'SERVED' 
-              ? 'Thank you! We hope you enjoy your meal.' 
-              : currentOrderStatus === 'READY'
-              ? 'Your food will be served shortly!'
-              : 'We\'ll notify you when your order status changes!'}
+            {currentOrderStatus === 'CANCELLED'
+              ? 'Please contact our staff if you have any questions.'
+              : currentOrderStatus === 'SERVED'
+                ? 'Thank you! We hope you enjoy your meal.'
+                : currentOrderStatus === 'READY'
+                  ? 'Your food will be served shortly!'
+                  : 'We\'ll notify you when your order status changes!'}
           </p>
           <button className="btn btn-primary btn-lg" onClick={startNewOrder}>
             <i className="fas fa-plus me-2"></i> Place Another Order
@@ -453,85 +470,173 @@ const CustomerQROrder = () => {
     );
   }
 
+  // Helper to resolve image URL
+  const getImageUrl = (url) => {
+    if (!url) return null;
+
+    let resolvedUrl = url;
+    if (url.startsWith('http')) {
+      // If the URL contains 'localhost' but we are accessing via IP, replace it
+      const currentHost = window.location.hostname;
+      if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+        resolvedUrl = url.replace('localhost', currentHost).replace('127.0.0.1', currentHost);
+      }
+      return resolvedUrl;
+    }
+
+    // Base URL for uploads (assuming backend serves from /uploads)
+    const baseUrl = API_URL.replace('/api', '');
+    return `${baseUrl}/uploads/food-items/${url}`;
+  };
+
   return (
     <div className="customer-qr-order-container">
-      {/* Header with Table Info */}
-      <div className="customer-header">
-        <div>
-          <h1><i className="fas fa-utensils me-2"></i> {tableInfo.restaurantName}</h1>
-          <div className="table-badge">
-            <i className="fas fa-chair me-1"></i> {tableInfo.tableNo}
-          </div>
-        </div>
-        <button 
-          className="btn btn-primary cart-toggle-btn"
-          onClick={() => setShowCart(!showCart)}
-        >
-          <i className="fas fa-shopping-cart me-2"></i>
-          Cart ({cart.length})
-        </button>
-      </div>
-
-      <div className="customer-content">
-        {/* Categories Sidebar */}
-        <div className="categories-sidebar">
-          <h5>Categories</h5>
-          <div className="category-list">
-            <button
-              className={`category-item ${!selectedCategory ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(null)}
-            >
-              <i className="fas fa-th me-2"></i> All Items
-            </button>
-            {categories.map(category => (
-              <button
-                key={category.categoryId}
-                className={`category-item ${selectedCategory === category.categoryId ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(category.categoryId)}
-              >
-                {category.categoryName}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Food Items Grid */}
-        <div className="food-items-section">
-          {filteredItems.length === 0 ? (
-            <div className="no-items">
-              <i className="fas fa-inbox fa-3x mb-3"></i>
-              <p>No items available in this category</p>
+      {/* Dynamic Header */}
+      <header className={`customer-header-modern ${selectedMenu ? 'header-scrolled' : ''}`}>
+        <div className="header-top">
+          <div className="restaurant-brand">
+            <div className="brand-icon">
+              <i className="fas fa-utensils"></i>
             </div>
-          ) : (
-            <div className="food-items-grid">
-              {filteredItems.map(item => (
-                <div key={item.foodItemId} className="food-item-card">
-                  {item.imageUrl1 && (
-                    <div className="food-item-image">
-                      <img src={item.imageUrl1} alt={item.itemName} />
-                    </div>
-                  )}
-                  <div className="food-item-body">
-                    <h5 className="food-item-name">{item.itemName}</h5>
-                    {item.description && (
-                      <p className="food-item-description">{item.description}</p>
+            <div className="brand-info">
+              <h1>{tableInfo.restaurantName}</h1>
+              <div className="table-indicator">
+                <i className="fas fa-chair"></i> Room {tableInfo.tableNo || tableInfo.roomNo}
+              </div>
+            </div>
+          </div>
+          <button
+            className={`modern-cart-btn ${cart.length > 0 ? 'has-items' : ''}`}
+            onClick={() => setShowCart(true)}
+          >
+            <i className="fas fa-shopping-bag"></i>
+            {cart.length > 0 && <span className="cart-count">{cart.length}</span>}
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="customer-main-content">
+        {!selectedMenu ? (
+          // Menu Selection Screen
+          <div className="menu-selection-container fade-in">
+            <div className="section-title">
+              <h2>Welcome</h2>
+              <p>Please select a menu to start ordering</p>
+            </div>
+            <div className="menu-grid">
+              {menus.map(menu => (
+                <div
+                  key={menu.menuId}
+                  className="menu-option-card"
+                  onClick={() => setSelectedMenu(menu.menuId)}
+                >
+                  <div className="menu-option-icon">
+                    {menu.imageUrl ? (
+                      <img src={getImageUrl(menu.imageUrl)} alt={menu.menuName} className="menu-thumb" />
+                    ) : (
+                      <i className={
+                        (menu.menuName || '').toLowerCase().includes('breakfast') ? 'fas fa-coffee' :
+                          (menu.menuName || '').toLowerCase().includes('lunch') ? 'fas fa-sun' :
+                            (menu.menuName || '').toLowerCase().includes('dinner') ? 'fas fa-moon' :
+                              'fas fa-hamburger'
+                      }></i>
                     )}
-                    <div className="food-item-footer">
-                      <span className="food-item-price">${parseFloat(item.price).toFixed(2)}</span>
-                      <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => addToCart(item)}
-                      >
-                        <i className="fas fa-plus me-1"></i> Add
-                      </button>
-                    </div>
                   </div>
+                  <h3>{menu.menuName}</h3>
+                  <p>{menu.description || 'View our selection of dishes'}</p>
+                  <span className="select-btn">Select <i className="fas fa-arrow-right"></i></span>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        ) : (
+          // Category & Items Screen
+          <div className="items-view-container">
+            {/* Category Navigation - Horizontal Scroll */}
+            <div className="category-nav-container slide-in-top">
+              <button
+                className={`back-to-menus`}
+                onClick={() => {
+                  setSelectedMenu(null);
+                  setSelectedCategory(null);
+                }}
+              >
+                <i className="fas fa-chevron-left"></i>
+              </button>
+              <div className="horizontal-categories">
+                <button
+                  className={`category-pill ${!selectedCategory ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  All
+                </button>
+                {categories
+                  .filter(cat => cat.menuId === selectedMenu)
+                  .map(category => (
+                    <button
+                      key={category.categoryId}
+                      className={`category-pill ${selectedCategory === category.categoryId ? 'active' : ''}`}
+                      onClick={() => setSelectedCategory(category.categoryId)}
+                    >
+                      {category.categoryName}
+                    </button>
+                  ))}
+              </div>
+            </div>
+
+            {/* Food Items Grid */}
+            <div className="food-items-section-modern fade-in">
+              <div className="items-header">
+                <h3>{selectedCategory
+                  ? categories.find(c => c.categoryId === selectedCategory)?.categoryName
+                  : menus.find(m => m.menuId === selectedMenu)?.menuName}
+                </h3>
+                <span className="items-count">{filteredItems.length} Items</span>
+              </div>
+
+              {filteredItems.length === 0 ? (
+                <div className="no-items-modern">
+                  <div className="empty-state-icon">
+                    <i className="fas fa-utensils"></i>
+                  </div>
+                  <h4>No items found</h4>
+                  <p>There are no items available in this category currently.</p>
+                </div>
+              ) : (
+                <div className="food-grid-modern">
+                  {filteredItems.map(item => (
+                    <div key={item.foodItemId} className="modern-food-card">
+                      <div className="card-image-wrapper">
+                        <img
+                          src={getImageUrl(item.imageUrl1)}
+                          alt={item.itemName}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/assets/images/default-food.png';
+                            e.target.className = 'placeholder-img';
+                          }}
+                        />
+                        <div className="price-tag">Rs. {parseFloat(item.price).toFixed(0)}</div>
+                      </div>
+                      <div className="card-content">
+                        <h4>{item.itemName}</h4>
+                        <p>{item.description || 'Fresh and delicious prepared just for you.'}</p>
+                        <button
+                          className="add-to-cart-modern"
+                          onClick={() => addToCart(item)}
+                        >
+                          <i className="fas fa-plus"></i> Add to Order
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
 
       {/* Cart Drawer */}
       <div className={`cart-drawer ${showCart ? 'open' : ''}`}>
@@ -620,7 +725,7 @@ const CustomerQROrder = () => {
                     />
                     <small className="text-muted">We'll send your bill to this WhatsApp number.</small>
                   </div>
-                  
+
                   <div className="mb-3">
                     <label className="form-label">Order Notes (Optional)</label>
                     <textarea

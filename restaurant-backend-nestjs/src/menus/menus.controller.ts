@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Request,
+  Query,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -35,12 +36,12 @@ interface RequestWithUser extends Request {
 }
 
 @Controller('menus')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 export class MenusController {
-  constructor(private readonly menusService: MenusService) {}
+  constructor(private readonly menusService: MenusService) { }
 
   @Post('upload-image')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @UseInterceptors(
     FileInterceptor('image', {
       storage: menuImageStorage,
@@ -68,6 +69,8 @@ export class MenusController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   create(@Body() createMenuDto: CreateMenuDto, @Request() req: RequestWithUser) {
     const restaurantId = req.user.isSuperAdmin
       ? (createMenuDto as any).restaurantId
@@ -77,19 +80,30 @@ export class MenusController {
   }
 
   @Get()
-  findAll(@Request() req: RequestWithUser) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  findAll(@Request() req: any) {
     if (req.user.isSuperAdmin) {
       return this.menusService.findAllForSuperAdmin();
     }
     return this.menusService.findAll(req.user.restaurantId || 0);
   }
 
+  @Get('all') // Added for backward compatibility if needed by frontend
+  findAllPublic(@Query('restaurantId') restaurantId?: string) {
+    return this.menusService.findAll(+(restaurantId || 0));
+  }
+
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   findOne(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.menusService.findOne(+id, req.user.restaurantId || 0);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   update(
     @Param('id') id: string,
     @Body() updateMenuDto: UpdateMenuDto,
@@ -103,6 +117,8 @@ export class MenusController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   remove(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.menusService.remove(+id, req.user.restaurantId || 0);
   }
