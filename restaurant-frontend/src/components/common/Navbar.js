@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import apiClient, { BASE_URL } from '../../api/apiClient';
+import apiClient, { BASE_URL, sanitizeUrl } from '../../api/apiClient';
 import Swal from 'sweetalert2';
 import './Navbar.css';
 
@@ -153,9 +153,9 @@ function Navbar() {
 
   const restaurantName = user?.restaurantName || 'Restaurant';
   const restaurantLogoUrl = user?.restaurantLogo
-    ? (user.restaurantLogo.startsWith('http')
+    ? sanitizeUrl(user.restaurantLogo.startsWith('http')
       ? user.restaurantLogo
-      : `${BASE_URL}/${user.restaurantLogo.startsWith('/') ? user.restaurantLogo.substring(1) : user.restaurantLogo}`)
+      : `${BASE_URL}${user.restaurantLogo.startsWith('/') ? '' : '/'}${user.restaurantLogo}`)
     : null;
 
   return (

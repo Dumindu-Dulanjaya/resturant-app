@@ -72,6 +72,7 @@ export class TableQrService {
     restaurantId: number;
     restaurantName: string;
     tableNo: string;
+    logo?: string;
   }> {
     const tableQr = await this.findByTableKey(tableKey);
 
@@ -83,6 +84,7 @@ export class TableQrService {
       restaurantId: tableQr.restaurantId,
       restaurantName: tableQr.restaurant?.restaurantName || 'Restaurant',
       tableNo: tableQr.tableNo,
+      logo: tableQr.restaurant?.logo,
     };
   }
 

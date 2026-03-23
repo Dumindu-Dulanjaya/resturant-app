@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient, { BASE_URL } from '../api/apiClient';
+import apiClient, { BASE_URL, sanitizeUrl } from '../api/apiClient';
 import Swal from 'sweetalert2';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
@@ -190,7 +190,9 @@ function AdminHotelProfile() {
   }
 
   const logoUrl = restaurant.logo
-    ? `${BASE_URL}${restaurant.logo.startsWith('/') ? '' : '/'}${restaurant.logo}`
+    ? sanitizeUrl(restaurant.logo.startsWith('http') 
+        ? restaurant.logo 
+        : `${BASE_URL}${restaurant.logo.startsWith('/') ? '' : '/'}${restaurant.logo}`)
     : null;
 
   const expiryDate = restaurant.subscriptionExpiryDate

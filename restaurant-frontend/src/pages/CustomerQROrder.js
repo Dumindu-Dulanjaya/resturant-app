@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../api/apiClient';
 import Swal from 'sweetalert2';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
@@ -63,8 +63,8 @@ const CustomerQROrder = () => {
 
       pollInterval = setInterval(async () => {
         try {
-          const response = await axios.get(
-            `${API_URL}/orders/track/${orderSuccess.orderId}`,
+          const response = await apiClient.get(
+            `/orders/track/${orderSuccess.orderId}`,
             {
               headers: {
                 'x-table-key': tableKey
@@ -155,7 +155,7 @@ const CustomerQROrder = () => {
 
   const fetchTableInfo = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/qr/resolve/${tableKey}`);
+      const response = await apiClient.get(`/qr/resolve/${tableKey}`);
       setTableInfo(response.data);
       return response.data.restaurantId;
     } catch (error) {
@@ -168,9 +168,9 @@ const CustomerQROrder = () => {
   const fetchMenuData = useCallback(async (restaurantId) => {
     try {
       const [menusRes, categoriesRes, foodItemsRes] = await Promise.all([
-        axios.get(`${API_URL}/menus/all?restaurantId=${restaurantId}`),
-        axios.get(`${API_URL}/categories?restaurantId=${restaurantId}`),
-        axios.get(`${API_URL}/food-items?restaurantId=${restaurantId}`),
+        apiClient.get(`/menus/all?restaurantId=${restaurantId}`),
+        apiClient.get(`/categories?restaurantId=${restaurantId}`),
+        apiClient.get(`/food-items?restaurantId=${restaurantId}`),
       ]);
 
       // Filter data by restaurant
@@ -304,8 +304,8 @@ const CustomerQROrder = () => {
         }))
       };
 
-      const response = await axios.post(
-        `${API_URL}/orders`,
+      const response = await apiClient.post(
+        `/orders`,
         orderPayload,
         {
           headers: {
@@ -473,20 +473,7 @@ const CustomerQROrder = () => {
   // Helper to resolve image URL
   const getImageUrl = (url) => {
     if (!url) return null;
-
-    let resolvedUrl = url;
-    if (url.startsWith('http')) {
-      // If the URL contains 'localhost' but we are accessing via IP, replace it
-      const currentHost = window.location.hostname;
-      if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
-        resolvedUrl = url.replace('localhost', currentHost).replace('127.0.0.1', currentHost);
-      }
-      return resolvedUrl;
-    }
-
-    // Base URL for uploads (assuming backend serves from /uploads)
-    const baseUrl = API_URL.replace('/api', '');
-    return `${baseUrl}/uploads/food-items/${url}`;
+    return url; // Now handled automatically by apiClient interceptor
   };
 
   return (
@@ -495,9 +482,13 @@ const CustomerQROrder = () => {
       <header className={`customer-header-modern ${selectedMenu ? 'header-scrolled' : ''}`}>
         <div className="header-top">
           <div className="restaurant-brand">
-            <div className="brand-icon">
-              <i className="fas fa-utensils"></i>
-            </div>
+            {tableInfo?.logo ? (
+              <img src={tableInfo.logo} alt={tableInfo.restaurantName || 'Restaurant'} className="brand-logo-img" />
+            ) : (
+              <div className="brand-icon">
+                <i className="fas fa-utensils"></i>
+              </div>
+            )}
             <div className="brand-info">
               <h1>{tableInfo.restaurantName}</h1>
               <div className="table-indicator">

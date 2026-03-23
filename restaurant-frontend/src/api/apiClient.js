@@ -56,6 +56,72 @@ const resolveApiBaseUrl = () => {
 const API_BASE_URL = resolveApiBaseUrl();
 export const BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 
+/**
+ * Dynamically corrects URLs in response data to match the current host.
+ * This is crucial for environments where the server's LAN IP may change.
+ */
+export const sanitizeUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const currentProtocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
+  
+  // Dynamically resolve base URL for this specific sanitize call
+  const dynamicBaseUrl = (currentHostname === 'localhost' || currentHostname === '127.0.0.1')
+    ? 'http://localhost:3000'
+    : `${currentProtocol}//${currentHostname}:3000`;
+
+  // If it's a relative path, prefix it with the current dynamic base URL
+  if (!url.startsWith('http')) {
+     const isAsset = url.startsWith('/uploads') || url.startsWith('uploads/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(url);
+     if (isAsset) {
+        return `${dynamicBaseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+     }
+     return url;
+  }
+
+  try {
+    const urlObj = new URL(url);
+    
+    // If accessing via LAN IP/different host, ensure absolute URLs point to current backend host
+    if (currentHostname && currentHostname !== 'localhost' && currentHostname !== '127.0.0.1') {
+      if (urlObj.hostname !== currentHostname) {
+        urlObj.hostname = currentHostname;
+        // Keep the backend port (3000) unless it was something else explicitly
+        if (!urlObj.port) urlObj.port = '3000'; 
+        return urlObj.toString();
+      }
+    }
+    return url;
+  } catch {
+    return url;
+  }
+};
+
+/** Recursive helper to sanitize all URLs in an object/array. */
+const sanitizeData = (data, parentKey = '') => {
+  if (!data) return data;
+  
+  if (typeof data === 'string') {
+    const lowerKey = parentKey.toLowerCase();
+    const isUrlKey = lowerKey.includes('url') || lowerKey.includes('image') || lowerKey.includes('logo') || lowerKey === 'qrimage';
+    if (isUrlKey || data.startsWith('http')) {
+      return sanitizeUrl(data);
+    }
+    return data;
+  }
+  
+  if (Array.isArray(data)) return data.map(item => sanitizeData(item, parentKey));
+  if (typeof data === 'object') {
+    const sanitized = {};
+    for (const [key, value] of Object.entries(data)) {
+      sanitized[key] = sanitizeData(value, key);
+    }
+    return sanitized;
+  }
+  return data;
+};
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -83,9 +149,15 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle response errors
+// Handle response errors and sanitize data
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Automatically sanitize all URLs in the response to match current IP
+    if (response.data) {
+      response.data = sanitizeData(response.data);
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       // Clear auth and redirect to login
