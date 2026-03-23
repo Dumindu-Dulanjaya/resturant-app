@@ -583,13 +583,14 @@
   .add-to-cart-modern {
     padding: 6px 12px;
     font-size: 0.85rem;
-    border-radius: 10px;
+    border-radius: 0;
   }
 
   .price-tag {
     font-size: 0.85rem;
     padding: 4px 10px;
-    bottom: 8px;
-    right: 8px;
+    bottom: 0px;
+    right: 0px;
+    border-radius: 0;
   }
 }

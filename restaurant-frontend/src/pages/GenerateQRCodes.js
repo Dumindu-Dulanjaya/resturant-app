@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import Swal from 'sweetalert2';
 import apiClient from '../api/apiClient';
+import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import './GenerateQRCodes.css';
 
@@ -119,9 +120,10 @@ const GenerateQRCodes = () => {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="wrapper">
+      <Navbar />
       <Sidebar />
-      <div className="main-content">
+      <div className="content-wrapper">
         <div className="generate-qr-container">
           <div className="page-header">
             <h2>

@@ -16,7 +16,7 @@
 
 .generate-qr-form {
   background: white;
-  border-radius: 10px;
+  border-radius: 0;
   border: none;
 }
 
@@ -27,7 +27,7 @@
 }
 
 .generate-qr-form .form-control {
-  border-radius: 6px;
+  border-radius: 0;
   padding: 10px 15px;
   border: 1px solid #dee2e6;
 }
@@ -46,7 +46,7 @@
 
 .qr-code-card {
   border: none;
-  border-radius: 10px;
+  border-radius: 0;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -63,20 +63,20 @@
 
 .qr-code-wrapper {
   background: #f8f9fa;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 15px;
   display: inline-block;
   margin: 0 auto;
 }
 
 .qr-code-wrapper canvas {
-  border-radius: 8px;
+  border-radius: 0;
   display: block;
 }
 
 .no-qr-codes {
   background: white;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 60px 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
@@ -92,7 +92,7 @@
 
 /* Button Styles */
 .btn {
-  border-radius: 6px;
+  border-radius: 0;
   padding: 10px 20px;
   font-weight: 500;
   transition: all 0.3s;

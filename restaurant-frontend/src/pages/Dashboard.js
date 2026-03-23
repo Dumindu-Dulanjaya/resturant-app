@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -22,6 +23,15 @@ function Dashboard() {
     recentOrders: []
   });
   const [loading, setLoading] = useState(true);
+  const [animTrigger, setAnimTrigger] = useState(0);
+
+  // Re-trigger animation every 20 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimTrigger(prev => prev + 1);
+    }, 20000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -185,16 +195,59 @@ function Dashboard() {
             {/* Welcome Header */}
             <div className="row mb-4">
               <div className="col-12">
-                <div className="welcome-card">
+                <div className="welcome-card" key={animTrigger}>
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
-                      <h2>
+                      <motion.h2
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                          visible: {
+                            transition: {
+                              staggerChildren: 0.05
+                            }
+                          }
+                        }}
+                      >
                         <i className="fas fa-store me-2"></i>
-                        Welcome back, {user?.name || user?.email?.split('@')[0] || 'User'}!
-                      </h2>
-                      <p className="text-white mb-0" style={{ opacity: 0.9 }}>
-                        Here's what's happening with your restaurant today
-                      </p>
+                        {`Welcome back, ${user?.name || user?.email?.split('@')[0] || 'User'}!`.split("").map((char, index) => (
+                          <motion.span
+                            key={index}
+                            variants={{
+                              hidden: { opacity: 0 },
+                              visible: { opacity: 1 }
+                            }}
+                          >
+                            {char}
+                          </motion.span>
+                        ))}
+                      </motion.h2>
+                      <motion.p 
+                        className="text-white mb-0" 
+                        style={{ opacity: 0.9 }}
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                          visible: {
+                            transition: {
+                              staggerChildren: 0.03,
+                              delayChildren: 0.5
+                            }
+                          }
+                        }}
+                      >
+                        {"Here's what's happening with your restaurant today".split("").map((char, index) => (
+                          <motion.span
+                            key={index}
+                            variants={{
+                              hidden: { opacity: 0 },
+                              visible: { opacity: 1 }
+                            }}
+                          >
+                            {char}
+                          </motion.span>
+                        ))}
+                      </motion.p>
                     </div>
                     <div>
                       {connected ? (
@@ -215,7 +268,12 @@ function Dashboard() {
             </div>
 
             {/* Stats Cards */}
-            <div className="row g-4 mb-4">
+            <motion.div 
+              className="row g-4 mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
               <div className="col-xl-3 col-md-6">
                 <div className="stats-card gradient-blue">
                   <div className="stats-icon">
@@ -263,7 +321,7 @@ function Dashboard() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Charts and Recent Orders */}
             <div className="row g-4">
