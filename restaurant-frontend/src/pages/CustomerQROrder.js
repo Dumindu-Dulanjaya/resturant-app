@@ -43,6 +43,8 @@ const CustomerQROrder = () => {
   const [loading, setLoading] = useState(true);
   const [showCart, setShowCart] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+  const [showStatusScreen, setShowStatusScreen] = useState(false);
+  const [isCancelled, setIsCancelled] = useState(false);
   const [currentOrderStatus, setCurrentOrderStatus] = useState(null);
   const [shownNotifications, setShownNotifications] = useState(new Set());
   const { subscribe, connected } = useWebSocket();
@@ -337,6 +339,7 @@ const CustomerQROrder = () => {
 
       // Success
       setOrderSuccess(response.data);
+      setShowStatusScreen(true);
       setCart([]);
       setOrderNotes('');
       setShowCart(false);
@@ -371,14 +374,14 @@ const CustomerQROrder = () => {
     return displays[status] || displays['NEW'];
   };
 
-  // Success Screen with Real-time Status Updates
-  if (orderSuccess) {
-    const statusDisplay = getStatusDisplay(currentOrderStatus || orderSuccess.status);
-    const isCancelled = (currentOrderStatus || orderSuccess.status) === 'CANCELLED';
+  // Logic to determine what to show in the main content area
+  const renderMainContent = () => {
+    if (orderSuccess && showStatusScreen) {
+      const statusDisplay = getStatusDisplay(currentOrderStatus || orderSuccess.status);
+      const isCancelled = (currentOrderStatus || orderSuccess.status) === 'CANCELLED';
 
-    return (
-      <div className="customer-qr-order-container">
-        <div className="order-success-screen">
+      return (
+        <div className="order-success-screen fade-in">
           <div className={`success-icon ${isCancelled ? 'cancelled-icon' : ''}`}>
             <i className={`fas ${isCancelled ? 'fa-times-circle' : 'fa-check-circle'}`}></i>
           </div>
@@ -457,13 +460,126 @@ const CustomerQROrder = () => {
                   ? 'Your food will be served shortly!'
                   : 'We\'ll notify you when your order status changes!'}
           </p>
-          <button className="place-another-btn" onClick={startNewOrder}>
-            <i className="fas fa-plus me-2"></i> Place Another Order
+
+          <div className="d-flex flex-column gap-3">
+            <button className="btn btn-outline-secondary w-100" onClick={() => setShowStatusScreen(false)} style={{ padding: '12px', borderRadius: '8px', fontWeight: '600' }}>
+              <i className="fas fa-arrow-left me-2"></i> Back to Menu
+            </button>
+            <button className="place-another-btn" onClick={startNewOrder}>
+              <i className="fas fa-plus me-2"></i> Place Another Order
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (!selectedMenu) {
+      return (
+        <div className="menu-selection-container fade-in">
+          <div className="section-title">
+            <h2>Welcome</h2>
+            <p>Please select a menu to start ordering</p>
+          </div>
+          <div className="menu-grid">
+            {menus.map(menu => (
+              <div
+                key={menu.menuId}
+                className="menu-option-card"
+                onClick={() => setSelectedMenu(menu.menuId)}
+              >
+                <div className="menu-option-icon">
+                  {menu.imageUrl ? (
+                    <img src={getImageUrl(menu.imageUrl)} alt={menu.menuName} className="menu-thumb" />
+                  ) : (
+                    <i className={
+                      (menu.menuName || '').toLowerCase().includes('breakfast') ? 'fas fa-coffee' :
+                        (menu.menuName || '').toLowerCase().includes('lunch') ? 'fas fa-sun' :
+                          (menu.menuName || '').toLowerCase().includes('dinner') ? 'fas fa-moon' :
+                            'fas fa-hamburger'
+                    }></i>
+                  )}
+                </div>
+                <h3>{menu.menuName}</h3>
+                <p>{menu.description || 'View our selection of dishes'}</p>
+                <span className="select-btn">Select <i className="fas fa-arrow-right"></i></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="items-view-container">
+        {/* Category Navigation - Horizontal Scroll */}
+        <div className="category-nav-container slide-in-top">
+          <button
+            className={`back-to-menus`}
+            onClick={() => {
+              setSelectedMenu(null);
+              setSelectedCategory(null);
+            }}
+          >
+            <i className="fas fa-chevron-left"></i>
           </button>
+          <div className="horizontal-categories">
+            <button
+              className={`category-pill ${!selectedCategory ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(null)}
+            >
+              All
+            </button>
+            {categories
+              .filter(cat => cat.menuId === selectedMenu)
+              .map(category => (
+                <button
+                  key={category.categoryId}
+                  className={`category-pill ${selectedCategory === category.categoryId ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(category.categoryId)}
+                >
+                  {category.categoryName}
+                </button>
+              ))}
+          </div>
+        </div>
+
+        {/* Food Items Grid */}
+        <div className="food-items-section-modern fade-in">
+          <div className="items-header">
+            <h3>{categories.find(c => c.categoryId === selectedCategory)?.categoryName || 'All Items'}</h3>
+            <span className="items-count">{filteredItems.length} items available</span>
+          </div>
+
+          <div className="food-grid-modern">
+            {filteredItems.map(item => (
+              <div key={item.foodItemId} className="modern-food-card">
+                <div className="card-image-wrapper">
+                  {item.imageUrl ? (
+                    <img src={getImageUrl(item.imageUrl)} alt={item.itemName} />
+                  ) : (
+                    <div className="h-100 d-flex align-items-center justify-content-center text-muted">
+                      <i className="fas fa-hamburger fa-3x opacity-25"></i>
+                    </div>
+                  )}
+                  <div className="price-tag">Rs. {parseFloat(item.price).toFixed(0)}</div>
+                </div>
+                <div className="card-content">
+                  <h4>{item.itemName}</h4>
+                  <p>{item.description}</p>
+                  <button
+                    className="add-to-cart-modern"
+                    onClick={() => addToCart(item)}
+                  >
+                    <i className="fas fa-plus"></i> Add to Order
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
-  }
+  };
 
   if (loading) {
     return (
@@ -516,137 +632,31 @@ const CustomerQROrder = () => {
               </div>
             </div>
           </div>
-          <button
-            className={`modern-cart-btn ${cart.length > 0 ? 'has-items' : ''}`}
-            onClick={() => setShowCart(true)}
-          >
-            <i className="fas fa-shopping-bag"></i>
-            {cart.length > 0 && <span className="cart-count">{cart.length}</span>}
-          </button>
+          <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
+            {orderSuccess && !showStatusScreen && (
+              <button
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => setShowStatusScreen(true)}
+                style={{ borderRadius: '8px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <i className="fas fa-receipt"></i> Track Order
+              </button>
+            )}
+            <button
+              className={`modern-cart-btn ${cart.length > 0 ? 'has-items' : ''}`}
+              onClick={() => setShowCart(true)}
+            >
+              <i className="fas fa-shopping-bag"></i>
+              {cart.length > 0 && <span className="cart-count">{cart.length}</span>}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
+      {/* Main Content Area */}
       <main className="customer-main-content">
-        {!selectedMenu ? (
-          // Menu Selection Screen
-          <div className="menu-selection-container fade-in">
-            <div className="section-title">
-              <h2>Welcome</h2>
-              <p>Please select a menu to start ordering</p>
-            </div>
-            <div className="menu-grid">
-              {menus.map(menu => (
-                <div
-                  key={menu.menuId}
-                  className="menu-option-card"
-                  onClick={() => setSelectedMenu(menu.menuId)}
-                >
-                  <div className="menu-option-icon">
-                    {menu.imageUrl ? (
-                      <img src={getImageUrl(menu.imageUrl)} alt={menu.menuName} className="menu-thumb" />
-                    ) : (
-                      <i className={
-                        (menu.menuName || '').toLowerCase().includes('breakfast') ? 'fas fa-coffee' :
-                          (menu.menuName || '').toLowerCase().includes('lunch') ? 'fas fa-sun' :
-                            (menu.menuName || '').toLowerCase().includes('dinner') ? 'fas fa-moon' :
-                              'fas fa-hamburger'
-                      }></i>
-                    )}
-                  </div>
-                  <h3>{menu.menuName}</h3>
-                  <p>{menu.description || 'View our selection of dishes'}</p>
-                  <span className="select-btn">Select <i className="fas fa-arrow-right"></i></span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          // Category & Items Screen
-          <div className="items-view-container">
-            {/* Category Navigation - Horizontal Scroll */}
-            <div className="category-nav-container slide-in-top">
-              <button
-                className={`back-to-menus`}
-                onClick={() => {
-                  setSelectedMenu(null);
-                  setSelectedCategory(null);
-                }}
-              >
-                <i className="fas fa-chevron-left"></i>
-              </button>
-              <div className="horizontal-categories">
-                <button
-                  className={`category-pill ${!selectedCategory ? 'active' : ''}`}
-                  onClick={() => setSelectedCategory(null)}
-                >
-                  All
-                </button>
-                {categories
-                  .filter(cat => cat.menuId === selectedMenu)
-                  .map(category => (
-                    <button
-                      key={category.categoryId}
-                      className={`category-pill ${selectedCategory === category.categoryId ? 'active' : ''}`}
-                      onClick={() => setSelectedCategory(category.categoryId)}
-                    >
-                      {category.categoryName}
-                    </button>
-                  ))}
-              </div>
-            </div>
-
-            {/* Food Items Grid */}
-            <div className="food-items-section-modern fade-in">
-              <div className="items-header">
-                <h3>{selectedCategory
-                  ? categories.find(c => c.categoryId === selectedCategory)?.categoryName
-                  : menus.find(m => m.menuId === selectedMenu)?.menuName}
-                </h3>
-                <span className="items-count">{filteredItems.length} Items</span>
-              </div>
-
-              {filteredItems.length === 0 ? (
-                <div className="no-items-modern">
-                  <div className="empty-state-icon">
-                    <i className="fas fa-utensils"></i>
-                  </div>
-                  <h4>No items found</h4>
-                  <p>There are no items available in this category currently.</p>
-                </div>
-              ) : (
-                <div className="food-grid-modern">
-                  {filteredItems.map(item => (
-                    <div key={item.foodItemId} className="modern-food-card">
-                      <div className="card-image-wrapper">
-                        <img
-                          src={getImageUrl(item.imageUrl1)}
-                          alt={item.itemName}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/assets/images/default-food.png';
-                            e.target.className = 'placeholder-img';
-                          }}
-                        />
-                        <div className="price-tag">Rs. {parseFloat(item.price).toFixed(0)}</div>
-                      </div>
-                      <div className="card-content">
-                        <h4>{item.itemName}</h4>
-                        <p>{item.description || 'Fresh and delicious prepared just for you.'}</p>
-                        <button
-                          className="add-to-cart-modern"
-                          onClick={() => addToCart(item)}
-                        >
-                          <i className="fas fa-plus"></i> Add to Order
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {renderMainContent()}
       </main>
 
       {/* Cart Drawer */}
@@ -657,7 +667,6 @@ const CustomerQROrder = () => {
             <i className="fas fa-times"></i>
           </button>
         </div>
-
         <div className="cart-body">
           {cart.length === 0 ? (
             <div className="empty-cart-modern">
@@ -665,102 +674,102 @@ const CustomerQROrder = () => {
               <p>Your cart is empty</p>
             </div>
           ) : (
-            <>
-              <div className="cart-items">
-                {cart.map(item => (
-                  <div key={item.foodItemId} className="cart-item-modern">
-                    <div className="cart-item-info" style={{ flex: 1, paddingRight: '10px' }}>
-                      <h5>{item.name}</h5>
-                      <p>Rs. {parseFloat(item.price).toFixed(0)}</p>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm mt-2"
-                        placeholder="Special instructions..."
-                        value={item.notes}
-                        onChange={(e) => updateCartItemNotes(item.foodItemId, e.target.value)}
-                        style={{ borderRadius: '8px', fontSize: '0.85rem' }}
-                      />
-                    </div>
-                    <div className="cart-item-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-                      <button
-                        className="remove-btn"
-                        onClick={() => removeFromCart(item.foodItemId)}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                      <div className="qty-controls">
-                        <button onClick={() => updateCartItemQty(item.foodItemId, -1)}>
-                          <i className="fas fa-minus"></i>
-                        </button>
-                        <span>{item.qty}</span>
-                        <button onClick={() => updateCartItemQty(item.foodItemId, 1)}>
-                          <i className="fas fa-plus"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="cart-footer">
-                <div className="order-inputs">
-                  <div className="table-info-display mb-3">
-                    <i className="fas fa-chair me-2"></i>
-                    <strong>Table:</strong> {tableInfo.tableNo}
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">Your Name <span className="text-danger">*</span></label>
+            <div className="cart-items">
+              {cart.map(item => (
+                <div key={item.foodItemId} className="cart-item-modern">
+                  <div className="cart-item-info" style={{ flex: 1, paddingRight: '10px' }}>
+                    <h5>{item.name}</h5>
+                    <p>Rs. {parseFloat(item.price).toFixed(0)}</p>
                     <input
                       type="text"
-                      className="form-control"
-                      placeholder="Enter your name"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="form-control form-control-sm mt-2"
+                      placeholder="Special instructions..."
+                      value={item.notes}
+                      onChange={(e) => updateCartItemNotes(item.foodItemId, e.target.value)}
+                      style={{ borderRadius: '8px', fontSize: '0.85rem' }}
                     />
                   </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">WhatsApp Number <span className="text-danger">*</span></label>
-                    <PhoneInput
-                      country={'lk'}
-                      value={whatsappNumber}
-                      onChange={setWhatsappNumber}
-                      inputStyle={{ width: '100%' }}
-                      containerClass="phone-input-container"
-                      placeholder="Enter WhatsApp Number"
-                      enableSearch={true}
-                    />
-                    <small className="text-muted">We'll send your bill to this WhatsApp number.</small>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">Order Notes (Optional)</label>
-                    <textarea
-                      className="form-control"
-                      rows="2"
-                      placeholder="Any special requests?"
-                      value={orderNotes}
-                      onChange={(e) => setOrderNotes(e.target.value)}
-                    ></textarea>
+                  <div className="cart-item-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                    <button
+                      className="remove-btn"
+                      onClick={() => removeFromCart(item.foodItemId)}
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                    <div className="qty-controls">
+                      <button onClick={() => updateCartItemQty(item.foodItemId, -1)}>
+                        <i className="fas fa-minus"></i>
+                      </button>
+                      <span>{item.qty}</span>
+                      <button onClick={() => updateCartItemQty(item.foodItemId, 1)}>
+                        <i className="fas fa-plus"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                <div className="cart-total">
-                  <h5>Total: <span>Rs. {parseFloat(calculateTotal()).toFixed(0)}</span></h5>
-                </div>
-
-                <button
-                  className="btn btn-lg w-100 text-white"
-                  onClick={placeOrder}
-                  style={{ borderRadius: '8px', background: 'var(--primary-color)', border: 'none', fontWeight: '700', padding: '14px', fontSize: '1.05rem', boxShadow: '0 4px 12px rgba(38, 102, 104, 0.2)' }}
-                >
-                  <i className="fas fa-check me-2"></i> Place Order
-                </button>
-              </div>
-            </>
+              ))}
+            </div>
           )}
         </div>
+
+        {cart.length > 0 && (
+          <div className="cart-footer">
+            <div className="order-inputs">
+              <div className="table-info-display mb-3">
+                <i className="fas fa-chair me-2"></i>
+                <strong>Table:</strong> {tableInfo.tableNo}
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Your Name <span className="text-danger">*</span></label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter your name"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">WhatsApp Number <span className="text-danger">*</span></label>
+                <PhoneInput
+                  country={'lk'}
+                  value={whatsappNumber}
+                  onChange={setWhatsappNumber}
+                  inputStyle={{ width: '100%' }}
+                  containerClass="phone-input-container"
+                  placeholder="Enter WhatsApp Number"
+                  enableSearch={true}
+                />
+                <small className="text-muted">We'll send your bill to this WhatsApp number.</small>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Order Notes (Optional)</label>
+                <textarea
+                  className="form-control"
+                  rows="2"
+                  placeholder="Any special requests?"
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                ></textarea>
+              </div>
+            </div>
+
+            <div className="cart-total">
+              <h5>Total: <span>Rs. {parseFloat(calculateTotal()).toFixed(0)}</span></h5>
+            </div>
+
+            <button
+              className="btn btn-lg w-100 text-white"
+              onClick={placeOrder}
+              style={{ borderRadius: '8px', background: 'var(--primary-color)', border: 'none', fontWeight: '700', padding: '14px', fontSize: '1.05rem', boxShadow: '0 4px 12px rgba(38, 102, 104, 0.2)' }}
+            >
+              <i className="fas fa-check me-2"></i> Place Order
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Cart Overlay */}
