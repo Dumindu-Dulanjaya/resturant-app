@@ -9,12 +9,14 @@ import {
 } from './housekeeping.controller';
 import { RoomQrModule } from '../room-qr/room-qr.module';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
+import { WebsocketModule } from '../websocket/websocket.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([HousekeepingRequest, RoomQr]),
     RoomQrModule, // For room key validation
     RestaurantsModule, // For FeatureFlagGuard
+    WebsocketModule,
   ],
   controllers: [HousekeepingPublicController, HousekeepingAdminController],
   providers: [HousekeepingService],

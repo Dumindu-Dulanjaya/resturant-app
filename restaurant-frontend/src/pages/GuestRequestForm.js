@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { useWebSocket } from '../hooks/useWebSocket';
 import Swal from 'sweetalert2';
 import './GuestRequestForm.css';
 
@@ -18,6 +19,7 @@ function GuestRequestForm() {
     requestType: 'CLEANING',
     message: ''
   });
+  const { subscribe, connected } = useWebSocket();
 
   // Request notification permission on mount
   useEffect(() => {
@@ -26,71 +28,84 @@ function GuestRequestForm() {
     }
   }, []);
 
-  // Poll request status when request is submitted
+  // Refresh request status logic
+  const refreshRequestStatus = useCallback(async () => {
+    if (!requestSuccess || !requestSuccess.requestId) return;
+    
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/housekeeping/track/${requestSuccess.requestId}`,
+        {
+          headers: {
+            'x-room-key': roomKey
+          }
+        }
+      );
+      
+      const newStatus = response.data.data?.status;
+      
+      setCurrentRequestStatus(prevStatus => {
+        if (newStatus !== prevStatus) {
+          setShownNotifications(prevNotifications => {
+            if (!prevNotifications.has(newStatus)) {
+              if (newStatus === 'IN_PROGRESS') {
+                showNotification(
+                  'Request in Progress! 🚀',
+                  'Our staff has started working on your request.',
+                  'info'
+                );
+              } else if (newStatus === 'DONE') {
+                showNotification(
+                  'Request Completed! ✅',
+                  'Your request has been completed. Thank you!',
+                  'success'
+                );
+              } else if (newStatus === 'CANCELLED') {
+                showNotification(
+                  'Request Cancelled ❌',
+                  'Your request has been cancelled. Please contact staff for assistance.',
+                  'error'
+                );
+              }
+              return new Set(prevNotifications).add(newStatus);
+            }
+            return prevNotifications;
+          });
+        }
+        return newStatus;
+      });
+    } catch (error) {
+      console.error('Error fetching request status:', error);
+    }
+  }, [requestSuccess, roomKey, API_BASE_URL, showNotification]);
+
+  // Real-time listener for housekeeping status updates
+  useEffect(() => {
+    if (!connected || !requestSuccess) return;
+
+    const unsubscribe = subscribe('housekeeping:status-update', (updated) => {
+      if (updated && updated.requestId === requestSuccess.requestId) {
+        console.log('WS: Housekeeping status updated for current request!', updated.status);
+        refreshRequestStatus();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [connected, subscribe, requestSuccess, refreshRequestStatus]);
+
+  // Occasional polling fallback
   useEffect(() => {
     let pollInterval;
     
     if (requestSuccess && requestSuccess.requestId) {
       setCurrentRequestStatus(requestSuccess.status);
-      
-      pollInterval = setInterval(async () => {
-        try {
-          const response = await axios.get(
-            `${API_BASE_URL}/housekeeping/track/${requestSuccess.requestId}`,
-            {
-              headers: {
-                'x-room-key': roomKey
-              }
-            }
-          );
-          
-          const newStatus = response.data.data?.status;
-          
-          // Update status using callback to get latest value
-          setCurrentRequestStatus(prevStatus => {
-            // Check for status changes
-            if (newStatus !== prevStatus) {
-              // Show notification only once per status change
-              setShownNotifications(prevNotifications => {
-                if (!prevNotifications.has(newStatus)) {
-                  if (newStatus === 'IN_PROGRESS') {
-                    showNotification(
-                      'Request in Progress! 🚀',
-                      `Our staff has started working on your request.`,
-                      'info'
-                    );
-                  } else if (newStatus === 'DONE') {
-                    showNotification(
-                      'Request Completed! ✅',
-                      `Your request has been completed. Thank you!`,
-                      'success'
-                    );
-                  } else if (newStatus === 'CANCELLED') {
-                    showNotification(
-                      'Request Cancelled ❌',
-                      `Your request has been cancelled. Please contact staff for assistance.`,
-                      'error'
-                    );
-                  }
-                  return new Set(prevNotifications).add(newStatus);
-                }
-                return prevNotifications;
-              });
-            }
-            return newStatus;
-          });
-        } catch (error) {
-          console.error('Error polling request status:', error);
-        }
-      }, 5000); // Poll every 5 seconds
+      pollInterval = setInterval(refreshRequestStatus, 120000); // 2 minutes
     }
     
     return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
+      if (pollInterval) clearInterval(pollInterval);
     };
-  }, [requestSuccess, API_BASE_URL, roomKey]);
+  }, [requestSuccess, refreshRequestStatus]);
 
   const showNotification = (title, message, type = 'info') => {
     // Browser notification

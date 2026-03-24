@@ -484,7 +484,7 @@ const ServiceBillingDashboard = ({
       if (isCashierDashboard) {
         fetchCashierTransactions(transferDate);
       }
-    }, 30000);
+    }, 120000); // 2 minute safety fallback
     return () => clearInterval(id);
   }, [fetchCashierQueue, fetchCashierTransactions, fetchReadyOrders, isCashierDashboard, transferDate]);
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/apiClient';
+import { useWebSocket } from '../hooks/useWebSocket';
 import Swal from 'sweetalert2';
 import OrderDetailsModal from '../components/orders/OrderDetailsModal';
 import './OrderManagement.css';
@@ -10,6 +11,7 @@ const ActiveOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const { subscribe, connected } = useWebSocket();
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -24,19 +26,45 @@ const ActiveOrders = () => {
 
   useEffect(() => {
     fetchOrders();
-    
-    // Auto-refresh every 30 seconds if enabled
+  }, []);
+
+  // Real-time updates via WebSockets
+  useEffect(() => {
+    if (!connected) return;
+
+    const unsubscribers = [
+      subscribe('order:new', () => {
+        console.log('WS: New order received, refreshing active list...');
+        fetchOrders(filters, true);
+      }),
+      subscribe('order:status-update', () => {
+        console.log('WS: Order status updated, refreshing active list...');
+        fetchOrders(filters, true);
+      }),
+      subscribe('dashboard:refresh', () => {
+        console.log('WS: Dashboard refresh requested');
+        fetchOrders(filters, true);
+      })
+    ];
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [connected, subscribe, filters, fetchOrders]);
+
+  // Occasional background sync (safety fallback)
+  useEffect(() => {
     let interval;
     if (autoRefresh) {
       interval = setInterval(() => {
         fetchOrders(filters, true); // silent refresh
-      }, 30000);
+      }, 60000);
     }
     
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [autoRefresh]);
+  }, [autoRefresh, filters, fetchOrders]);
 
   const fetchOrders = async (filterParams = {}, silent = false) => {
     try {
@@ -217,14 +245,18 @@ const ActiveOrders = () => {
           Active Orders
         </h2>
         <div className="header-actions">
-          <button
-            className={`btn ${autoRefresh ? 'btn-success' : 'btn-outline-secondary'} btn-sm`}
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            title={autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
-          >
-            <i className={`fas fa-sync-alt ${autoRefresh ? 'fa-spin' : ''} me-1`}></i>
-            {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
-          </button>
+            <div className={`status-pill ${connected ? 'status-online' : 'status-offline'} me-2`}>
+              <i className="fas fa-circle me-1"></i>
+              {connected ? 'Live' : 'Offline'}
+            </div>
+            <button
+              className={`btn ${autoRefresh ? 'btn-success' : 'btn-outline-secondary'} btn-sm`}
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              title={autoRefresh ? 'Sync Fallback ON' : 'Sync Fallback OFF'}
+            >
+              <i className={`fas fa-sync-alt ${autoRefresh ? 'fa-spin' : ''} me-1`}></i>
+              {autoRefresh ? 'Sync: 60s' : 'Sync: OFF'}
+            </button>
           <button
             className="btn btn-primary btn-sm ms-2"
             onClick={() => fetchOrders(filters)}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import apiClient from '../api/apiClient';
+import { useWebSocket } from '../hooks/useWebSocket';
 import Swal from 'sweetalert2';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
@@ -44,6 +45,7 @@ const CustomerQROrder = () => {
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [currentOrderStatus, setCurrentOrderStatus] = useState(null);
   const [shownNotifications, setShownNotifications] = useState(new Set());
+  const { subscribe, connected } = useWebSocket();
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
@@ -54,71 +56,87 @@ const CustomerQROrder = () => {
     }
   }, []);
 
-  // Poll order status when order is placed
+  // Refresh order status logic
+  const refreshOrderStatus = useCallback(async () => {
+    if (!orderSuccess || !orderSuccess.orderId) return;
+    
+    try {
+      const response = await apiClient.get(
+        `/orders/track/${orderSuccess.orderId}`,
+        {
+          headers: {
+            'x-table-key': tableKey
+          }
+        }
+      );
+
+      const newStatus = response.data.status;
+
+      setCurrentOrderStatus(prevStatus => {
+        if (newStatus !== prevStatus) {
+          setShownNotifications(prevNotifications => {
+            if (!prevNotifications.has(newStatus)) {
+              if (newStatus === 'ACCEPTED') {
+                showNotification(
+                  'Order Accepted! 👨‍🍳',
+                  `Your order #${orderSuccess.orderNo} has been accepted by the kitchen.`,
+                  'success'
+                );
+              } else if (newStatus === 'READY') {
+                showNotification(
+                  'Order Ready! 🍽️',
+                  `Your order #${orderSuccess.orderNo} is ready! We'll bring it to your table shortly.`,
+                  'success'
+                );
+              } else if (newStatus === 'CANCELLED') {
+                showNotification(
+                  'Order Cancelled ❌',
+                  `Your order #${orderSuccess.orderNo} has been cancelled. Please contact staff for assistance.`,
+                  'error'
+                );
+              }
+              return new Set(prevNotifications).add(newStatus);
+            }
+            return prevNotifications;
+          });
+        }
+        return newStatus;
+      });
+    } catch (error) {
+      console.error('Error fetching order status:', error);
+    }
+  }, [orderSuccess, tableKey, showNotification]);
+
+  // Real-time listener for order status updates
+  useEffect(() => {
+    if (!connected || !orderSuccess) return;
+
+    const unsubscribe = subscribe('order:status-update', (updatedOrder) => {
+      // Only refresh if the update is for THIS specific order
+      if (updatedOrder && updatedOrder.orderId === orderSuccess.orderId) {
+        console.log('WS: Order status updated for current order!', updatedOrder.status);
+        refreshOrderStatus();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [connected, subscribe, orderSuccess, refreshOrderStatus]);
+
+  // Occasional polling fallback (safety first)
   useEffect(() => {
     let pollInterval;
 
     if (orderSuccess && orderSuccess.orderId) {
       setCurrentOrderStatus(orderSuccess.status);
-
-      pollInterval = setInterval(async () => {
-        try {
-          const response = await apiClient.get(
-            `/orders/track/${orderSuccess.orderId}`,
-            {
-              headers: {
-                'x-table-key': tableKey
-              }
-            }
-          );
-
-          const newStatus = response.data.status;
-
-          // Update status using callback to get latest value
-          setCurrentOrderStatus(prevStatus => {
-            // Check for status changes
-            if (newStatus !== prevStatus) {
-              // Show notification only once per status change
-              setShownNotifications(prevNotifications => {
-                if (!prevNotifications.has(newStatus)) {
-                  if (newStatus === 'ACCEPTED') {
-                    showNotification(
-                      'Order Accepted! 👨‍🍳',
-                      `Your order #${orderSuccess.orderNo} has been accepted by the kitchen.`,
-                      'success'
-                    );
-                  } else if (newStatus === 'READY') {
-                    showNotification(
-                      'Order Ready! 🍽️',
-                      `Your order #${orderSuccess.orderNo} is ready! We'll bring it to your table shortly.`,
-                      'success'
-                    );
-                  } else if (newStatus === 'CANCELLED') {
-                    showNotification(
-                      'Order Cancelled ❌',
-                      `Your order #${orderSuccess.orderNo} has been cancelled. Please contact staff for assistance.`,
-                      'error'
-                    );
-                  }
-                  return new Set(prevNotifications).add(newStatus);
-                }
-                return prevNotifications;
-              });
-            }
-            return newStatus;
-          });
-        } catch (error) {
-          console.error('Error polling order status:', error);
-        }
-      }, 5000); // Poll every 5 seconds
+      
+      // Fallback poll every 2 minutes
+      pollInterval = setInterval(refreshOrderStatus, 120000);
     }
 
     return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
+      if (pollInterval) clearInterval(pollInterval);
     };
-  }, [orderSuccess, API_URL, tableKey]);
+  }, [orderSuccess, refreshOrderStatus]);
 
   const showNotification = (title, message, type = 'info') => {
     // Browser notification

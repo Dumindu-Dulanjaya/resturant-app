@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { HousekeepingRequest, RequestStatus, RequestType } from './entities/housekeeping-request.entity';
 import { CreateHousekeepingRequestDto } from './dto/create-housekeeping-request.dto';
 import { RoomQr } from '../room-qr/entities/room-qr.entity';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 
 @Injectable()
 export class HousekeepingService {
@@ -12,6 +13,7 @@ export class HousekeepingService {
     private readonly housekeepingRepository: Repository<HousekeepingRequest>,
     @InjectRepository(RoomQr)
     private readonly roomQrRepository: Repository<RoomQr>,
+    private readonly websocketGateway: WebsocketGateway,
   ) {}
 
   /**
@@ -29,7 +31,13 @@ export class HousekeepingService {
     request.message = createDto.message || null;
     request.status = RequestStatus.NEW;
 
-    return this.housekeepingRepository.save(request);
+    const savedRequest = await this.housekeepingRepository.save(request);
+
+    // Emit live update
+    this.websocketGateway.server.emit('housekeeping:new', savedRequest);
+    this.websocketGateway.server.emit('dashboard:refresh', { restaurantId });
+
+    return savedRequest;
   }
 
   /**
@@ -81,7 +89,13 @@ export class HousekeepingService {
     }
 
     request.status = status;
-    return this.housekeepingRepository.save(request);
+    const updatedRequest = await this.housekeepingRepository.save(request);
+
+    // Emit live update
+    this.websocketGateway.server.emit('housekeeping:status-update', updatedRequest);
+    this.websocketGateway.server.emit('dashboard:refresh', { restaurantId });
+
+    return updatedRequest;
   }
 
   /**
@@ -96,6 +110,9 @@ export class HousekeepingService {
     if (result.affected === 0) {
       throw new NotFoundException('Housekeeping request not found');
     }
+
+    // Emit live update (optional but good for dashboard consistency)
+    this.websocketGateway.server.emit('dashboard:refresh', { restaurantId });
   }
 
   /**

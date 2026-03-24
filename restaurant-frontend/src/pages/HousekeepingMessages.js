@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import apiClient from '../api/apiClient';
+import { useWebSocket } from '../hooks/useWebSocket';
 import './HousekeepingMessages.css';
 
 const HousekeepingMessages = () => {
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const { subscribe, connected } = useWebSocket();
 
   // Filters
   const [filters, setFilters] = useState({
@@ -56,13 +58,37 @@ const HousekeepingMessages = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  // Auto refresh every 10 seconds
+  // Real-time listener
+  useEffect(() => {
+    if (!connected) return;
+
+    const unsubscribers = [
+      subscribe('housekeeping:new', (newReq) => {
+        console.log('WS: New housekeeping request!', newReq);
+        fetchRequests();
+      }),
+      subscribe('housekeeping:status-update', (updated) => {
+        console.log('WS: Housekeeping status updated!', updated);
+        fetchRequests();
+      }),
+      subscribe('dashboard:refresh', () => {
+        console.log('WS: Dashboard refresh requested');
+        fetchRequests();
+      })
+    ];
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [connected, subscribe, fetchRequests]);
+
+  // Fallback sync every 60 seconds
   useEffect(() => {
     let interval;
     if (autoRefresh) {
       interval = setInterval(() => {
         fetchRequests();
-      }, 10000); // 10 seconds
+      }, 60000);
     }
     return () => clearInterval(interval);
   }, [autoRefresh, fetchRequests]);
@@ -191,6 +217,10 @@ const HousekeepingMessages = () => {
               <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''} me-2`}></i>
               Refresh
             </button>
+            <div className={`status-pill ${connected ? 'status-online' : 'status-offline'} me-2`}>
+              <i className={`fas fa-circle me-1`}></i>
+              {connected ? 'Live' : 'Offline'}
+            </div>
             <div className="form-check form-switch">
               <input
                 className="form-check-input"
@@ -200,7 +230,7 @@ const HousekeepingMessages = () => {
                 onChange={(e) => setAutoRefresh(e.target.checked)}
               />
               <label className="form-check-label" htmlFor="autoRefreshSwitch">
-                Auto Refresh (10s)
+                Sync Fallback (60s)
               </label>
             </div>
           </div>
