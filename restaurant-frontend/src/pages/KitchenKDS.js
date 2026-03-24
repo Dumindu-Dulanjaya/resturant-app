@@ -4,6 +4,7 @@ import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import Swal from 'sweetalert2';
 import apiClient, { billingAPI } from '../api/apiClient';
+import { useWebSocket } from '../hooks/useWebSocket';
 import './KitchenKDS.css';
 
 const KitchenKDS = () => {
@@ -18,6 +19,7 @@ const KitchenKDS = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const previousNewOrderIdsRef = useRef(new Set());
+  const { subscribe, connected } = useWebSocket();
 
   // Defensive cleanup: prevents rare cases where SweetAlert backdrop remains
   // on screen after async flows (WhatsApp/print actions).
@@ -146,17 +148,39 @@ const KitchenKDS = () => {
   useEffect(() => {
     fetchAllOrders();
 
-    // Auto-refresh every 10 seconds
+    // Background sync every 30 seconds (safety fallback)
     const interval = setInterval(() => {
       fetchAllOrders();
-    }, 10000);
+    }, 30000);
 
-    // Cleanup interval on unmount
+    return () => clearInterval(interval);
+  }, [fetchAllOrders]);
+
+  // WebSocket subscriptions for real-time updates
+  useEffect(() => {
+    if (!connected) return;
+
+    const unsubscribeNew = subscribe('order:new', () => {
+      console.log('WS: New order received, refreshing KDS...');
+      fetchAllOrders();
+    });
+
+    const unsubscribeStatus = subscribe('order:status-update', () => {
+      console.log('WS: Order status updated, refreshing KDS...');
+      fetchAllOrders();
+    });
+
+    const unsubscribeRefresh = subscribe('dashboard:refresh', () => {
+      console.log('WS: Dashboard refresh requested, refreshing KDS...');
+      fetchAllOrders();
+    });
+
     return () => {
-      clearInterval(interval);
+      unsubscribeNew();
+      unsubscribeStatus();
+      unsubscribeRefresh();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only run once on mount, fetchAllOrders is stable
+  }, [connected, subscribe, fetchAllOrders]);
 
   useEffect(() => {
     clearSwalBackdropArtifacts();
@@ -1300,6 +1324,10 @@ const KitchenKDS = () => {
                     Kitchen Display System
                   </h2>
                   <div className="header-actions">
+                    <span className={`kd-live-pill ${connected ? 'online' : 'offline'} me-2`}>
+                      <i className={`fas ${connected ? 'fa-wifi' : 'fa-wifi-slash'} me-1`}></i>
+                      {connected ? 'Live' : 'Disconnected'}
+                    </span>
                     <button 
                       className="btn btn-outline-primary btn-sm me-2"
                       onClick={fetchAllOrders}
@@ -1310,7 +1338,7 @@ const KitchenKDS = () => {
                     </button>
                     <span className="badge bg-secondary">
                       <i className="far fa-clock me-1"></i>
-                      Auto-refresh: 10s
+                      Sync: 30s
                     </span>
                   </div>
                 </div>

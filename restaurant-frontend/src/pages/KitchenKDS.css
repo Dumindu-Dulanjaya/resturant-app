@@ -393,9 +393,35 @@
   border-bottom-right-radius: 0.5rem;
 }
 
-/* Refresh Button Animation */
-.fa-spin {
-  animation: spin 1s linear infinite;
+/* Connectivity Status Pill */
+.kd-live-pill {
+  border-radius: 20px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  animation: connectivityPulse 2.5s infinite;
+}
+
+.kd-live-pill.online {
+  background: #27ae60;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(39, 174, 96, 0.4);
+}
+
+.kd-live-pill.offline {
+  background: #e74c3c;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+}
+
+@keyframes connectivityPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.98); }
 }
 
 @keyframes spin {
