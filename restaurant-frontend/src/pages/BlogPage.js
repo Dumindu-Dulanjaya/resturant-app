@@ -125,7 +125,7 @@ const BlogPage = () => {
                           src={sanitizeUrl(blog.imageUrl)} 
                           alt={blog.title} 
                           className="blog-card-img"
-                          onError={(e) => { e.target.src = 'https://via.placeholder.com/800x450?text=Food+System+Insight'; }}
+                          onError={(e) => { e.target.src = '/assets/images/blog/blog1.jpg'; }}
                         />
                       </Link>
                     </div>
@@ -190,7 +190,7 @@ const BlogPage = () => {
                     <img 
                       src={sanitizeUrl(post.imageUrl)} 
                       alt={post.title} 
-                      onError={(e) => { e.target.src = 'https://via.placeholder.com/80'; }}
+                      onError={(e) => { e.target.src = '/assets/images/blog/admin.jpg'; }}
                     />
                     <div className="recent-post-info">
                       <h5><Link to={`/blog/${post.id}`}>{post.title}</Link></h5>

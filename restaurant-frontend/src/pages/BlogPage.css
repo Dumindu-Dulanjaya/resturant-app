@@ -281,8 +281,7 @@
 
 /* Consultation Card */
 .sidebar-consultation-card {
-  background: linear-gradient(rgba(45, 107, 99, 0.9), rgba(45, 107, 99, 0.9)), url('https://via.placeholder.com/400x300');
-  background-size: cover;
+  background: linear-gradient(135deg, #2d6b63 0%, #1a4d46 100%);
   padding: 40px 30px;
   border-radius: 10px;
   text-align: center;

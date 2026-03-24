@@ -71,12 +71,25 @@ export const sanitizeUrl = (url) => {
     ? 'http://localhost:3000'
     : `${currentProtocol}//${currentHostname}:3000`;
 
-  // If it's a relative path, prefix it with the current dynamic base URL
+  // If it's a relative path, resolve it based on the type of asset
   if (!url.startsWith('http')) {
-     const isAsset = url.startsWith('/uploads') || url.startsWith('uploads/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(url);
-     if (isAsset) {
+     const isBackendAsset = url.startsWith('/uploads') || url.startsWith('uploads/');
+     const isFrontendAsset = url.startsWith('/assets') || url.startsWith('assets/');
+
+     if (isBackendAsset) {
         return `${dynamicBaseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
      }
+     
+     // For frontend assets, just return the path so it hits the current host/port (frontend server)
+     if (isFrontendAsset) {
+        return url;
+     }
+
+     // Generic fallback for other potential assets
+     if (/\.(png|jpe?g|gif|webp|svg)$/i.test(url)) {
+        return `${dynamicBaseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+     }
+     
      return url;
   }
 
