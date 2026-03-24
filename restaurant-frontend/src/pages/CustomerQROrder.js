@@ -437,7 +437,7 @@ const CustomerQROrder = () => {
                   ? 'Your food will be served shortly!'
                   : 'We\'ll notify you when your order status changes!'}
           </p>
-          <button className="btn btn-primary btn-lg" onClick={startNewOrder}>
+          <button className="place-another-btn" onClick={startNewOrder}>
             <i className="fas fa-plus me-2"></i> Place Another Order
           </button>
         </div>
