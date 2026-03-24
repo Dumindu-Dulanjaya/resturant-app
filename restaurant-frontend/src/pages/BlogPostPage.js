@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/landing/Navbar';
 import Footer from '../components/landing/Footer';
-import apiClient from '../api/apiClient';
+import apiClient, { sanitizeUrl } from '../api/apiClient';
 import './BlogPostPage.css';
 
 const BlogPostPage = () => {
@@ -84,7 +84,7 @@ const BlogPostPage = () => {
           <article className="blog-post-content">
             <div className="featured-image-wrap">
               <img 
-                src={blog.imageUrl ? (blog.imageUrl.startsWith('/assets') ? blog.imageUrl : `http://localhost:3000${blog.imageUrl}`) : 'https://via.placeholder.com/1200x600?text=Blog+Header'} 
+                src={sanitizeUrl(blog.imageUrl)} 
                 alt={blog.title} 
                 className="full-featured-image"
                 onError={(e) => { e.target.src = 'https://via.placeholder.com/1200x600?text=Insight+Featured+Image'; }}
@@ -155,7 +155,7 @@ const BlogPostPage = () => {
                 {recentPosts.map((post) => (
                   <li key={post.id} className="recent-post-item">
                     <img 
-                      src={post.imageUrl ? `http://localhost:3000${post.imageUrl}` : 'https://via.placeholder.com/80'} 
+                      src={sanitizeUrl(post.imageUrl)} 
                       alt={post.title} 
                       onError={(e) => { e.target.src = 'https://via.placeholder.com/80'; }}
                     />

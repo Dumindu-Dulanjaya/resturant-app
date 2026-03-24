@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/landing/Navbar';
 import Footer from '../components/landing/Footer';
-import apiClient from '../api/apiClient';
+import apiClient, { sanitizeUrl } from '../api/apiClient';
 import './BlogPage.css';
 
 const BlogPage = () => {
@@ -122,7 +122,7 @@ const BlogPage = () => {
                       <div className="blog-card-badge-ribbon"></div>
                       <Link to={`/blog/${blog.id}`}>
                         <img 
-                          src={blog.imageUrl ? (blog.imageUrl.startsWith('/assets') ? blog.imageUrl : `http://localhost:3000${blog.imageUrl}`) : '/assets/images/placeholder.jpg'} 
+                          src={sanitizeUrl(blog.imageUrl)} 
                           alt={blog.title} 
                           className="blog-card-img"
                           onError={(e) => { e.target.src = 'https://via.placeholder.com/800x450?text=Food+System+Insight'; }}
@@ -188,7 +188,7 @@ const BlogPage = () => {
                 {recentPosts.map((post) => (
                   <li key={post.id} className="recent-post-item">
                     <img 
-                      src={post.imageUrl ? (post.imageUrl.startsWith('/assets') ? post.imageUrl : `http://localhost:3000${post.imageUrl}`) : 'https://via.placeholder.com/80'} 
+                      src={sanitizeUrl(post.imageUrl)} 
                       alt={post.title} 
                       onError={(e) => { e.target.src = 'https://via.placeholder.com/80'; }}
                     />
