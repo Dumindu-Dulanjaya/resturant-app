@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import { useAuthStore } from '../store/authStore';
+import { useWebSocket } from '../hooks/useWebSocket';
 import './RestaurantProfile.css';
 
 const PACKAGE_NAMES = {
@@ -45,6 +46,7 @@ function AdminHotelProfile() {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const hasShownNetworkErrorRef = useRef(false);
+  const { subscribe, connected } = useWebSocket();
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -96,6 +98,19 @@ function AdminHotelProfile() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!connected || !id) return;
+    
+    // Listen for realtime updates to this specific restaurant from super_admin
+    const unsub = subscribe('restaurant:updated', (data) => {
+      if (data.restaurantId === parseInt(id) && data.restaurant) {
+        setRestaurant(data.restaurant);
+      }
+    });
+
+    return () => unsub();
+  }, [connected, subscribe, id]);
 
   const handleDeleteAdmin = async (adminId) => {
     const result = await Swal.fire({

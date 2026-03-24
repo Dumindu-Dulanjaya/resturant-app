@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import apiClient from '../api/apiClient';
 import Sidebar from '../components/common/Sidebar';
+import Navbar from '../components/common/Navbar';
 import Swal from 'sweetalert2';
 import { useNotification } from '../components/common/NotificationToast';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -251,7 +252,8 @@ function RestaurantSettings() {
       <div className="page-wrapper">
         <Sidebar />
         <div className="content-wrapper">
-          <div className="loading-container">
+        <Navbar />
+        <div className="loading-container">
             <div className="spinner-border text-primary" role="status">
               <span className="visually-hidden">Loading...</span>
             </div>
@@ -308,6 +310,7 @@ function RestaurantSettings() {
     <div className="page-wrapper">
       <Sidebar />
       <div className="content-wrapper">
+        <Navbar />
         <div className="restaurant-settings-container">
           <div className="page-header">
             <h1>

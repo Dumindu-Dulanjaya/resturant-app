@@ -12,6 +12,7 @@ import {
   HttpCode,
   UseInterceptors,
   UploadedFile,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RestaurantsService } from './restaurants.service';
@@ -223,6 +224,12 @@ export class RestaurantsController {
       +id,
       updateRestaurantDto,
     );
+
+    this.websocketGateway.server.emit('restaurant:updated', {
+      restaurantId: +id,
+      restaurant,
+    });
+
     return {
       success: true,
       data: restaurant,

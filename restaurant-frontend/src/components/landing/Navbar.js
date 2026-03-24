@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { sanitizeUrl } from '../../api/apiClient';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -56,12 +57,16 @@ const Navbar = () => {
           {/* CTA Buttons */}
           <div className={`nav-cta${menuOpen ? ' open' : ''}`}>
             {user ? (
-              <div className="nav-user-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Link to="/my-hotel" className="nav-restaurant-name" style={{ fontWeight: 600, color: '#266668' }}>
+              <div className="nav-user-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Link to="/my-hotel" className="nav-restaurant-name" style={{ fontWeight: 700, color: '#266668', textDecoration: 'none', fontFamily: '"Poppins", sans-serif', letterSpacing: '-0.3px', fontSize: '1.05rem' }}>
                   {user.restaurantName || 'My Hotel'}
                 </Link>
-                <div className="nav-user-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className="fas fa-user" style={{ fontSize: '14px', color: '#666' }}></i>
+                <div className="nav-user-avatar" style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px solid #266668',boxShadow: '0 2px 8px rgba(38,102,104,0.2)' }}>
+                  {user.restaurantLogo ? (
+                    <img src={sanitizeUrl(user.restaurantLogo)} alt="Restaurant Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <i className="fas fa-store" style={{ fontSize: '16px', color: '#666' }}></i>
+                  )}
                 </div>
               </div>
             ) : (

@@ -110,9 +110,20 @@ function SettingsSyncProvider() {
       }
     });
 
+    const unsubRestaurant = subscribe('restaurant:updated', (data) => {
+      if (data.restaurantId !== user.restaurantId) return;
+      if (data.restaurant) {
+        updateUser({
+          restaurantName: data.restaurant.restaurantName,
+          restaurantLogo: data.restaurant.logo
+        });
+      }
+    });
+
     return () => {
       unsubReviewed();
       unsubUpdated();
+      unsubRestaurant();
     };
   }, [subscribe, user, updateUser]);
 

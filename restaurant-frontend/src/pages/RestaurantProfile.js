@@ -13,6 +13,21 @@ const PACKAGE_NAMES = {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+const EditIcon = ({ onClick, title }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    strokeWidth={1.8} 
+    stroke="currentColor" 
+    className="rp-edit-icon"
+    onClick={onClick}
+    title={title}
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+  </svg>
+);
+
 const formatRole = (role) => {
   const labels = {
     admin: 'Admin',
@@ -165,6 +180,82 @@ function RestaurantProfile() {
     }
   };
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      Swal.fire({
+        title: 'Uploading Logo...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      const uploadRes = await apiClient.post('/restaurant/upload-logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (uploadRes.data.success) {
+        const updateRes = await apiClient.patch(`/restaurant/${id}`, {
+          logo: uploadRes.data.logoUrl
+        });
+        
+        if (updateRes.data.success) {
+          Swal.fire('Success', 'Hotel logo updated successfully!', 'success');
+          fetchData();
+        } else {
+          Swal.fire('Error', 'Failed to update hotel data', 'error');
+        }
+      } else {
+        Swal.fire('Error', 'Failed to upload logo image', 'error');
+      }
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      Swal.fire('Error', error.response?.data?.message || 'Error uploading logo', 'error');
+    } finally {
+      // Clear input so same file can be selected again if needed
+      e.target.value = null;
+    }
+  };
+
+  const handleEditField = async (field, label, currentValue) => {
+    const { value: newValue } = await Swal.fire({
+      title: `Edit ${label}`,
+      input: 'text',
+      inputLabel: `Enter the new ${label}`,
+      inputValue: currentValue || '',
+      showCancelButton: true,
+      confirmButtonColor: '#266668',
+      confirmButtonText: 'Save Changes',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return `${label} cannot be empty!`;
+        }
+      }
+    });
+
+    if (newValue && newValue.trim() !== currentValue) {
+      try {
+        Swal.fire({ title: 'Updating...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const updateRes = await apiClient.patch(`/restaurant/${id}`, {
+          [field]: newValue.trim()
+        });
+        
+        if (updateRes.data.success) {
+          Swal.fire('Success', `${label} updated successfully!`, 'success');
+          fetchData();
+        } else {
+          Swal.fire('Error', `Failed to update ${label}`, 'error');
+        }
+      } catch (error) {
+        console.error('Update error:', error);
+        Swal.fire('Error', error.response?.data?.message || `Error updating ${label}`, 'error');
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -235,6 +326,15 @@ function RestaurantProfile() {
   return (
     <SuperAdminDashboard>
       <div className="rp-shell">
+        <div className="mb-4">
+          <button 
+            type="button"
+            onClick={() => navigate('/super-admin/manage-restaurants')}
+            className="rp-back-btn" 
+          >
+            <i className="fas fa-arrow-left"></i> Back to Hotel List
+          </button>
+        </div>
         {isTrialAccess && (
           <section className="rp-trial-banner">
             <div className="rp-trial-copy">
@@ -265,17 +365,29 @@ function RestaurantProfile() {
 
         <div className="rp-layout">
           <aside className="rp-left-card">
-            <div className="rp-avatar-wrap">
-              {logoUrl ? (
-                <img src={logoUrl} alt="logo" className="rp-avatar" />
-              ) : (
-                <div className="rp-avatar-placeholder">
-                  <i className="fas fa-hotel"></i>
+            <div className="rp-avatar-wrap" style={{ position: 'relative', display: 'inline-block' }}>
+              <label htmlFor="logo-upload" style={{ cursor: 'pointer', display: 'block', margin: 0 }}>
+                {logoUrl ? (
+                  <img src={logoUrl} alt="logo" className="rp-avatar" />
+                ) : (
+                  <div className="rp-avatar-placeholder">
+                    <i className="fas fa-hotel"></i>
+                  </div>
+                )}
+                <div style={{ position: 'absolute', bottom: '5px', right: '5px', background: '#266668', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', transition: 'background 0.2s', border: '2px solid #fff' }} title="Change Logo">
+                  <i className="fas fa-camera"></i>
                 </div>
-              )}
+              </label>
+              <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
             </div>
             <div className="rp-identity">
-              <h1 className="rp-name">{restaurant.restaurantName}</h1>
+              <h1 className="rp-name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                {restaurant.restaurantName}
+                <EditIcon 
+                  onClick={() => handleEditField('restaurantName', 'Hotel Name', restaurant.restaurantName)}
+                  title="Edit Hotel Name"
+                />
+              </h1>
               <p className="rp-address">{restaurant.address}</p>
             </div>
 
@@ -293,15 +405,33 @@ function RestaurantProfile() {
             <div className="rp-detail-list">
               <div className="rp-detail-row">
                 <div className="rp-detail-label">Restaurant Name</div>
-                <div className="rp-detail-value">{restaurant.restaurantName}</div>
+                <div className="rp-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {restaurant.restaurantName}
+                  <EditIcon 
+                    onClick={() => handleEditField('restaurantName', 'Hotel Name', restaurant.restaurantName)}
+                    title="Edit Name"
+                  />
+                </div>
               </div>
               <div className="rp-detail-row">
                 <div className="rp-detail-label">Email</div>
-                <div className="rp-detail-value">{restaurant.email}</div>
+                <div className="rp-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {restaurant.email}
+                  <EditIcon 
+                    onClick={() => handleEditField('email', 'Email Address', restaurant.email)}
+                    title="Edit Email"
+                  />
+                </div>
               </div>
               <div className="rp-detail-row">
                 <div className="rp-detail-label">Contact Number</div>
-                <div className="rp-detail-value">{restaurant.contactNumber}</div>
+                <div className="rp-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {restaurant.contactNumber}
+                  <EditIcon 
+                    onClick={() => handleEditField('contactNumber', 'Contact Number', restaurant.contactNumber)}
+                    title="Edit Contact Number"
+                  />
+                </div>
               </div>
               <div className="rp-detail-row">
                 <div className="rp-detail-label">Country</div>
@@ -337,18 +467,7 @@ function RestaurantProfile() {
                 <div className="rp-detail-label">Package</div>
                 <div className="rp-detail-value">{packageName}</div>
               </div>
-              <div className="rp-detail-row rp-detail-row-action">
-                <div className="rp-detail-label"></div>
-                <div className="rp-detail-value">
-                  <button
-                    type="button"
-                    className="rp-primary-btn"
-                    onClick={() => navigate('/super-admin/manage-restaurants')}
-                  >
-                    Back to Hotel List
-                  </button>
-                </div>
-              </div>
+
               <div className="rp-detail-row">
                 <div className="rp-detail-label">Opening Time</div>
                 <div className="rp-detail-value">{restaurant.openingTime}</div>
