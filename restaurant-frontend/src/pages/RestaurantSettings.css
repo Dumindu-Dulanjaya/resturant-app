@@ -9,7 +9,6 @@
   margin-left: 250px;
   transition: margin-left 0.15s ease-in-out;
   flex: 1;
-  padding: 2rem;
   min-width: 0; /* prevent flex overflow */
 }
 

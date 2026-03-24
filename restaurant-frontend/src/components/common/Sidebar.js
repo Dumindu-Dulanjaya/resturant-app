@@ -383,11 +383,20 @@ function Sidebar() {
             </>
           )}
 
+          {canAccessAdminFeatures && (
+            <li className={isActive('/settings/restaurant')}>
+              <Link to="/settings/restaurant" onClick={closeSubmenus}>
+                <i className="fas fa-cog"></i>
+                <span>Restaurant Settings</span>
+              </Link>
+            </li>
+          )}
+
           {/* Settings */}
           <li className={`has-submenu ${menuStates.settings ? 'open' : ''}`}>
             <a href="#" onClick={(e) => { e.preventDefault(); toggleMenu('settings'); }}>
-              <i className="fas fa-cog"></i>
-              <span>Settings</span>
+              <i className="fas fa-user-cog"></i>
+              <span>User Settings</span>
               <i className={`fas fa-chevron-${menuStates.settings ? 'down' : 'right'} submenu-arrow`}></i>
             </a>
             <ul className="submenu" style={{ display: menuStates.settings ? 'block' : 'none' }}>
@@ -403,14 +412,6 @@ function Sidebar() {
                   Change Password
                 </Link>
               </li>
-              {canAccessAdminFeatures && (
-                <li className={isActive('/settings/restaurant')}>
-                  <Link to="/settings/restaurant">
-                    <i className="fas fa-building"></i>
-                    Restaurant Settings
-                  </Link>
-                </li>
-              )}
             </ul>
           </li>
         </ul>

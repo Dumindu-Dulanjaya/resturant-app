@@ -462,8 +462,8 @@ const CustomerQROrder = () => {
           </p>
 
           <div className="d-flex flex-column gap-3">
-            <button className="btn btn-outline-secondary w-100" onClick={() => setShowStatusScreen(false)} style={{ padding: '12px', borderRadius: '8px', fontWeight: '600' }}>
-              <i className="fas fa-arrow-left me-2"></i> Back to Menu
+            <button className="btn btn-outline-secondary w-100" onClick={() => setShowStatusScreen(false)} style={{ padding: '14px', borderRadius: 'var(--radius-btn)', fontWeight: '700' }}>
+              <i className="fas fa-utensils me-2"></i> Back to Menu
             </button>
             <button className="place-another-btn" onClick={startNewOrder}>
               <i className="fas fa-plus me-2"></i> Place Another Order
@@ -551,30 +551,35 @@ const CustomerQROrder = () => {
           </div>
 
           <div className="food-grid-modern">
-            {filteredItems.map(item => (
-              <div key={item.foodItemId} className="modern-food-card">
-                <div className="card-image-wrapper">
-                  {item.imageUrl ? (
-                    <img src={getImageUrl(item.imageUrl)} alt={item.itemName} />
-                  ) : (
-                    <div className="h-100 d-flex align-items-center justify-content-center text-muted">
-                      <i className="fas fa-hamburger fa-3x opacity-25"></i>
-                    </div>
-                  )}
-                  <div className="price-tag">Rs. {parseFloat(item.price).toFixed(0)}</div>
+            {filteredItems.map(item => {
+              // Try multiple image fields from backend (imageUrl1 is primary)
+              const displayImage = item.imageUrl1 || item.imageUrl || item.imageUrl2;
+              
+              return (
+                <div key={item.foodItemId} className="modern-food-card">
+                  <div className="card-image-wrapper">
+                    {displayImage ? (
+                      <img src={getImageUrl(displayImage)} alt={item.itemName} />
+                    ) : (
+                      <div className="h-100 d-flex align-items-center justify-content-center text-muted card-image-placeholder">
+                        <i className="fas fa-utensils fa-3x opacity-25"></i>
+                      </div>
+                    )}
+                    <div className="price-tag">Rs. {parseFloat(item.price).toFixed(0)}</div>
+                  </div>
+                  <div className="card-content">
+                    <h4>{item.itemName}</h4>
+                    <p>{item.description}</p>
+                    <button
+                      className="add-to-cart-modern"
+                      onClick={() => addToCart(item)}
+                    >
+                      <i className="fas fa-plus"></i> Add to Order
+                    </button>
+                  </div>
                 </div>
-                <div className="card-content">
-                  <h4>{item.itemName}</h4>
-                  <p>{item.description}</p>
-                  <button
-                    className="add-to-cart-modern"
-                    onClick={() => addToCart(item)}
-                  >
-                    <i className="fas fa-plus"></i> Add to Order
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -614,44 +619,69 @@ const CustomerQROrder = () => {
 
   return (
     <div className="customer-qr-order-container">
-      {/* Dynamic Header */}
-      <header className={`customer-header-modern ${selectedMenu ? 'header-scrolled' : ''}`}>
-        <div className="header-top">
-          <div className="restaurant-brand">
+      {/* Premium Elegant Header */}
+      <header className={`customer-header-v2 ${selectedMenu ? 'header-scrolled' : ''}`}>
+        <div className="header-container">
+          <div className="restaurant-brand-v2">
             {tableInfo?.logo ? (
-              <img src={tableInfo.logo} alt={tableInfo.restaurantName || 'Restaurant'} className="brand-logo-img" />
+              <img src={tableInfo.logo} alt={tableInfo.restaurantName} className="brand-logo-v2" />
             ) : (
-              <div className="brand-icon">
+              <div className="brand-placeholder-v2">
                 <i className="fas fa-utensils"></i>
               </div>
             )}
-            <div className="brand-info">
-              <h1>{tableInfo.restaurantName}</h1>
-              <div className="table-indicator">
-                <i className="fas fa-chair"></i> Room {tableInfo.tableNo || tableInfo.roomNo}
+            <div className="brand-text-v2">
+              <h1 className="hotel-name-v2">{tableInfo.restaurantName}</h1>
+              <div className="room-badge-v2">
+                <i className="fas fa-door-open"></i>
+                <span>Room {tableInfo.tableNo || tableInfo.roomNo}</span>
               </div>
             </div>
           </div>
-          <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
-            {orderSuccess && !showStatusScreen && (
-              <button
-                className="btn btn-sm btn-outline-primary"
-                onClick={() => setShowStatusScreen(true)}
-                style={{ borderRadius: '8px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <i className="fas fa-receipt"></i> Track Order
-              </button>
-            )}
-            <button
-              className={`modern-cart-btn ${cart.length > 0 ? 'has-items' : ''}`}
-              onClick={() => setShowCart(true)}
-            >
+
+          <div className="cart-trigger-v2" onClick={() => setShowCart(true)}>
+            <div className={`cart-btn-v2 ${cart.length > 0 ? 'pulse' : ''}`}>
               <i className="fas fa-shopping-bag"></i>
-              {cart.length > 0 && <span className="cart-count">{cart.length}</span>}
-            </button>
+              {cart.length > 0 && <span className="cart-badge-v2">{cart.length}</span>}
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Modern Bottom Navigation */}
+      <nav className="mobile-bottom-nav">
+        <button 
+          className={`nav-item ${!showStatusScreen ? 'active' : ''}`}
+          onClick={() => setShowStatusScreen(false)}
+        >
+          <i className="fas fa-utensils"></i>
+          <span>Menu</span>
+        </button>
+        <button 
+          className={`nav-item ${showStatusScreen ? 'active' : ''} ${orderSuccess ? 'has-active-order' : ''}`}
+          onClick={() => {
+            if (orderSuccess) {
+              setShowStatusScreen(true);
+            } else {
+              Swal.fire({
+                title: 'No Active Order',
+                text: 'You haven\'t placed an order yet.',
+                icon: 'info',
+                toast: true,
+                position: 'bottom',
+                timer: 3000,
+                showConfirmButton: false
+              });
+            }
+          }}
+        >
+          <div className="track-icon-wrapper">
+            <i className="fas fa-receipt"></i>
+            {orderSuccess && <span className="notification-dot"></span>}
+          </div>
+          <span>Track Order</span>
+        </button>
+      </nav>
 
       {/* Main Content Area */}
       {/* Main Content Area */}
