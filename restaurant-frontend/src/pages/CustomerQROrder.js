@@ -56,6 +56,41 @@ const CustomerQROrder = () => {
     }
   }, []);
 
+  // Helper to show notifications (Toast + Browser)
+  // Helper to show notifications (Toast + Browser)
+  const showNotification = useCallback((title, message, type = 'info') => {
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: message,
+        icon: '/logo192.png',
+        badge: '/logo192.png',
+        vibrate: [200, 100, 200],
+        tag: 'order-update'
+      });
+
+      // Auto-close after 5 seconds
+      setTimeout(() => notification.close(), 5000);
+
+      // Play sound (optional)
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(() => { });
+      } catch (e) { }
+    }
+
+    // Also show SweetAlert notification
+    Swal.fire({
+      title: title,
+      text: message,
+      icon: type,
+      timer: 4000,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
+  }, []);
+
   // Refresh order status logic
   const refreshOrderStatus = useCallback(async () => {
     if (!orderSuccess || !orderSuccess.orderId) return;
@@ -137,39 +172,6 @@ const CustomerQROrder = () => {
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [orderSuccess, refreshOrderStatus]);
-
-  const showNotification = (title, message, type = 'info') => {
-    // Browser notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      const notification = new Notification(title, {
-        body: message,
-        icon: '/logo192.png',
-        badge: '/logo192.png',
-        vibrate: [200, 100, 200],
-        tag: 'order-update'
-      });
-
-      // Auto-close after 5 seconds
-      setTimeout(() => notification.close(), 5000);
-
-      // Play sound (optional)
-      try {
-        const audio = new Audio('/notification.mp3');
-        audio.play().catch(() => { });
-      } catch (e) { }
-    }
-
-    // Also show SweetAlert notification
-    Swal.fire({
-      title: title,
-      text: message,
-      icon: type,
-      timer: 4000,
-      showConfirmButton: false,
-      toast: true,
-      position: 'top-end'
-    });
-  };
 
   const fetchTableInfo = useCallback(async () => {
     try {

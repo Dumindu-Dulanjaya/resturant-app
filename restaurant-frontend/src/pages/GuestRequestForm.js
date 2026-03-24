@@ -28,6 +28,40 @@ function GuestRequestForm() {
     }
   }, []);
 
+  // Helper to show notifications (Toast + Browser)
+  const showNotification = useCallback((title, message, type = 'info') => {
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: message,
+        icon: '/logo192.png',
+        badge: '/logo192.png',
+        vibrate: [200, 100, 200],
+        tag: 'housekeeping-update'
+      });
+
+      // Auto-close after 5 seconds
+      setTimeout(() => notification.close(), 5000);
+
+      // Play sound (optional)
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(() => {});
+      } catch (e) {}
+    }
+
+    // Also show SweetAlert notification
+    Swal.fire({
+      title: title,
+      text: message,
+      icon: type,
+      timer: 4000,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
+  }, []);
+
   // Refresh request status logic
   const refreshRequestStatus = useCallback(async () => {
     if (!requestSuccess || !requestSuccess.requestId) return;
@@ -105,40 +139,7 @@ function GuestRequestForm() {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [requestSuccess, refreshRequestStatus]);
-
-  const showNotification = (title, message, type = 'info') => {
-    // Browser notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      const notification = new Notification(title, {
-        body: message,
-        icon: '/logo192.png',
-        badge: '/logo192.png',
-        vibrate: [200, 100, 200],
-        tag: 'housekeeping-update'
-      });
-
-      // Auto-close after 5 seconds
-      setTimeout(() => notification.close(), 5000);
-
-      // Play sound (optional)
-      try {
-        const audio = new Audio('/notification.mp3');
-        audio.play().catch(() => {});
-      } catch (e) {}
-    }
-
-    // Also show SweetAlert notification
-    Swal.fire({
-      title: title,
-      text: message,
-      icon: type,
-      timer: 4000,
-      showConfirmButton: false,
-      toast: true,
-      position: 'top-end'
-    });
-  };  const fetchRoomInfo = useCallback(async () => {
+  }, [requestSuccess, refreshRequestStatus]);  const fetchRoomInfo = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/qr/room/resolve/${roomKey}`);
       setRoomInfo(response.data);

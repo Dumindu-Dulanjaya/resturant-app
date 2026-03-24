@@ -80,12 +80,6 @@ export const WebSocketProvider = ({ children }) => {
   }, [clearConnectTimer, clearRetryTimer]);
 
   useEffect(() => {
-    if (!user) {
-      hasLoggedUnavailableRef.current = false;
-      disconnectSocket();
-      return;
-    }
-
     const API_URL = (() => {
       const envApiUrl = (
         process.env.REACT_APP_API_URL ||
@@ -183,10 +177,12 @@ export const WebSocketProvider = ({ children }) => {
         }
 
         setConnected(true);
-        newSocket.emit('authenticate', {
-          userId: user.id,
-          role: user.role,
-        });
+        if (user) {
+          newSocket.emit('authenticate', {
+            userId: user.id,
+            role: user.role,
+          });
+        }
       });
 
       newSocket.on('disconnect', (reason) => {
