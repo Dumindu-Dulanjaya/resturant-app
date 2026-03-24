@@ -160,8 +160,9 @@ const KitchenKDS = () => {
   useEffect(() => {
     if (!connected) return;
 
-    const unsubscribeNew = subscribe('order:new', () => {
-      console.log('WS: New order received, refreshing KDS...');
+    const unsubscribeNew = subscribe('order:new', (order) => {
+      console.log('WS: New order received, refreshing KDS...', order);
+      playNotificationSound();
       fetchAllOrders();
     });
 
